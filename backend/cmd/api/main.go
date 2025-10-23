@@ -53,10 +53,11 @@ func main() {
 		var priceService service.PriceService
 		finmindAPIKey := os.Getenv("FINMIND_API_KEY")
 		coingeckoAPIKey := os.Getenv("COINGECKO_API_KEY")
+		alphaVantageAPIKey := os.Getenv("ALPHA_VANTAGE_API_KEY")
 
-		if finmindAPIKey != "" && coingeckoAPIKey != "" {
-			priceService = service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey)
-			log.Println("Using real price API without cache")
+		if finmindAPIKey != "" && coingeckoAPIKey != "" && alphaVantageAPIKey != "" {
+			priceService = service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey, alphaVantageAPIKey)
+			log.Println("Using real price API without cache (FinMind + CoinGecko + Alpha Vantage)")
 		} else {
 			priceService = service.NewMockPriceService()
 			log.Println("Using mock price service without cache")
@@ -90,11 +91,12 @@ func main() {
 
 	finmindAPIKey := os.Getenv("FINMIND_API_KEY")
 	coingeckoAPIKey := os.Getenv("COINGECKO_API_KEY")
+	alphaVantageAPIKey := os.Getenv("ALPHA_VANTAGE_API_KEY")
 
-	if finmindAPIKey != "" && coingeckoAPIKey != "" {
+	if finmindAPIKey != "" && coingeckoAPIKey != "" && alphaVantageAPIKey != "" {
 		// 使用真實 API
-		basePriceService = service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey)
-		log.Println("Using real price API (FinMind + CoinGecko + Yahoo Finance)")
+		basePriceService = service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey, alphaVantageAPIKey)
+		log.Println("Using real price API (FinMind + CoinGecko + Alpha Vantage)")
 	} else {
 		// 使用 Mock Service
 		basePriceService = service.NewMockPriceService()

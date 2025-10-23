@@ -10,17 +10,17 @@ import (
 
 // realPriceService 真實價格服務（整合多個外部 API）
 type realPriceService struct {
-	finmindClient      *external.FinMindClient
-	coingeckoClient    *external.CoinGeckoClient
-	yahooFinanceClient *external.YahooFinanceClient
+	finmindClient       *external.FinMindClient
+	coingeckoClient     *external.CoinGeckoClient
+	alphaVantageClient  *external.AlphaVantageClient
 }
 
 // NewRealPriceService 建立真實價格服務
-func NewRealPriceService(finmindAPIKey, coingeckoAPIKey string) PriceService {
+func NewRealPriceService(finmindAPIKey, coingeckoAPIKey, alphaVantageAPIKey string) PriceService {
 	return &realPriceService{
-		finmindClient:      external.NewFinMindClient(finmindAPIKey),
-		coingeckoClient:    external.NewCoinGeckoClient(coingeckoAPIKey),
-		yahooFinanceClient: external.NewYahooFinanceClient(),
+		finmindClient:       external.NewFinMindClient(finmindAPIKey),
+		coingeckoClient:     external.NewCoinGeckoClient(coingeckoAPIKey),
+		alphaVantageClient:  external.NewAlphaVantageClient(alphaVantageAPIKey),
 	}
 }
 
@@ -40,8 +40,8 @@ func (s *realPriceService) GetPrice(symbol string, assetType models.AssetType) (
 		currency = "TWD"
 
 	case models.AssetTypeUSStock:
-		// 美股：使用 Yahoo Finance API
-		price, err = s.yahooFinanceClient.GetStockPrice(symbol)
+		// 美股：使用 Alpha Vantage API
+		price, err = s.alphaVantageClient.GetStockPrice(symbol)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get US stock price: %w", err)
 		}
@@ -114,8 +114,9 @@ func (s *realPriceService) GetPrices(symbols []string, assetTypes map[string]mod
 	}
 
 	// 批次取得美股價格
+	// 注意：Alpha Vantage 免費版有速率限制（每分鐘 5 次），批次查詢會較慢
 	if len(usStocks) > 0 {
-		usPrices, err := s.yahooFinanceClient.GetMultipleStockPrices(usStocks)
+		usPrices, err := s.alphaVantageClient.GetMultipleStockPrices(usStocks)
 		if err != nil {
 			fmt.Printf("Warning: failed to get US stock prices: %v\n", err)
 		} else {
