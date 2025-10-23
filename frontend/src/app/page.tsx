@@ -1,51 +1,26 @@
+/**
+ * 首頁 - 重定向到 Dashboard
+ */
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const [status, setStatus] = useState<string>('載入中...');
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchHealth = async () => {
-      try {
-        const response = await fetch('http://localhost:8080/health');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setStatus(data.message);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '未知錯誤');
-      }
-    };
-
-    fetchHealth();
-  }, []);
+    // 自動重定向到 Dashboard 頁面
+    router.push('/dashboard');
+  }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
-      <main className="flex flex-col items-center justify-center gap-8 rounded-lg bg-white p-8 shadow-lg">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Asset Manager
-        </h1>
-        
-        <div className="text-center">
-          <p className="mb-4 text-lg text-gray-600">後端狀態：</p>
-          {error ? (
-            <p className="text-red-600 font-semibold">❌ {error}</p>
-          ) : (
-            <p className="text-green-600 font-semibold">✅ {status}</p>
-          )}
-        </div>
-
-        <p className="text-sm text-gray-500">
-          前端運行在 http://localhost:3000
-        </p>
-        <p className="text-sm text-gray-500">
-          後端運行在 http://localhost:8080
-        </p>
-      </main>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+        <p className="text-gray-600">載入中...</p>
+      </div>
     </div>
   );
 }
