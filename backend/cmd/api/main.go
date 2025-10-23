@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/joho/godotenv"
 	"github.com/chienchuanw/asset-manager/internal/api"
 	"github.com/chienchuanw/asset-manager/internal/db"
 	"github.com/chienchuanw/asset-manager/internal/repository"
@@ -12,6 +13,11 @@ import (
 )
 
 func main() {
+	// 載入環境變數
+	if err := godotenv.Load(".env.local"); err != nil {
+		log.Printf("Warning: .env.local file not found: %v", err)
+	}
+	
 	// 初始化資料庫連線
 	database, err := db.InitDB()
 	if err != nil {

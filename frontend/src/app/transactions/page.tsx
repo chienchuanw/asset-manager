@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,33 +26,44 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AddTransactionDialog } from '@/components/transactions/AddTransactionDialog';
+import { useTransactions, useDeleteTransaction } from '@/hooks';
 import {
-  mockAllTransactions,
-  assetTypeNames,
-  transactionTypeNames,
-  transactionTypeColors,
-  assetTypeColors,
-  type AssetType,
-  type Transaction,
-} from '@/lib/mock-data';
-import { Search, Download, Plus, ArrowUpDown } from 'lucide-react';
+  getAssetTypeLabel,
+  getTransactionTypeLabel,
+  AssetType,
+  TransactionType,
+} from '@/types/transaction';
+import { Search, Download, Trash2, Loader2 } from 'lucide-react';
 
 export default function TransactionsPage() {
+  // 狀態管理
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<Transaction['type'] | 'all'>('all');
+  const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
   const [filterAssetType, setFilterAssetType] = useState<AssetType | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // 篩選和排序邏輯
-  const filteredAndSortedTransactions = mockAllTransactions
-    .filter((transaction) => {
+  // 取得交易列表資料
+  const { data: transactions, isLoading, error, refetch } = useTransactions();
+
+  // 刪除交易 mutation
+  const deleteMutation = useDeleteTransaction({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  // 篩選和排序邏輯（使用 useMemo 優化效能）
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+
+    return transactions.filter((transaction) => {
       // 交易類型篩選
       if (filterType !== 'all' && transaction.type !== filterType) {
         return false;
       }
       // 資產類別篩選
-      if (filterAssetType !== 'all' && transaction.assetType !== filterAssetType) {
+      if (filterAssetType !== 'all' && transaction.asset_type !== filterAssetType) {
         return false;
       }
       // 搜尋篩選
@@ -64,37 +75,62 @@ export default function TransactionsPage() {
         );
       }
       return true;
-    })
-    .sort((a, b) => {
-      let compareValue = 0;
-      switch (sortBy) {
-        case 'date':
-          compareValue = new Date(a.date).getTime() - new Date(b.date).getTime();
-          break;
-        case 'amount':
-          compareValue = a.amount - b.amount;
-          break;
-      }
-      return sortOrder === 'asc' ? compareValue : -compareValue;
+    }).sort((a, b) => {
+      // 預設按日期降序排列（最新的在前）
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
+  }, [transactions, filterType, filterAssetType, searchQuery]);
 
   // 計算統計資料
-  const totalTransactions = filteredAndSortedTransactions.length;
-  const totalBuyAmount = filteredAndSortedTransactions
-    .filter((t) => t.type === 'buy')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalSellAmount = filteredAndSortedTransactions
-    .filter((t) => t.type === 'sell')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const netFlow = totalBuyAmount - totalSellAmount;
+  const stats = useMemo(() => {
+    const totalTransactions = filteredTransactions.length;
+    const totalBuyAmount = filteredTransactions
+      .filter((t) => t.type === TransactionType.BUY)
+      .reduce((sum, t) => sum + t.amount, 0);
+    const totalSellAmount = filteredTransactions
+      .filter((t) => t.type === TransactionType.SELL)
+      .reduce((sum, t) => sum + t.amount, 0);
+    const netFlow = totalBuyAmount - totalSellAmount;
 
-  // 排序切換
-  const handleSort = (field: 'date' | 'amount') => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
+    return { totalTransactions, totalBuyAmount, totalSellAmount, netFlow };
+  }, [filteredTransactions]);
+
+  // 處理刪除交易
+  const handleDelete = (id: string) => {
+    if (confirm('確定要刪除這筆交易嗎？')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  // 取得交易類型的顏色
+  const getTransactionTypeColor = (type: TransactionType) => {
+    switch (type) {
+      case TransactionType.BUY:
+        return 'bg-green-100 text-green-800';
+      case TransactionType.SELL:
+        return 'bg-red-100 text-red-800';
+      case TransactionType.DIVIDEND:
+        return 'bg-blue-100 text-blue-800';
+      case TransactionType.FEE:
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // 取得資產類型的顏色
+  const getAssetTypeColor = (assetType: AssetType) => {
+    switch (assetType) {
+      case AssetType.TW_STOCK:
+        return 'bg-purple-100 text-purple-800';
+      case AssetType.US_STOCK:
+        return 'bg-indigo-100 text-indigo-800';
+      case AssetType.CRYPTO:
+        return 'bg-orange-100 text-orange-800';
+      case AssetType.CASH:
+        return 'bg-emerald-100 text-emerald-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -110,8 +146,14 @@ export default function TransactionsPage() {
                 <CardDescription>總交易次數</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold tabular-nums">{totalTransactions}</div>
-                <p className="text-xs text-muted-foreground mt-1">筆交易記錄</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-20" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+                    <p className="text-xs text-muted-foreground mt-1">筆交易記錄</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -120,10 +162,16 @@ export default function TransactionsPage() {
                 <CardDescription>總買入金額</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold tabular-nums text-blue-600">
-                  TWD {totalBuyAmount.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">累計買入</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-32" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-blue-600">
+                      TWD {stats.totalBuyAmount.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">累計買入</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -132,10 +180,16 @@ export default function TransactionsPage() {
                 <CardDescription>總賣出金額</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold tabular-nums text-red-600">
-                  TWD {totalSellAmount.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">累計賣出</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-32" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-red-600">
+                      TWD {stats.totalSellAmount.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">累計賣出</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -144,16 +198,22 @@ export default function TransactionsPage() {
                 <CardDescription>淨流入/流出</CardDescription>
               </CardHeader>
               <CardContent>
-                <div
-                  className={`text-2xl font-bold tabular-nums ${
-                    netFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  TWD {netFlow.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {netFlow >= 0 ? '淨流入' : '淨流出'}
-                </p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-32" />
+                ) : (
+                  <>
+                    <div
+                      className={`text-2xl font-bold ${
+                        stats.netFlow >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      TWD {stats.netFlow.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats.netFlow >= 0 ? '淨流入' : '淨流出'}
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -164,13 +224,12 @@ export default function TransactionsPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>交易記錄</CardTitle>
-                  <CardDescription>查看所有交易記錄</CardDescription>
+                  <CardDescription>
+                    {isLoading ? '載入中...' : `共 ${filteredTransactions.length} 筆記錄`}
+                  </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    新增交易
-                  </Button>
+                  <AddTransactionDialog onSuccess={() => refetch()} />
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
                     匯出
@@ -224,78 +283,113 @@ export default function TransactionsPage() {
             </CardHeader>
 
             <CardContent>
+              {/* 錯誤訊息 */}
+              {error && (
+                <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg">
+                  <p className="font-medium">載入失敗</p>
+                  <p>{error.message}</p>
+                </div>
+              )}
+
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('date')}
-                          className="h-8 px-2"
-                        >
-                          日期
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </TableHead>
+                      <TableHead>日期</TableHead>
                       <TableHead>交易類型</TableHead>
                       <TableHead>資產類別</TableHead>
                       <TableHead>代碼/名稱</TableHead>
                       <TableHead className="text-right">數量</TableHead>
                       <TableHead className="text-right">單價</TableHead>
-                      <TableHead className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('amount')}
-                          className="h-8 px-2 ml-auto"
-                        >
-                          總金額
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </TableHead>
+                      <TableHead className="text-right">總金額</TableHead>
                       <TableHead className="text-right hidden md:table-cell">手續費</TableHead>
                       <TableHead className="hidden lg:table-cell">備註</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAndSortedTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="font-medium">{transaction.date}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={transactionTypeColors[transaction.type]}>
-                            {transactionTypeNames[transaction.type]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={assetTypeColors[transaction.assetType]}>
-                            {assetTypeNames[transaction.assetType]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{transaction.symbol}</div>
-                            <div className="text-sm text-muted-foreground">{transaction.name}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {transaction.quantity.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {transaction.price.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">
-                          {transaction.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums hidden md:table-cell">
-                          {transaction.fee ? transaction.fee.toLocaleString() : '-'}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
-                          {transaction.note || '-'}
+                    {isLoading ? (
+                      // 載入中骨架屏
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <TableRow key={index}>
+                          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                          <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                          <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                          <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : filteredTransactions.length === 0 ? (
+                      // 無資料
+                      <TableRow>
+                        <TableCell colSpan={10} className="h-24 text-center">
+                          <p className="text-muted-foreground">
+                            {searchQuery || filterType !== 'all' || filterAssetType !== 'all'
+                              ? '沒有符合條件的交易記錄'
+                              : '尚無交易記錄，點擊「新增交易」開始記錄'}
+                          </p>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      // 交易列表
+                      filteredTransactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="font-medium">
+                            {new Date(transaction.date).toLocaleDateString('zh-TW')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getTransactionTypeColor(transaction.type)}>
+                              {getTransactionTypeLabel(transaction.type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getAssetTypeColor(transaction.asset_type)}>
+                              {getAssetTypeLabel(transaction.asset_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{transaction.symbol}</div>
+                              <div className="text-sm text-muted-foreground">{transaction.name}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {transaction.quantity.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {transaction.price.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {transaction.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right hidden md:table-cell">
+                            {transaction.fee ? transaction.fee.toLocaleString() : '-'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
+                            {transaction.note || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(transaction.id)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              {deleteMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
