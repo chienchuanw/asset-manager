@@ -244,7 +244,7 @@ export default function TransactionsPage() {
                       <TableHead>代碼/名稱</TableHead>
                       <TableHead className="text-right">數量</TableHead>
                       <TableHead className="text-right">單價</TableHead>
-                      <TableHead>
+                      <TableHead className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
