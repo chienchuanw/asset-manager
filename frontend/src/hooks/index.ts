@@ -12,3 +12,12 @@ export {
   transactionKeys,
 } from "./useTransactions";
 
+export {
+  useHoldings,
+  useHolding,
+  useTWStockHoldings,
+  useUSStockHoldings,
+  useCryptoHoldings,
+  holdingKeys,
+} from "./useHoldings";
+
