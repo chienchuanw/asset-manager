@@ -1,0 +1,23 @@
+# gotestsum configuration file
+
+# 預設輸出格式
+# 可選: dots, testname, standard-verbose, standard-quiet, pkgname, pkgname-and-test-fails
+format: testname
+
+# 顯示測試執行時間
+show-elapsed: true
+
+# 失敗時顯示完整的測試輸出
+hide-summary: false
+
+# 測試失敗時的行為
+# 可選: none, all, failed
+rerun-fails: failed
+
+# 最多重新執行失敗測試的次數
+rerun-fails-max-attempts: 2
+
+# 測試超時時間（秒）
+# 0 表示無限制
+timeout: 0
+
