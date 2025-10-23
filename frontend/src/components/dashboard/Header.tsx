@@ -69,7 +69,7 @@ export function Header({ userName = '使用者', onMenuClick }: HeaderProps) {
               <Button variant="ghost" className="flex items-center gap-2 pl-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/avatar-placeholder.png" alt={userName} />
-                  <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white">
+                  <AvatarFallback className="bg-linear-to-br from-blue-600 to-purple-600 text-white">
                     {userName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>

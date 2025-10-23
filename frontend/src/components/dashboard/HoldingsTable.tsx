@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Holding } from '@/types/holding';
-import { getAssetTypeLabel, getProfitLossColor } from '@/types/transaction';
+import { Holding, getProfitLossColor } from '@/types/holding';
+import { getAssetTypeLabel } from '@/types/transaction';
 
 interface HoldingsTableProps {
   holdings: Holding[];

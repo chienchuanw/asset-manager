@@ -16,6 +16,7 @@ export interface Holding {
   total_cost: number;
   current_price: number;
   currency: string;
+  current_price_twd: number; // TWD 轉換後的價格
   market_value: number;
   unrealized_pl: number;
   unrealized_pl_pct: number;
@@ -43,6 +44,7 @@ export const holdingSchema = z.object({
   total_cost: z.number(),
   current_price: z.number(),
   currency: z.string(),
+  current_price_twd: z.number(),
   market_value: z.number(),
   unrealized_pl: z.number(),
   unrealized_pl_pct: z.number(),

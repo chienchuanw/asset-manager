@@ -59,7 +59,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
         {/* Logo 區域 + 關閉按鈕 */}
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <WalletIcon className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900">Asset Manager</span>

@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { getAssetTypeLabel } from '@/types/transaction';
+import { AssetType, getAssetTypeLabel } from '@/types/transaction';
 
 interface AssetAllocationData {
   name: string;
@@ -31,7 +31,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
   const chartData = useMemo(() => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     return data.map((item) => ({
-      name: getAssetTypeLabel(item.name),
+      name: getAssetTypeLabel(item.name as AssetType),
       assetType: item.name,
       value: item.value,
       percentage: total > 0 ? (item.value / total) * 100 : 0,
