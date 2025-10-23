@@ -13,7 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Holding, assetTypeNames } from '@/lib/mock-data';
+import { Holding } from '@/types/holding';
+import { getAssetTypeLabel, getProfitLossColor } from '@/types/transaction';
 
 interface HoldingsTableProps {
   holdings: Holding[];
@@ -42,9 +43,10 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
             </TableHeader>
             <TableBody>
               {holdings.map((holding) => {
-                const isProfit = holding.profitLoss >= 0;
+                const isProfit = holding.unrealized_pl >= 0;
+                const profitLossColor = getProfitLossColor(holding.unrealized_pl);
                 return (
-                  <TableRow key={holding.id}>
+                  <TableRow key={holding.symbol}>
                     <TableCell>
                       <div className="font-medium">{holding.symbol}</div>
                       <div className="text-sm text-muted-foreground hidden md:block">
@@ -53,25 +55,25 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <Badge variant="outline" className="text-xs">
-                        {assetTypeNames[holding.assetType]}
+                        {getAssetTypeLabel(holding.asset_type)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {holding.quantity.toLocaleString()}
+                      {holding.quantity.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right tabular-nums hidden md:table-cell">
-                      {holding.avgCost.toLocaleString()}
+                      {holding.avg_cost.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {holding.currentPrice.toLocaleString()}
+                      {holding.current_price_twd.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
-                      {holding.marketValue.toLocaleString()}
+                      {holding.market_value.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}
                     </TableCell>
-                    <TableCell className={`text-right font-medium tabular-nums ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
-                      <div>{isProfit ? '+' : ''}{holding.profitLoss.toLocaleString()}</div>
+                    <TableCell className={`text-right font-medium tabular-nums ${profitLossColor}`}>
+                      <div>{isProfit ? '+' : ''}{holding.unrealized_pl.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</div>
                       <div className="text-xs">
-                        {isProfit ? '+' : ''}{holding.profitLossPercent.toFixed(2)}%
+                        {isProfit ? '+' : ''}{holding.unrealized_pl_pct.toFixed(2)}%
                       </div>
                     </TableCell>
                   </TableRow>
