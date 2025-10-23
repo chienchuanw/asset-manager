@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chienchuanw/asset-manager/internal/cache"
 	"github.com/chienchuanw/asset-manager/internal/models"
 )
 
@@ -100,3 +101,122 @@ func (s *mockPriceService) RefreshPrice(symbol string, assetType models.AssetTyp
 	return s.GetPrice(symbol, assetType)
 }
 
+// ==================== Cached Price Service ====================
+
+// cachedPriceService 帶 Redis 快取的價格服務
+type cachedPriceService struct {
+	cache          *cache.RedisCache
+	fallback       PriceService // 當快取失效時使用的備用服務（例如 Mock 或真實 API）
+	cacheExpiration time.Duration
+}
+
+// NewCachedPriceService 建立帶快取的價格服務
+func NewCachedPriceService(redisCache *cache.RedisCache, fallback PriceService, cacheExpiration time.Duration) PriceService {
+	return &cachedPriceService{
+		cache:          redisCache,
+		fallback:       fallback,
+		cacheExpiration: cacheExpiration,
+	}
+}
+
+// getCacheKey 產生快取 key
+func (s *cachedPriceService) getCacheKey(symbol string, assetType models.AssetType) string {
+	return fmt.Sprintf("price:%s:%s", assetType, symbol)
+}
+
+// GetPrice 取得單一標的價格（優先從快取取得）
+func (s *cachedPriceService) GetPrice(symbol string, assetType models.AssetType) (*models.Price, error) {
+	cacheKey := s.getCacheKey(symbol, assetType)
+
+	// 1. 嘗試從快取取得
+	var cachedPrice models.PriceCache
+	err := s.cache.Get(cacheKey, &cachedPrice)
+	if err == nil {
+		// 快取命中，返回快取資料
+		return &models.Price{
+			Symbol:    cachedPrice.Symbol,
+			AssetType: cachedPrice.AssetType,
+			Price:     cachedPrice.Price,
+			Currency:  cachedPrice.Currency,
+			Source:    "cache",
+			UpdatedAt: cachedPrice.CachedAt,
+		}, nil
+	}
+
+	// 2. 快取未命中，從 fallback 服務取得
+	price, err := s.fallback.GetPrice(symbol, assetType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get price from fallback: %w", err)
+	}
+
+	// 3. 儲存到快取
+	cacheData := models.PriceCache{
+		Symbol:    price.Symbol,
+		AssetType: price.AssetType,
+		Price:     price.Price,
+		Currency:  price.Currency,
+		CachedAt:  time.Now(),
+	}
+
+	if err := s.cache.Set(cacheKey, cacheData, s.cacheExpiration); err != nil {
+		// 快取失敗不影響返回結果，只記錄錯誤
+		fmt.Printf("Warning: failed to cache price for %s: %v\n", symbol, err)
+	}
+
+	// 更新 source 為 API
+	price.Source = "api"
+	return price, nil
+}
+
+// GetPrices 批次取得多個標的價格
+func (s *cachedPriceService) GetPrices(symbols []string, assetTypes map[string]models.AssetType) (map[string]*models.Price, error) {
+	prices := make(map[string]*models.Price)
+
+	for _, symbol := range symbols {
+		assetType, exists := assetTypes[symbol]
+		if !exists {
+			return nil, fmt.Errorf("asset type not found for symbol: %s", symbol)
+		}
+
+		price, err := s.GetPrice(symbol, assetType)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get price for %s: %w", symbol, err)
+		}
+
+		prices[symbol] = price
+	}
+
+	return prices, nil
+}
+
+// RefreshPrice 手動更新價格（清除快取並重新取得）
+func (s *cachedPriceService) RefreshPrice(symbol string, assetType models.AssetType) (*models.Price, error) {
+	cacheKey := s.getCacheKey(symbol, assetType)
+
+	// 1. 清除快取
+	if err := s.cache.Delete(cacheKey); err != nil {
+		fmt.Printf("Warning: failed to delete cache for %s: %v\n", symbol, err)
+	}
+
+	// 2. 從 fallback 服務取得最新價格
+	price, err := s.fallback.GetPrice(symbol, assetType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh price: %w", err)
+	}
+
+	// 3. 儲存到快取
+	cacheData := models.PriceCache{
+		Symbol:    price.Symbol,
+		AssetType: price.AssetType,
+		Price:     price.Price,
+		Currency:  price.Currency,
+		CachedAt:  time.Now(),
+	}
+
+	if err := s.cache.Set(cacheKey, cacheData, s.cacheExpiration); err != nil {
+		fmt.Printf("Warning: failed to cache refreshed price for %s: %v\n", symbol, err)
+	}
+
+	price.Source = "api"
+	return price, nil
+}

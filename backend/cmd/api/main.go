@@ -2,9 +2,13 @@ package main
 
 import (
 	"log"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/chienchuanw/asset-manager/internal/api"
+	"github.com/chienchuanw/asset-manager/internal/cache"
 	"github.com/chienchuanw/asset-manager/internal/db"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/chienchuanw/asset-manager/internal/service"
@@ -31,9 +35,60 @@ func main() {
 	// 初始化 Service
 	transactionService := service.NewTransactionService(transactionRepo)
 
+	// 初始化 Redis Cache
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisDB, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
+
+	redisCache, err := cache.NewRedisCache(redisAddr, redisPassword, redisDB)
+	if err != nil {
+		log.Printf("Warning: Failed to connect to Redis: %v. Using mock price service without cache.", err)
+		// 如果 Redis 連線失敗，使用不帶快取的 Mock Service
+		fifoCalculator := service.NewFIFOCalculator()
+		priceService := service.NewMockPriceService()
+		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService)
+
+		// 初始化 Handler
+		transactionHandler := api.NewTransactionHandler(transactionService)
+		holdingHandler := api.NewHoldingHandler(holdingService)
+
+		// 建立 router 並啟動（簡化版）
+		startServer(transactionHandler, holdingHandler)
+		return
+	}
+	defer redisCache.Close()
+
+	// 解析快取過期時間
+	cacheExpiration := 5 * time.Minute
+	if expStr := os.Getenv("PRICE_CACHE_EXPIRATION"); expStr != "" {
+		if duration, err := time.ParseDuration(expStr); err == nil {
+			cacheExpiration = duration
+		}
+	}
+
+	// 初始化 FIFO Calculator 和 Price Service（帶快取）
+	fifoCalculator := service.NewFIFOCalculator()
+	mockPriceService := service.NewMockPriceService()
+	priceService := service.NewCachedPriceService(redisCache, mockPriceService, cacheExpiration)
+
+	log.Printf("Redis cache enabled with %v expiration", cacheExpiration)
+
+	// 初始化 Holding Service
+	holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService)
+
 	// 初始化 Handler
 	transactionHandler := api.NewTransactionHandler(transactionService)
+	holdingHandler := api.NewHoldingHandler(holdingService)
 
+	// 啟動伺服器
+	startServer(transactionHandler, holdingHandler)
+}
+
+// startServer 啟動 HTTP 伺服器
+func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -51,6 +106,7 @@ func main() {
 	// API routes
 	apiGroup := router.Group("/api")
 	{
+		// Transactions 路由
 		transactions := apiGroup.Group("/transactions")
 		{
 			transactions.POST("", transactionHandler.CreateTransaction)
@@ -58,6 +114,13 @@ func main() {
 			transactions.GET("/:id", transactionHandler.GetTransaction)
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)
 			transactions.DELETE("/:id", transactionHandler.DeleteTransaction)
+		}
+
+		// Holdings 路由
+		holdings := apiGroup.Group("/holdings")
+		{
+			holdings.GET("", holdingHandler.GetAllHoldings)
+			holdings.GET("/:symbol", holdingHandler.GetHoldingBySymbol)
 		}
 	}
 
