@@ -39,6 +39,7 @@ import {
   getTransactionTypeOptions,
   AssetType,
   TransactionType,
+  Currency,
 } from "@/types/transaction";
 import { Plus, Loader2 } from "lucide-react";
 
@@ -77,6 +78,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
       price: 0,
       amount: 0,
       fee: null,
+      currency: Currency.TWD,
       note: null,
     },
   });
@@ -300,31 +302,55 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               />
             </div>
 
-            {/* 手續費 */}
-            <FormField
-              control={form.control}
-              name="fee"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>手續費（選填）</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? parseFloat(e.target.value) : null
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* 手續費和幣別 */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>手續費（選填）</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? parseFloat(e.target.value) : null
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>幣別</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="選擇幣別" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={Currency.TWD}>新台幣 (TWD)</SelectItem>
+                        <SelectItem value={Currency.USD}>美金 (USD)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* 備註 */}
             <FormField

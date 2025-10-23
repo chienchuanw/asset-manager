@@ -34,6 +34,7 @@ export function TransactionExample() {
       price: 620,
       amount: 6200,
       fee: 28,
+      currency: "TWD",
       note: "測試交易",
     };
 

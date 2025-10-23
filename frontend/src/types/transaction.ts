@@ -161,20 +161,10 @@ export const createTransactionSchema = z.object({
   symbol: z.string().min(1, "代碼為必填"),
   name: z.string().min(1, "名稱為必填"),
   type: transactionTypeSchema,
-  quantity: z.coerce
-    .number({ message: "數量必須為數字" })
-    .positive("數量必須大於 0"),
-  price: z.coerce
-    .number({ message: "價格必須為數字" })
-    .nonnegative("價格不可為負數"),
-  amount: z.coerce
-    .number({ message: "金額必須為數字" })
-    .nonnegative("金額不可為負數"),
-  fee: z.coerce
-    .number({ message: "手續費必須為數字" })
-    .nonnegative("手續費不可為負數")
-    .nullable()
-    .optional(),
+  quantity: z.number({ message: "數量必須為數字" }).positive("數量必須大於 0"),
+  price: z.number({ message: "價格必須為數字" }).nonnegative("價格不可為負數"),
+  amount: z.number({ message: "金額必須為數字" }).nonnegative("金額不可為負數"),
+  fee: z.number({ message: "手續費必須為數字" }).nonnegative("手續費不可為負數").nullable().optional(),
   currency: currencySchema,
   note: z.string().nullable().optional(),
 });
