@@ -60,9 +60,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Logo 區域 */}
         <div className="p-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
-              <WalletIcon className="h-5 w-5 text-white" />
-            </div>
             {sidebarOpen && (
               <span className="text-xl font-bold text-gray-900 whitespace-nowrap">
                 Asset Manager
@@ -259,9 +256,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               <MenuIcon className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <WalletIcon className="h-4 w-4 text-white" />
-              </div>
               <span className="font-semibold">Asset Manager</span>
             </div>
           </div>
