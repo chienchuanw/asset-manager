@@ -45,10 +45,23 @@ func main() {
 
 	redisCache, err := cache.NewRedisCache(redisAddr, redisPassword, redisDB)
 	if err != nil {
-		log.Printf("Warning: Failed to connect to Redis: %v. Using mock price service without cache.", err)
-		// 如果 Redis 連線失敗，使用不帶快取的 Mock Service
+		log.Printf("Warning: Failed to connect to Redis: %v. Using price service without cache.", err)
+		// 如果 Redis 連線失敗，使用不帶快取的 Price Service
 		fifoCalculator := service.NewFIFOCalculator()
-		priceService := service.NewMockPriceService()
+
+		// 初始化 Price Service（真實 API 或 Mock）
+		var priceService service.PriceService
+		finmindAPIKey := os.Getenv("FINMIND_API_KEY")
+		coingeckoAPIKey := os.Getenv("COINGECKO_API_KEY")
+
+		if finmindAPIKey != "" && coingeckoAPIKey != "" {
+			priceService = service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey)
+			log.Println("Using real price API without cache")
+		} else {
+			priceService = service.NewMockPriceService()
+			log.Println("Using mock price service without cache")
+		}
+
 		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService)
 
 		// 初始化 Handler
@@ -69,10 +82,27 @@ func main() {
 		}
 	}
 
-	// 初始化 FIFO Calculator 和 Price Service（帶快取）
+	// 初始化 FIFO Calculator
 	fifoCalculator := service.NewFIFOCalculator()
-	mockPriceService := service.NewMockPriceService()
-	priceService := service.NewCachedPriceService(redisCache, mockPriceService, cacheExpiration)
+
+	// 初始化 Price Service（真實 API 或 Mock）
+	var basePriceService service.PriceService
+
+	finmindAPIKey := os.Getenv("FINMIND_API_KEY")
+	coingeckoAPIKey := os.Getenv("COINGECKO_API_KEY")
+
+	if finmindAPIKey != "" && coingeckoAPIKey != "" {
+		// 使用真實 API
+		basePriceService = service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey)
+		log.Println("Using real price API (FinMind + CoinGecko + Yahoo Finance)")
+	} else {
+		// 使用 Mock Service
+		basePriceService = service.NewMockPriceService()
+		log.Println("Warning: API keys not found. Using mock price service.")
+	}
+
+	// 加上 Redis 快取層
+	priceService := service.NewCachedPriceService(redisCache, basePriceService, cacheExpiration)
 
 	log.Printf("Redis cache enabled with %v expiration", cacheExpiration)
 
