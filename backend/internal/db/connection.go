@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	- "github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
 
 func InitDB() (*sql.DB, error) {
@@ -20,12 +20,12 @@ func InitDB() (*sql.DB, error) {
 
 	// connect to database
 	db, err := sql.Open("postgres", psqlInfo)
-	if	err != nil {
+	if err != nil {
 		return nil, err
 	}
 
 	err = db.Ping()
-	if err !- nil {
+	if err != nil {
 		return nil, err
 	}
 
