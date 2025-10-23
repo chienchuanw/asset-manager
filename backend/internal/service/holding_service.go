@@ -18,9 +18,10 @@ type HoldingService interface {
 
 // holdingService 持倉服務實作
 type holdingService struct {
-	transactionRepo repository.TransactionRepository
-	fifoCalculator  FIFOCalculator
-	priceService    PriceService
+	transactionRepo   repository.TransactionRepository
+	fifoCalculator    FIFOCalculator
+	priceService      PriceService
+	exchangeRateService ExchangeRateService
 }
 
 // NewHoldingService 建立新的持倉服務
@@ -28,11 +29,13 @@ func NewHoldingService(
 	transactionRepo repository.TransactionRepository,
 	fifoCalculator FIFOCalculator,
 	priceService PriceService,
+	exchangeRateService ExchangeRateService,
 ) HoldingService {
 	return &holdingService{
-		transactionRepo: transactionRepo,
-		fifoCalculator:  fifoCalculator,
-		priceService:    priceService,
+		transactionRepo:   transactionRepo,
+		fifoCalculator:    fifoCalculator,
+		priceService:      priceService,
+		exchangeRateService: exchangeRateService,
 	}
 }
 
@@ -80,13 +83,27 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 		return nil, fmt.Errorf("failed to get prices: %w", err)
 	}
 
-	// 5. 整合價格資訊並計算損益
+	// 5. 整合價格資訊並計算損益（統一轉換為 TWD）
 	holdings := make([]*models.Holding, 0, len(holdingsMap))
 	for symbol, holding := range holdingsMap {
 		price, exists := prices[symbol]
 		if exists {
 			holding.CurrentPrice = price.Price
-			holding.MarketValue = holding.Quantity * price.Price
+
+			// 根據資產類型決定幣別
+			currency := s.getCurrencyForAssetType(holding.AssetType)
+			holding.Currency = currency
+
+			// 將價格轉換為 TWD
+			priceTWD, err := s.exchangeRateService.ConvertToTWD(price.Price, currency, price.UpdatedAt)
+			if err != nil {
+				// 如果匯率轉換失敗，使用原始價格（假設為 TWD）
+				priceTWD = price.Price
+			}
+			holding.CurrentPriceTWD = priceTWD
+
+			// 計算市值（TWD）
+			holding.MarketValue = holding.Quantity * priceTWD
 			holding.UnrealizedPL = holding.MarketValue - holding.TotalCost
 
 			// 計算未實現損益百分比
@@ -136,9 +153,23 @@ func (s *holdingService) GetHoldingBySymbol(symbol string) (*models.Holding, err
 		return nil, fmt.Errorf("failed to get price: %w", err)
 	}
 
-	// 4. 整合價格資訊並計算損益
+	// 4. 整合價格資訊並計算損益（統一轉換為 TWD）
 	holding.CurrentPrice = price.Price
-	holding.MarketValue = holding.Quantity * price.Price
+
+	// 根據資產類型決定幣別
+	currency := s.getCurrencyForAssetType(holding.AssetType)
+	holding.Currency = currency
+
+	// 將價格轉換為 TWD
+	priceTWD, err := s.exchangeRateService.ConvertToTWD(price.Price, currency, price.UpdatedAt)
+	if err != nil {
+		// 如果匯率轉換失敗，使用原始價格（假設為 TWD）
+		priceTWD = price.Price
+	}
+	holding.CurrentPriceTWD = priceTWD
+
+	// 計算市值（TWD）
+	holding.MarketValue = holding.Quantity * priceTWD
 	holding.UnrealizedPL = holding.MarketValue - holding.TotalCost
 
 	// 計算未實現損益百分比
@@ -147,5 +178,19 @@ func (s *holdingService) GetHoldingBySymbol(symbol string) (*models.Holding, err
 	}
 
 	return holding, nil
+}
+
+// getCurrencyForAssetType 根據資產類型取得幣別
+func (s *holdingService) getCurrencyForAssetType(assetType models.AssetType) models.Currency {
+	switch assetType {
+	case models.AssetTypeTWStock:
+		return models.CurrencyTWD
+	case models.AssetTypeUSStock:
+		return models.CurrencyUSD
+	case models.AssetTypeCrypto:
+		return models.CurrencyUSD // 加密貨幣使用 USD 計價
+	default:
+		return models.CurrencyTWD
+	}
 }
 

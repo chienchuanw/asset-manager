@@ -34,6 +34,7 @@ import {
   getTransactionTypeLabel,
   AssetType,
   TransactionType,
+  Currency,
 } from '@/types/transaction';
 import { Search, Download, Trash2, Loader2 } from 'lucide-react';
 
@@ -302,6 +303,7 @@ export default function TransactionsPage() {
                       <TableHead className="text-right">數量</TableHead>
                       <TableHead className="text-right">單價</TableHead>
                       <TableHead className="text-right">總金額</TableHead>
+                      <TableHead className="text-center">幣別</TableHead>
                       <TableHead className="text-right hidden md:table-cell">手續費</TableHead>
                       <TableHead className="hidden lg:table-cell">備註</TableHead>
                       <TableHead className="text-right">操作</TableHead>
@@ -319,6 +321,7 @@ export default function TransactionsPage() {
                           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                           <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                          <TableCell><Skeleton className="h-6 w-12" /></TableCell>
                           <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
                           <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                           <TableCell><Skeleton className="h-8 w-8" /></TableCell>
@@ -327,7 +330,7 @@ export default function TransactionsPage() {
                     ) : filteredTransactions.length === 0 ? (
                       // 無資料
                       <TableRow>
-                        <TableCell colSpan={10} className="h-24 text-center">
+                        <TableCell colSpan={11} className="h-24 text-center">
                           <p className="text-muted-foreground">
                             {searchQuery || filterType !== 'all' || filterAssetType !== 'all'
                               ? '沒有符合條件的交易記錄'
@@ -366,6 +369,11 @@ export default function TransactionsPage() {
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {transaction.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                              {transaction.currency}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right hidden md:table-cell">
                             {transaction.fee ? transaction.fee.toLocaleString() : '-'}

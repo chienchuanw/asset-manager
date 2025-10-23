@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/chienchuanw/asset-manager/internal/api"
 	"github.com/chienchuanw/asset-manager/internal/cache"
+	"github.com/chienchuanw/asset-manager/internal/client"
 	"github.com/chienchuanw/asset-manager/internal/db"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/chienchuanw/asset-manager/internal/service"
@@ -31,6 +32,7 @@ func main() {
 
 	// 初始化 Repository
 	transactionRepo := repository.NewTransactionRepository(database)
+	exchangeRateRepo := repository.NewExchangeRateRepository(database)
 
 	// 初始化 Service
 	transactionService := service.NewTransactionService(transactionRepo)
@@ -63,7 +65,11 @@ func main() {
 			log.Println("Using mock price service without cache")
 		}
 
-		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService)
+		// 初始化匯率服務（不帶 Redis 快取）
+		bankClient := client.NewTaiwanBankClient()
+		exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, nil)
+
+		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
 
 		// 初始化 Handler
 		transactionHandler := api.NewTransactionHandler(transactionService)
@@ -108,8 +114,12 @@ func main() {
 
 	log.Printf("Redis cache enabled with %v expiration", cacheExpiration)
 
+	// 初始化匯率服務（帶 Redis 快取）
+	bankClient := client.NewTaiwanBankClient()
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, redisCache.GetClient())
+
 	// 初始化 Holding Service
-	holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService)
+	holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
 
 	// 初始化 Handler
 	transactionHandler := api.NewTransactionHandler(transactionService)

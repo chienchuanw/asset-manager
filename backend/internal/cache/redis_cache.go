@@ -92,3 +92,8 @@ func (c *RedisCache) Close() error {
 	return c.client.Close()
 }
 
+// GetClient 取得 Redis 客戶端（用於直接操作）
+func (c *RedisCache) GetClient() *redis.Client {
+	return c.client
+}
+
