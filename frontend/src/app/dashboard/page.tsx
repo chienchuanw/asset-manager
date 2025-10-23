@@ -16,7 +16,7 @@ import {
   mockChartData,
   mockHoldings,
   mockAssetAllocation,
-  mockTransactions,
+  mockRecentTransactions,
 } from '@/lib/mock-data';
 
 export default function DashboardPage() {
@@ -60,7 +60,7 @@ export default function DashboardPage() {
 
               {/* 右側：近期交易 */}
               <div className="lg:col-span-3">
-                <RecentTransactions transactions={mockTransactions} />
+                <RecentTransactions transactions={mockRecentTransactions} />
               </div>
             </div>
           </div>
