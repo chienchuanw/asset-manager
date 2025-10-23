@@ -60,7 +60,7 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
                       {holding.quantity.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right tabular-nums hidden md:table-cell">
-                      {holding.costPrice.toLocaleString()}
+                      {holding.avgCost.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {holding.currentPrice.toLocaleString()}

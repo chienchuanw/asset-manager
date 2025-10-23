@@ -5,10 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
-import { Sidebar } from '@/components/dashboard/Sidebar';
-import { MobileSidebar } from '@/components/dashboard/MobileSidebar';
-import { Header } from '@/components/dashboard/Header';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { AssetTrendChart } from '@/components/dashboard/AssetTrendChart';
 import { HoldingsTable } from '@/components/dashboard/HoldingsTable';
@@ -23,29 +20,10 @@ import {
 } from '@/lib/mock-data';
 
 export default function DashboardPage() {
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* 桌面版側邊欄 */}
-      <Sidebar />
-
-      {/* 手機版側邊欄 */}
-      <MobileSidebar
-        isOpen={isMobileSidebarOpen}
-        onClose={() => setIsMobileSidebarOpen(false)}
-      />
-
-      {/* 主要內容區 */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <Header
-          userName="Zac"
-          onMenuClick={() => setIsMobileSidebarOpen(true)}
-        />
-
-        {/* 內容區域 */}
-        <main className="flex-1 p-4 md:p-6">
+    <AppLayout>
+      {/* 內容區域 */}
+      <main className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
             {/* 統計卡片區 - 響應式網格 */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -87,8 +65,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
+    </AppLayout>
   );
 }
 

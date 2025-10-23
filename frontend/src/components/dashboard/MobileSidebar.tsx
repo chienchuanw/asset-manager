@@ -5,6 +5,8 @@
 
 'use client';
 
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -18,7 +20,6 @@ import {
   LogOutIcon,
   XIcon,
 } from 'lucide-react';
-import { useState } from 'react';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -26,14 +27,14 @@ interface MobileSidebarProps {
 }
 
 export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
-  const [activeItem, setActiveItem] = useState('dashboard');
+  const pathname = usePathname();
 
   // 主要導航項目
   const mainNavItems = [
-    { id: 'dashboard', label: '首頁', icon: HomeIcon },
-    { id: 'holdings', label: '持倉明細', icon: WalletIcon },
-    { id: 'transactions', label: '交易記錄', icon: ArrowLeftRightIcon },
-    { id: 'analytics', label: '分析報表', icon: BarChart3Icon },
+    { id: 'dashboard', label: '首頁', icon: HomeIcon, href: '/dashboard' },
+    { id: 'holdings', label: '持倉明細', icon: WalletIcon, href: '/holdings' },
+    { id: 'transactions', label: '交易記錄', icon: ArrowLeftRightIcon, href: '/transactions' },
+    { id: 'analytics', label: '分析報表', icon: BarChart3Icon, href: '/analytics' },
   ];
 
   // 工具區項目
@@ -72,24 +73,21 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
           {mainNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeItem === item.id;
+            const isActive = pathname === item.href;
             return (
-              <Button
-                key={item.id}
-                variant={isActive ? 'default' : 'ghost'}
-                className={`w-full justify-start gap-3 ${
-                  isActive
-                    ? 'bg-gray-900 text-white hover:bg-gray-800'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                onClick={() => {
-                  setActiveItem(item.id);
-                  onClose();
-                }}
-              >
-                <Icon className="h-5 w-5" />
-                {item.label}
-              </Button>
+              <Link key={item.id} href={item.href} onClick={onClose}>
+                <Button
+                  variant={isActive ? 'default' : 'ghost'}
+                  className={`w-full justify-start gap-3 ${
+                    isActive
+                      ? 'bg-gray-900 text-white hover:bg-gray-800'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </Button>
+              </Link>
             );
           })}
 
@@ -102,20 +100,12 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
             </p>
             {toolItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeItem === item.id;
               return (
                 <Button
                   key={item.id}
                   variant="ghost"
-                  className={`w-full justify-start gap-3 ${
-                    isActive
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                  onClick={() => {
-                    setActiveItem(item.id);
-                    onClose();
-                  }}
+                  className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100"
+                  onClick={onClose}
                 >
                   <Icon className="h-5 w-5" />
                   {item.label}

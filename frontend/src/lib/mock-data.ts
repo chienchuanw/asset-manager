@@ -21,7 +21,8 @@ export interface Holding {
   symbol: string;
   name: string;
   quantity: number;
-  costPrice: number;
+  avgCost: number; // 平均成本價
+  cost: number; // 總成本 (avgCost * quantity)
   currentPrice: number;
   marketValue: number;
   profitLoss: number;
@@ -96,7 +97,8 @@ export const mockHoldings: Holding[] = [
     symbol: '2330',
     name: '台積電',
     quantity: 100,
-    costPrice: 580,
+    avgCost: 580,
+    cost: 58000,
     currentPrice: 620,
     marketValue: 62000,
     profitLoss: 4000,
@@ -108,7 +110,8 @@ export const mockHoldings: Holding[] = [
     symbol: 'AAPL',
     name: 'Apple Inc.',
     quantity: 50,
-    costPrice: 150,
+    avgCost: 150,
+    cost: 7500,
     currentPrice: 175,
     marketValue: 8750,
     profitLoss: 1250,
@@ -120,7 +123,8 @@ export const mockHoldings: Holding[] = [
     symbol: 'BTC',
     name: 'Bitcoin',
     quantity: 0.5,
-    costPrice: 900000,
+    avgCost: 900000,
+    cost: 450000,
     currentPrice: 1200000,
     marketValue: 600000,
     profitLoss: 150000,
@@ -132,7 +136,8 @@ export const mockHoldings: Holding[] = [
     symbol: '2317',
     name: '鴻海',
     quantity: 200,
-    costPrice: 105,
+    avgCost: 105,
+    cost: 21000,
     currentPrice: 98,
     marketValue: 19600,
     profitLoss: -1400,
@@ -144,7 +149,8 @@ export const mockHoldings: Holding[] = [
     symbol: 'TSLA',
     name: 'Tesla Inc.',
     quantity: 30,
-    costPrice: 250,
+    avgCost: 250,
+    cost: 7500,
     currentPrice: 280,
     marketValue: 8400,
     profitLoss: 900,
