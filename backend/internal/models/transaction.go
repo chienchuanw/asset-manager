@@ -16,6 +16,14 @@ const (
 	AssetTypeCrypto   AssetType = "crypto"
 )
 
+// Currency 幣別
+type Currency string
+
+const (
+	CurrencyTWD Currency = "TWD" // 新台幣
+	CurrencyUSD Currency = "USD" // 美金
+)
+
 // TransactionType 交易類型
 type TransactionType string
 
@@ -38,6 +46,7 @@ type Transaction struct {
 	Price           float64         `json:"price" db:"price"`
 	Amount          float64         `json:"amount" db:"amount"`
 	Fee             *float64        `json:"fee,omitempty" db:"fee"`
+	Currency        Currency        `json:"currency" db:"currency"`
 	Note            *string         `json:"note,omitempty" db:"note"`
 	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at" db:"updated_at"`
@@ -54,6 +63,7 @@ type CreateTransactionInput struct {
 	Price           float64         `json:"price" binding:"required,gte=0"`
 	Amount          float64         `json:"amount" binding:"required"`
 	Fee             *float64        `json:"fee,omitempty" binding:"omitempty,gte=0"`
+	Currency        Currency        `json:"currency" binding:"required"`
 	Note            *string         `json:"note,omitempty"`
 }
 
@@ -68,6 +78,7 @@ type UpdateTransactionInput struct {
 	Price           *float64         `json:"price,omitempty" binding:"omitempty,gte=0"`
 	Amount          *float64         `json:"amount,omitempty"`
 	Fee             *float64         `json:"fee,omitempty" binding:"omitempty,gte=0"`
+	Currency        *Currency        `json:"currency,omitempty"`
 	Note            *string          `json:"note,omitempty"`
 }
 
@@ -84,6 +95,15 @@ func (a AssetType) Validate() bool {
 func (t TransactionType) Validate() bool {
 	switch t {
 	case TransactionTypeBuy, TransactionTypeSell, TransactionTypeDividend, TransactionTypeFee:
+		return true
+	}
+	return false
+}
+
+// Validate 驗證 Currency 是否有效
+func (c Currency) Validate() bool {
+	switch c {
+	case CurrencyTWD, CurrencyUSD:
 		return true
 	}
 	return false

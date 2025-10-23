@@ -28,8 +28,17 @@ export const holdingsAPI = {
    * ```
    */
   getAll: async (filters?: HoldingFilters): Promise<Holding[]> => {
+    // 將 filters 轉換為符合 apiClient.get 的參數格式
+    const params: Record<string, string | undefined> = {};
+    if (filters?.asset_type) {
+      params.asset_type = filters.asset_type;
+    }
+    if (filters?.symbol) {
+      params.symbol = filters.symbol;
+    }
+
     return apiClient.get<Holding[]>(ENDPOINTS.HOLDINGS, {
-      params: filters,
+      params: Object.keys(params).length > 0 ? params : undefined,
     });
   },
 

@@ -43,9 +43,9 @@ func NewTransactionRepository(db *sql.DB) TransactionRepository {
 // Create 建立新的交易記錄
 func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*models.Transaction, error) {
 	query := `
-		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, note, created_at, updated_at
+		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
 	`
 
 	transaction := &models.Transaction{}
@@ -60,6 +60,7 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 		input.Price,
 		input.Amount,
 		input.Fee,
+		input.Currency,
 		input.Note,
 	).Scan(
 		&transaction.ID,
@@ -72,6 +73,7 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 		&transaction.Price,
 		&transaction.Amount,
 		&transaction.Fee,
+		&transaction.Currency,
 		&transaction.Note,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
@@ -87,7 +89,7 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 // GetByID 根據 ID 取得交易記錄
 func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, error) {
 	query := `
-		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, note, created_at, updated_at
+		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
 		FROM transactions
 		WHERE id = $1
 	`
@@ -104,6 +106,7 @@ func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 		&transaction.Price,
 		&transaction.Amount,
 		&transaction.Fee,
+		&transaction.Currency,
 		&transaction.Note,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
@@ -122,7 +125,7 @@ func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 // GetAll 取得所有交易記錄（支援篩選）
 func (r *transactionRepository) GetAll(filters TransactionFilters) ([]*models.Transaction, error) {
 	query := `
-		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, note, created_at, updated_at
+		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
 		FROM transactions
 		WHERE 1=1
 	`
@@ -197,6 +200,7 @@ func (r *transactionRepository) GetAll(filters TransactionFilters) ([]*models.Tr
 			&transaction.Price,
 			&transaction.Amount,
 			&transaction.Fee,
+			&transaction.Currency,
 			&transaction.Note,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
@@ -275,6 +279,12 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		argCount++
 	}
 
+	if input.Currency != nil {
+		setClauses = append(setClauses, fmt.Sprintf("currency = $%d", argCount))
+		args = append(args, *input.Currency)
+		argCount++
+	}
+
 	if input.Note != nil {
 		setClauses = append(setClauses, fmt.Sprintf("note = $%d", argCount))
 		args = append(args, *input.Note)
@@ -292,7 +302,7 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		UPDATE transactions
 		SET %s
 		WHERE id = $%d
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
 	`, strings.Join(setClauses, ", "), argCount)
 
 	transaction := &models.Transaction{}
@@ -307,6 +317,7 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		&transaction.Price,
 		&transaction.Amount,
 		&transaction.Fee,
+		&transaction.Currency,
 		&transaction.Note,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,

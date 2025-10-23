@@ -27,6 +27,16 @@ export const TransactionType = {
 export type TransactionType =
   (typeof TransactionType)[keyof typeof TransactionType];
 
+/**
+ * 幣別
+ */
+export const Currency = {
+  TWD: "TWD",
+  USD: "USD",
+} as const;
+
+export type Currency = (typeof Currency)[keyof typeof Currency];
+
 // ==================== 資料模型 ====================
 
 /**
@@ -43,6 +53,7 @@ export interface Transaction {
   price: number;
   amount: number;
   fee: number | null;
+  currency: Currency;
   note: string | null;
   created_at: string; // ISO 8601 格式
   updated_at: string; // ISO 8601 格式
@@ -61,6 +72,7 @@ export interface CreateTransactionInput {
   price: number;
   amount: number;
   fee?: number | null;
+  currency: Currency;
   note?: string | null;
 }
 
@@ -77,6 +89,7 @@ export interface UpdateTransactionInput {
   price?: number;
   amount?: number;
   fee?: number | null;
+  currency?: Currency;
   note?: string | null;
 }
 
@@ -135,6 +148,11 @@ export const transactionTypeSchema = z.enum([
 ]);
 
 /**
+ * 幣別 Schema
+ */
+export const currencySchema = z.enum([Currency.TWD, Currency.USD]);
+
+/**
  * 建立交易的表單 Schema
  */
 export const createTransactionSchema = z.object({
@@ -157,6 +175,7 @@ export const createTransactionSchema = z.object({
     .nonnegative("手續費不可為負數")
     .nullable()
     .optional(),
+  currency: currencySchema,
   note: z.string().nullable().optional(),
 });
 

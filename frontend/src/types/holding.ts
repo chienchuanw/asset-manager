@@ -83,12 +83,12 @@ export function formatPercentage(value: number): string {
 }
 
 /**
- * 取得損益顏色類別
+ * 取得損益顏色類別（台灣股市習慣：紅漲綠跌）
  * @param value 損益數值
  * @returns Tailwind CSS 類別名稱
  */
 export function getProfitLossColor(value: number): string {
-  return value >= 0 ? "text-green-600" : "text-red-600";
+  return value >= 0 ? "text-red-600" : "text-green-600";
 }
 
 /**
