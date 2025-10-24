@@ -19,12 +19,22 @@ type TransactionService interface {
 
 // transactionService 交易記錄業務邏輯實作
 type transactionService struct {
-	repo repository.TransactionRepository
+	repo               repository.TransactionRepository
+	realizedProfitRepo repository.RealizedProfitRepository
+	fifoCalculator     FIFOCalculator
 }
 
 // NewTransactionService 建立新的交易記錄 service
-func NewTransactionService(repo repository.TransactionRepository) TransactionService {
-	return &transactionService{repo: repo}
+func NewTransactionService(
+	repo repository.TransactionRepository,
+	realizedProfitRepo repository.RealizedProfitRepository,
+	fifoCalculator FIFOCalculator,
+) TransactionService {
+	return &transactionService{
+		repo:               repo,
+		realizedProfitRepo: realizedProfitRepo,
+		fifoCalculator:     fifoCalculator,
+	}
 }
 
 // CreateTransaction 建立新的交易記錄
@@ -54,7 +64,21 @@ func (s *transactionService) CreateTransaction(input *models.CreateTransactionIn
 	}
 
 	// 呼叫 repository 建立交易記錄
-	return s.repo.Create(input)
+	transaction, err := s.repo.Create(input)
+	if err != nil {
+		return nil, err
+	}
+
+	// 如果是賣出交易，自動計算並記錄已實現損益
+	if input.TransactionType == models.TransactionTypeSell {
+		if err := s.createRealizedProfit(transaction); err != nil {
+			// 記錄錯誤但不影響交易建立
+			// TODO: 考慮是否要回滾交易或使用事務
+			fmt.Printf("Warning: failed to create realized profit for transaction %s: %v\n", transaction.ID, err)
+		}
+	}
+
+	return transaction, nil
 }
 
 // GetTransaction 取得單筆交易記錄
@@ -108,5 +132,54 @@ func (s *transactionService) UpdateTransaction(id uuid.UUID, input *models.Updat
 // DeleteTransaction 刪除交易記錄
 func (s *transactionService) DeleteTransaction(id uuid.UUID) error {
 	return s.repo.Delete(id)
+}
+
+// createRealizedProfit 建立已實現損益記錄（賣出交易時自動呼叫）
+func (s *transactionService) createRealizedProfit(sellTransaction *models.Transaction) error {
+	// 取得該標的的所有交易記錄
+	filters := repository.TransactionFilters{
+		Symbol: &sellTransaction.Symbol,
+	}
+	allTransactions, err := s.repo.GetAll(filters)
+	if err != nil {
+		return fmt.Errorf("failed to get transactions for symbol %s: %w", sellTransaction.Symbol, err)
+	}
+
+	// 使用 FIFO Calculator 計算成本基礎
+	costBasis, err := s.fifoCalculator.CalculateCostBasis(
+		sellTransaction.Symbol,
+		sellTransaction,
+		allTransactions,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to calculate cost basis: %w", err)
+	}
+
+	// 準備賣出手續費
+	sellFee := 0.0
+	if sellTransaction.Fee != nil {
+		sellFee = *sellTransaction.Fee
+	}
+
+	// 建立已實現損益記錄
+	input := &models.CreateRealizedProfitInput{
+		TransactionID: sellTransaction.ID.String(),
+		Symbol:        sellTransaction.Symbol,
+		AssetType:     sellTransaction.AssetType,
+		SellDate:      sellTransaction.Date,
+		Quantity:      sellTransaction.Quantity,
+		SellPrice:     sellTransaction.Price,
+		SellAmount:    sellTransaction.Amount,
+		SellFee:       sellFee,
+		CostBasis:     costBasis,
+		Currency:      string(sellTransaction.Currency),
+	}
+
+	_, err = s.realizedProfitRepo.Create(input)
+	if err != nil {
+		return fmt.Errorf("failed to create realized profit record: %w", err)
+	}
+
+	return nil
 }
 

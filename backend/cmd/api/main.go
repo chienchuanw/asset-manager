@@ -33,9 +33,13 @@ func main() {
 	// 初始化 Repository
 	transactionRepo := repository.NewTransactionRepository(database)
 	exchangeRateRepo := repository.NewExchangeRateRepository(database)
+	realizedProfitRepo := repository.NewRealizedProfitRepository(database)
+
+	// 初始化 FIFO Calculator（需要在 TransactionService 之前初始化）
+	fifoCalculator := service.NewFIFOCalculator()
 
 	// 初始化 Service
-	transactionService := service.NewTransactionService(transactionRepo)
+	transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
 
 	// 初始化 Redis Cache
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -49,7 +53,6 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: Failed to connect to Redis: %v. Using price service without cache.", err)
 		// 如果 Redis 連線失敗，使用不帶快取的 Price Service
-		fifoCalculator := service.NewFIFOCalculator()
 
 		// 初始化 Price Service（真實 API 或 Mock）
 		var priceService service.PriceService
@@ -88,9 +91,6 @@ func main() {
 			cacheExpiration = duration
 		}
 	}
-
-	// 初始化 FIFO Calculator
-	fifoCalculator := service.NewFIFOCalculator()
 
 	// 初始化 Price Service（真實 API 或 Mock）
 	var basePriceService service.PriceService

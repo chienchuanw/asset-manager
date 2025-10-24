@@ -12,8 +12,18 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockTransactionRepository 模擬的 repository
+// MockTransactionRepository 模擬的 TransactionRepository
 type MockTransactionRepository struct {
+	mock.Mock
+}
+
+// MockRealizedProfitRepository 模擬的 RealizedProfitRepository
+type MockRealizedProfitRepository struct {
+	mock.Mock
+}
+
+// MockFIFOCalculator 模擬的 FIFOCalculator
+type MockFIFOCalculator struct {
 	mock.Mock
 }
 
@@ -54,11 +64,65 @@ func (m *MockTransactionRepository) Delete(id uuid.UUID) error {
 	return args.Error(0)
 }
 
-// TestCreateTransaction_Success 測試成功建立交易記錄
+// MockRealizedProfitRepository 方法實作
+func (m *MockRealizedProfitRepository) Create(input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RealizedProfit), args.Error(1)
+}
+
+func (m *MockRealizedProfitRepository) GetByTransactionID(transactionID string) (*models.RealizedProfit, error) {
+	args := m.Called(transactionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RealizedProfit), args.Error(1)
+}
+
+func (m *MockRealizedProfitRepository) GetAll(filters models.RealizedProfitFilters) ([]*models.RealizedProfit, error) {
+	args := m.Called(filters)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.RealizedProfit), args.Error(1)
+}
+
+func (m *MockRealizedProfitRepository) Delete(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+// MockFIFOCalculator 方法實作
+func (m *MockFIFOCalculator) CalculateHoldingForSymbol(symbol string, transactions []*models.Transaction) (*models.Holding, error) {
+	args := m.Called(symbol, transactions)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Holding), args.Error(1)
+}
+
+func (m *MockFIFOCalculator) CalculateAllHoldings(transactions []*models.Transaction) (map[string]*models.Holding, error) {
+	args := m.Called(transactions)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string]*models.Holding), args.Error(1)
+}
+
+func (m *MockFIFOCalculator) CalculateCostBasis(symbol string, sellTransaction *models.Transaction, allTransactions []*models.Transaction) (float64, error) {
+	args := m.Called(symbol, sellTransaction, allTransactions)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+// TestCreateTransaction_Success 測試成功建立買入交易記錄
 func TestCreateTransaction_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	fee := 28.0
 	input := &models.CreateTransactionInput{
@@ -71,6 +135,7 @@ func TestCreateTransaction_Success(t *testing.T) {
 		Price:           620,
 		Amount:          6200,
 		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
 	}
 
 	expectedTransaction := &models.Transaction{
@@ -84,6 +149,7 @@ func TestCreateTransaction_Success(t *testing.T) {
 		Price:           input.Price,
 		Amount:          input.Amount,
 		Fee:             input.Fee,
+		Currency:        input.Currency,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
@@ -99,13 +165,18 @@ func TestCreateTransaction_Success(t *testing.T) {
 	assert.Equal(t, expectedTransaction.ID, result.ID)
 	assert.Equal(t, expectedTransaction.Symbol, result.Symbol)
 	mockRepo.AssertExpectations(t)
+	// 買入交易不應該呼叫 RealizedProfitRepo 或 FIFOCalculator
+	mockRealizedProfitRepo.AssertNotCalled(t, "Create")
+	mockFIFOCalc.AssertNotCalled(t, "CalculateCostBasis")
 }
 
 // TestCreateTransaction_InvalidAssetType 測試無效的資產類型
 func TestCreateTransaction_InvalidAssetType(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	input := &models.CreateTransactionInput{
 		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -132,7 +203,9 @@ func TestCreateTransaction_InvalidAssetType(t *testing.T) {
 func TestCreateTransaction_InvalidTransactionType(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	input := &models.CreateTransactionInput{
 		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -159,7 +232,9 @@ func TestCreateTransaction_InvalidTransactionType(t *testing.T) {
 func TestCreateTransaction_NegativeQuantity(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	input := &models.CreateTransactionInput{
 		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -186,7 +261,9 @@ func TestCreateTransaction_NegativeQuantity(t *testing.T) {
 func TestGetTransaction_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	transactionID := uuid.New()
 	expectedTransaction := &models.Transaction{
@@ -217,7 +294,9 @@ func TestGetTransaction_Success(t *testing.T) {
 func TestGetTransaction_NotFound(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	transactionID := uuid.New()
 	mockRepo.On("GetByID", transactionID).Return(nil, fmt.Errorf("transaction not found"))
@@ -235,7 +314,9 @@ func TestGetTransaction_NotFound(t *testing.T) {
 func TestListTransactions_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	filters := repository.TransactionFilters{}
 	expectedTransactions := []*models.Transaction{
@@ -269,7 +350,9 @@ func TestListTransactions_Success(t *testing.T) {
 func TestDeleteTransaction_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepository)
-	service := NewTransactionService(mockRepo)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
 
 	transactionID := uuid.New()
 	mockRepo.On("Delete", transactionID).Return(nil)
@@ -280,5 +363,89 @@ func TestDeleteTransaction_Success(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
+}
+
+// TestCreateTransaction_SellWithRealizedProfit 測試建立賣出交易並自動建立已實現損益
+func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockTransactionRepository)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+
+	fee := 28.0
+	sellInput := &models.CreateTransactionInput{
+		Date:            time.Date(2025, 10, 24, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        100,
+		Price:           620,
+		Amount:          62000,
+		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
+	}
+
+	sellTransaction := &models.Transaction{
+		ID:              uuid.New(),
+		Date:            sellInput.Date,
+		AssetType:       sellInput.AssetType,
+		Symbol:          sellInput.Symbol,
+		Name:            sellInput.Name,
+		TransactionType: sellInput.TransactionType,
+		Quantity:        sellInput.Quantity,
+		Price:           sellInput.Price,
+		Amount:          sellInput.Amount,
+		Fee:             sellInput.Fee,
+		Currency:        sellInput.Currency,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	// 模擬之前的買入交易
+	previousTransactions := []*models.Transaction{
+		{
+			ID:              uuid.New(),
+			Date:            time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	// Mock 期望
+	mockRepo.On("Create", sellInput).Return(sellTransaction, nil)
+
+	filters := repository.TransactionFilters{Symbol: &sellInput.Symbol}
+	mockRepo.On("GetAll", filters).Return(previousTransactions, nil)
+
+	costBasis := 50028.0 // (50000 + 28)
+	mockFIFOCalc.On("CalculateCostBasis", "2330", sellTransaction, previousTransactions).Return(costBasis, nil)
+
+	mockRealizedProfitRepo.On("Create", mock.MatchedBy(func(input *models.CreateRealizedProfitInput) bool {
+		return input.Symbol == "2330" &&
+			input.Quantity == 100 &&
+			input.SellAmount == 62000 &&
+			input.SellFee == 28 &&
+			input.CostBasis == 50028.0
+	})).Return(&models.RealizedProfit{}, nil)
+
+	// Act
+	result, err := service.CreateTransaction(sellInput)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, sellTransaction.ID, result.ID)
+	mockRepo.AssertExpectations(t)
+	mockFIFOCalc.AssertExpectations(t)
+	mockRealizedProfitRepo.AssertExpectations(t)
 }
 
