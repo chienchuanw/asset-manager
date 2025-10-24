@@ -27,17 +27,29 @@ type AssetSnapshotService interface {
 
 	// DeleteSnapshot 刪除快照
 	DeleteSnapshot(date time.Time, assetType models.SnapshotAssetType) error
+
+	// CreateDailySnapshots 建立每日資產快照（所有類型）
+	CreateDailySnapshots() error
 }
 
 // assetSnapshotService 資產快照服務實作
 type assetSnapshotService struct {
-	repo repository.AssetSnapshotRepository
+	repo           repository.AssetSnapshotRepository
+	holdingService HoldingService // 用於計算持倉價值
 }
 
 // NewAssetSnapshotService 建立資產快照服務
 func NewAssetSnapshotService(repo repository.AssetSnapshotRepository) AssetSnapshotService {
 	return &assetSnapshotService{
 		repo: repo,
+	}
+}
+
+// NewAssetSnapshotServiceWithDeps 建立資產快照服務（包含依賴）
+func NewAssetSnapshotServiceWithDeps(repo repository.AssetSnapshotRepository, holdingService HoldingService) AssetSnapshotService {
+	return &assetSnapshotService{
+		repo:           repo,
+		holdingService: holdingService,
 	}
 }
 
@@ -147,6 +159,86 @@ func (s *assetSnapshotService) DeleteSnapshot(date time.Time, assetType models.S
 
 	if err := s.repo.Delete(normalizedDate, assetType); err != nil {
 		return fmt.Errorf("failed to delete snapshot: %w", err)
+	}
+
+	return nil
+}
+
+// CreateDailySnapshots 建立每日資產快照（所有類型）
+func (s *assetSnapshotService) CreateDailySnapshots() error {
+	// 檢查是否有 HoldingService 依賴
+	if s.holdingService == nil {
+		return fmt.Errorf("holding service is required for creating daily snapshots")
+	}
+
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// 取得所有持倉（不使用篩選條件）
+	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	if err != nil {
+		return fmt.Errorf("failed to get holdings: %w", err)
+	}
+
+	// 計算各類型資產的總價值
+	var totalValueTWD float64
+	var twStockValueTWD float64
+	var usStockValueTWD float64
+	var cryptoValueTWD float64
+
+	for _, holding := range holdings {
+		// 將所有價值轉換為 TWD
+		valueTWD := holding.MarketValue
+		if holding.Currency == "USD" {
+			// 這裡應該使用匯率服務轉換,暫時使用固定匯率 31.5
+			valueTWD = holding.MarketValue * 31.5
+		}
+
+		totalValueTWD += valueTWD
+
+		// 根據資產類型累加
+		switch holding.AssetType {
+		case models.AssetTypeTWStock:
+			twStockValueTWD += valueTWD
+		case models.AssetTypeUSStock:
+			usStockValueTWD += valueTWD
+		case models.AssetTypeCrypto:
+			cryptoValueTWD += valueTWD
+		}
+	}
+
+	// 建立各類型快照
+	snapshots := []struct {
+		assetType models.SnapshotAssetType
+		value     float64
+	}{
+		{models.SnapshotAssetTypeTotal, totalValueTWD},
+		{models.SnapshotAssetTypeTWStock, twStockValueTWD},
+		{models.SnapshotAssetTypeUSStock, usStockValueTWD},
+		{models.SnapshotAssetTypeCrypto, cryptoValueTWD},
+	}
+
+	// 建立或更新快照
+	for _, snapshot := range snapshots {
+		// 檢查是否已存在今日快照
+		existing, err := s.repo.GetByDateAndType(today, snapshot.assetType)
+		if err == nil && existing != nil {
+			// 已存在,更新
+			_, err = s.repo.Update(today, snapshot.assetType, snapshot.value)
+			if err != nil {
+				return fmt.Errorf("failed to update snapshot for %s: %w", snapshot.assetType, err)
+			}
+		} else {
+			// 不存在,建立新的
+			input := &models.CreateAssetSnapshotInput{
+				SnapshotDate: today,
+				AssetType:    snapshot.assetType,
+				ValueTWD:     snapshot.value,
+			}
+			_, err = s.repo.Create(input)
+			if err != nil {
+				return fmt.Errorf("failed to create snapshot for %s: %w", snapshot.assetType, err)
+			}
+		}
 	}
 
 	return nil

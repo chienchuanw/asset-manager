@@ -12,6 +12,7 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/client"
 	"github.com/chienchuanw/asset-manager/internal/db"
 	"github.com/chienchuanw/asset-manager/internal/repository"
+	"github.com/chienchuanw/asset-manager/internal/scheduler"
 	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,7 @@ func main() {
 	transactionRepo := repository.NewTransactionRepository(database)
 	exchangeRateRepo := repository.NewExchangeRateRepository(database)
 	realizedProfitRepo := repository.NewRealizedProfitRepository(database)
+	assetSnapshotRepo := repository.NewAssetSnapshotRepository(database)
 
 	// 初始化 FIFO Calculator（需要在 TransactionService 之前初始化）
 	fifoCalculator := service.NewFIFOCalculator()
@@ -77,13 +79,18 @@ func main() {
 		// 初始化 Analytics Service
 		analyticsService := service.NewAnalyticsService(realizedProfitRepo)
 
+		// 初始化 Asset Snapshot Service（不帶排程器）
+		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
+
 		// 初始化 Handler
 		transactionHandler := api.NewTransactionHandler(transactionService)
 		holdingHandler := api.NewHoldingHandler(holdingService)
 		analyticsHandler := api.NewAnalyticsHandler(analyticsService)
+		assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 
-		// 建立 router 並啟動（簡化版）
-		startServer(transactionHandler, holdingHandler, analyticsHandler)
+		// 建立 router 並啟動（簡化版，不啟動排程器）
+		log.Println("Warning: Snapshot scheduler is disabled (Redis not available)")
+		startServer(transactionHandler, holdingHandler, analyticsHandler, assetSnapshotHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -128,17 +135,41 @@ func main() {
 	// 初始化 Analytics Service
 	analyticsService := service.NewAnalyticsService(realizedProfitRepo)
 
+	// 初始化 Asset Snapshot Service（包含依賴）
+	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
+
 	// 初始化 Handler
 	transactionHandler := api.NewTransactionHandler(transactionService)
 	holdingHandler := api.NewHoldingHandler(holdingService)
 	analyticsHandler := api.NewAnalyticsHandler(analyticsService)
+	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
+
+	// 初始化並啟動排程器
+	snapshotSchedulerConfig := scheduler.SnapshotSchedulerConfig{
+		Enabled:           os.Getenv("SNAPSHOT_SCHEDULER_ENABLED") == "true",
+		DailySnapshotTime: getEnvOrDefault("SNAPSHOT_SCHEDULER_TIME", "23:59"),
+	}
+	snapshotScheduler := scheduler.NewSnapshotScheduler(assetSnapshotService, snapshotSchedulerConfig)
+	if err := snapshotScheduler.Start(); err != nil {
+		log.Printf("Warning: Failed to start snapshot scheduler: %v", err)
+	}
+	defer snapshotScheduler.Stop()
 
 	// 啟動伺服器
-	startServer(transactionHandler, holdingHandler, analyticsHandler)
+	startServer(transactionHandler, holdingHandler, analyticsHandler, assetSnapshotHandler)
+}
+
+// getEnvOrDefault 取得環境變數，如果不存在則使用預設值
+func getEnvOrDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler) {
+func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, assetSnapshotHandler *api.AssetSnapshotHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -179,6 +210,17 @@ func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api
 			analytics.GET("/summary", analyticsHandler.GetSummary)
 			analytics.GET("/performance", analyticsHandler.GetPerformance)
 			analytics.GET("/top-assets", analyticsHandler.GetTopAssets)
+		}
+
+		// Asset Snapshots 路由
+		snapshots := apiGroup.Group("/snapshots")
+		{
+			snapshots.POST("", assetSnapshotHandler.CreateSnapshot)
+			snapshots.POST("/trigger", assetSnapshotHandler.TriggerDailySnapshots) // 手動觸發每日快照
+			snapshots.GET("/trend", assetSnapshotHandler.GetAssetTrend)
+			snapshots.GET("/latest", assetSnapshotHandler.GetLatestSnapshot)
+			snapshots.PUT("", assetSnapshotHandler.UpdateSnapshot)
+			snapshots.DELETE("", assetSnapshotHandler.DeleteSnapshot)
 		}
 	}
 

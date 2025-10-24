@@ -64,6 +64,11 @@ func (m *MockAssetSnapshotService) DeleteSnapshot(date time.Time, assetType mode
 	return args.Error(0)
 }
 
+func (m *MockAssetSnapshotService) CreateDailySnapshots() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 // setupAssetSnapshotHandlerTest 設定測試環境
 func setupAssetSnapshotHandlerTest() (*gin.Engine, *MockAssetSnapshotService) {
 	gin.SetMode(gin.TestMode)

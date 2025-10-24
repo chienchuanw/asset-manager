@@ -318,3 +318,31 @@ func (h *AssetSnapshotHandler) DeleteSnapshot(c *gin.Context) {
 	})
 }
 
+// TriggerDailySnapshots 手動觸發每日快照建立（用於測試或手動執行）
+// @Summary 手動觸發每日快照建立
+// @Description 立即執行每日快照建立任務，計算當前所有持倉的價值並建立快照
+// @Tags snapshots
+// @Accept json
+// @Produce json
+// @Success 200 {object} APIResponse "成功建立快照"
+// @Failure 500 {object} APIResponse "伺服器錯誤"
+// @Router /api/snapshots/trigger [post]
+func (h *AssetSnapshotHandler) TriggerDailySnapshots(c *gin.Context) {
+	// 呼叫 Service 層
+	if err := h.service.CreateDailySnapshots(); err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	// 返回成功結果
+	c.JSON(http.StatusOK, APIResponse{
+		Data: map[string]string{
+			"message": "Daily snapshots created successfully",
+		},
+	})
+}
