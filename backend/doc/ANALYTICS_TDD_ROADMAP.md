@@ -17,7 +17,7 @@
 
 ### API 設計
 
-```
+```bash
 GET /api/analytics/summary?time_range=month
 GET /api/analytics/performance?time_range=month
 GET /api/analytics/top-assets?time_range=month&limit=5
@@ -27,13 +27,13 @@ GET /api/analytics/top-assets?time_range=month&limit=5
 
 ## 📊 Phase 進度追蹤
 
-| Phase   | 名稱                     | 狀態      | 完成時間   |
-| ------- | ------------------------ | --------- | ---------- |
-| Phase 1 | 資料庫 Migration         | ✅ 完成   | 2025-10-24 |
-| Phase 2 | Model & Repository       | ✅ 完成   | 2025-10-24 |
-| Phase 3 | FIFO Calculator 增強     | ✅ 完成   | 2025-10-24 |
-| Phase 4 | Transaction Service 整合 | ✅ 完成   | 2025-10-24 |
-| Phase 5 | Analytics Service & API  | ⏳ 待開始 | -          |
+| Phase   | 名稱                     | 狀態    | 完成時間   |
+| ------- | ------------------------ | ------- | ---------- |
+| Phase 1 | 資料庫 Migration         | ✅ 完成 | 2025-10-24 |
+| Phase 2 | Model & Repository       | ✅ 完成 | 2025-10-24 |
+| Phase 3 | FIFO Calculator 增強     | ✅ 完成 | 2025-10-24 |
+| Phase 4 | Transaction Service 整合 | ✅ 完成 | 2025-10-24 |
+| Phase 5 | Analytics Service & API  | ✅ 完成 | 2025-10-24 |
 
 ---
 
@@ -222,66 +222,90 @@ PASS
 
 ---
 
-## 📊 Phase 5: Analytics Service & API
+## 📊 Phase 5: Analytics Service & API ✅
 
 ### 目標
 
 建立 Analytics Service 和 API Handler，提供分析報表資料
 
-### 待完成項目
+### 完成項目
 
 #### 5.1 建立 Analytics Service 測試（Red）
 
-- [ ] `backend/internal/service/analytics_service_test.go`
-  - [ ] `TestAnalyticsService_GetSummary`
-  - [ ] `TestAnalyticsService_GetPerformance`
-  - [ ] `TestAnalyticsService_GetTopAssets`
+- ✅ `backend/internal/service/analytics_service_test.go`
+  - ✅ `TestAnalyticsService_GetSummary`
+  - ✅ `TestAnalyticsService_GetPerformance`
+  - ✅ `TestAnalyticsService_GetTopAssets`
 
 #### 5.2 建立 Analytics Models
 
-- [ ] `backend/internal/models/analytics.go`
-  - [ ] `AnalyticsSummary` 結構
-  - [ ] `PerformanceData` 結構
-  - [ ] `TopAsset` 結構
-  - [ ] `TimeRange` 類型
+- ✅ `backend/internal/models/analytics.go`
+  - ✅ `AnalyticsSummary` 結構
+  - ✅ `PerformanceData` 結構
+  - ✅ `TopAsset` 結構
+  - ✅ `TimeRange` 類型
 
 #### 5.3 實作 Analytics Service（Green）
 
-- [ ] `backend/internal/service/analytics_service.go`
-  - [ ] `AnalyticsService` interface
-  - [ ] `GetSummary()` 方法
-  - [ ] `GetPerformance()` 方法
-  - [ ] `GetTopAssets()` 方法
+- ✅ `backend/internal/service/analytics_service.go`
+  - ✅ `AnalyticsService` interface
+  - ✅ `GetSummary()` 方法
+  - ✅ `GetPerformance()` 方法
+  - ✅ `GetTopAssets()` 方法
 
 #### 5.4 建立 Analytics API Handler 測試（Red）
 
-- [ ] `backend/internal/api/analytics_handler_test.go`
-  - [ ] `TestAnalyticsHandler_GetSummary`
-  - [ ] `TestAnalyticsHandler_GetPerformance`
-  - [ ] `TestAnalyticsHandler_GetTopAssets`
+- ✅ `backend/internal/api/analytics_handler_test.go`
+  - ✅ `TestAnalyticsHandler_GetSummary`
+  - ✅ `TestAnalyticsHandler_GetSummary_InvalidTimeRange`
+  - ✅ `TestAnalyticsHandler_GetPerformance`
+  - ✅ `TestAnalyticsHandler_GetTopAssets`
+  - ✅ `TestAnalyticsHandler_GetTopAssets_DefaultLimit`
 
 #### 5.5 實作 Analytics API Handler（Green）
 
-- [ ] `backend/internal/api/analytics_handler.go`
-  - [ ] `AnalyticsHandler` 結構
-  - [ ] `GetSummary()` 方法
-  - [ ] `GetPerformance()` 方法
-  - [ ] `GetTopAssets()` 方法
+- ✅ `backend/internal/api/analytics_handler.go`
+  - ✅ `AnalyticsHandler` 結構
+  - ✅ `GetSummary()` 方法
+  - ✅ `GetPerformance()` 方法
+  - ✅ `GetTopAssets()` 方法
 
 #### 5.6 註冊路由
 
-- [ ] `backend/cmd/api/main.go`
-  - [ ] 初始化 `AnalyticsService`
-  - [ ] 初始化 `AnalyticsHandler`
-  - [ ] 註冊 `/api/analytics/*` 路由
+- ✅ `backend/cmd/api/main.go`
+  - ✅ 初始化 `AnalyticsService`
+  - ✅ 初始化 `AnalyticsHandler`
+  - ✅ 註冊 `/api/analytics/*` 路由
 
-#### 5.7 執行測試
+#### 5.7 測試結果
 
 ```bash
-cd backend
-go test ./internal/service -v -run TestAnalytics
-go test ./internal/api -v -run TestAnalytics
+# Analytics Service 測試
+=== RUN   TestAnalyticsService_GetSummary
+--- PASS: TestAnalyticsService_GetSummary (0.00s)
+=== RUN   TestAnalyticsService_GetPerformance
+--- PASS: TestAnalyticsService_GetPerformance (0.00s)
+=== RUN   TestAnalyticsService_GetTopAssets
+--- PASS: TestAnalyticsService_GetTopAssets (0.00s)
+PASS
+
+# Analytics Handler 測試
+=== RUN   TestAnalyticsHandler_GetSummary
+--- PASS: TestAnalyticsHandler_GetSummary (0.00s)
+=== RUN   TestAnalyticsHandler_GetSummary_InvalidTimeRange
+--- PASS: TestAnalyticsHandler_GetSummary_InvalidTimeRange (0.00s)
+=== RUN   TestAnalyticsHandler_GetPerformance
+--- PASS: TestAnalyticsHandler_GetPerformance (0.00s)
+=== RUN   TestAnalyticsHandler_GetTopAssets
+--- PASS: TestAnalyticsHandler_GetTopAssets (0.00s)
+=== RUN   TestAnalyticsHandler_GetTopAssets_DefaultLimit
+--- PASS: TestAnalyticsHandler_GetTopAssets_DefaultLimit (0.00s)
+PASS
 ```
+
+### 詳細文檔
+
+參見：`backend/doc/ANALYTICS_PHASE5_SERVICE_API.md`
 
 ---
 
@@ -372,8 +396,16 @@ open coverage.html
 
 ## 🎉 總結
 
-目前進度：**Phase 1 完成 ✅**
+目前進度：**Phase 1-5 全部完成 ✅**
 
-下一步：**開始 Phase 2 - Model & Repository 實作**
+**後端 Analytics 功能已完成！** 包含：
 
-請按照 TDD 原則，先建立測試檔案，再實作功能。
+- ✅ 資料庫 Migration
+- ✅ RealizedProfit Model & Repository
+- ✅ FIFO Calculator 增強
+- ✅ Transaction Service 整合
+- ✅ Analytics Service & API
+
+測試通過率：100%
+
+下一步：**前端整合（Phase 6-7）**

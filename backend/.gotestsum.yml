@@ -20,4 +20,3 @@ rerun-fails-max-attempts: 2
 # 測試超時時間（秒）
 # 0 表示無限制
 timeout: 0
-

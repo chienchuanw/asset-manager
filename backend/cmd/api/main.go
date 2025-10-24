@@ -74,12 +74,16 @@ func main() {
 
 		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
 
+		// 初始化 Analytics Service
+		analyticsService := service.NewAnalyticsService(realizedProfitRepo)
+
 		// 初始化 Handler
 		transactionHandler := api.NewTransactionHandler(transactionService)
 		holdingHandler := api.NewHoldingHandler(holdingService)
+		analyticsHandler := api.NewAnalyticsHandler(analyticsService)
 
 		// 建立 router 並啟動（簡化版）
-		startServer(transactionHandler, holdingHandler)
+		startServer(transactionHandler, holdingHandler, analyticsHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -121,16 +125,20 @@ func main() {
 	// 初始化 Holding Service
 	holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
 
+	// 初始化 Analytics Service
+	analyticsService := service.NewAnalyticsService(realizedProfitRepo)
+
 	// 初始化 Handler
 	transactionHandler := api.NewTransactionHandler(transactionService)
 	holdingHandler := api.NewHoldingHandler(holdingService)
+	analyticsHandler := api.NewAnalyticsHandler(analyticsService)
 
 	// 啟動伺服器
-	startServer(transactionHandler, holdingHandler)
+	startServer(transactionHandler, holdingHandler, analyticsHandler)
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler) {
+func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -163,6 +171,14 @@ func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api
 		{
 			holdings.GET("", holdingHandler.GetAllHoldings)
 			holdings.GET("/:symbol", holdingHandler.GetHoldingBySymbol)
+		}
+
+		// Analytics 路由
+		analytics := apiGroup.Group("/analytics")
+		{
+			analytics.GET("/summary", analyticsHandler.GetSummary)
+			analytics.GET("/performance", analyticsHandler.GetPerformance)
+			analytics.GET("/top-assets", analyticsHandler.GetTopAssets)
 		}
 	}
 
