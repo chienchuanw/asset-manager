@@ -49,7 +49,9 @@ func (h *AnalyticsHandler) GetSummary(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, summary)
+	c.JSON(http.StatusOK, APIResponse{
+		Data: summary,
+	})
 }
 
 // GetPerformance 取得各資產類型績效
@@ -80,7 +82,9 @@ func (h *AnalyticsHandler) GetPerformance(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, performance)
+	c.JSON(http.StatusOK, APIResponse{
+		Data: performance,
+	})
 }
 
 // GetTopAssets 取得最佳/最差表現資產
@@ -119,6 +123,8 @@ func (h *AnalyticsHandler) GetTopAssets(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, topAssets)
+	c.JSON(http.StatusOK, APIResponse{
+		Data: topAssets,
+	})
 }
 
