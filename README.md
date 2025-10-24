@@ -4,21 +4,21 @@ A personal asset-tracking system supporting Taiwan stocks, U.S. stocks, and cryp
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Tech Stack](#️-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Quick Start](#quick-start)
   - [Manual Setup](#manual-setup)
-- [Development](#development)
+- [Development](#-development)
   - [Running Tests](#running-tests)
   - [API Documentation](#api-documentation)
-- [Architecture](#architecture)
-- [Phase 1 Status](#phase-1-status)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
+- [Architecture](#️-architecture)
+- [Phase 1 Status](#-phase-1-status)
+- [Roadmap](#️-roadmap)
+- [Contributing](#-contributing)
 
 ---
 
@@ -37,6 +37,7 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 ## ✨ Features
 
 ### Current Features (Phase 1 - Backend)
+
 - ✅ Transaction management (Create, Read, Update, Delete)
 - ✅ Support for multiple asset types (Taiwan stocks, U.S. stocks, crypto)
 - ✅ Support for multiple transaction types (buy, sell, dividend, fee)
@@ -46,6 +47,7 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 - ✅ TDD (Test-Driven Development) approach
 
 ### Planned Features (Phase 2+)
+
 - 🔄 Frontend dashboard with React/Next.js
 - 🔄 Holdings calculation with FIFO cost basis
 - 🔄 Real-time price integration
@@ -58,6 +60,7 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **UI Library**: shadcn/ui (Tailwind CSS)
@@ -66,6 +69,7 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 - **Package Manager**: pnpm
 
 ### Backend
+
 - **Language**: Go 1.21+
 - **Web Framework**: Gin
 - **Database**: PostgreSQL 12+
@@ -74,6 +78,7 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 - **Testing**: testify
 
 ### DevOps
+
 - **Deployment**: AWS EC2 (planned)
 - **CI/CD**: GitHub Actions (planned)
 
@@ -81,7 +86,7 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 
 ## 📁 Project Structure
 
-```
+```bash
 asset-manager/
 ├── frontend/                 # Next.js frontend application
 │   ├── src/
@@ -131,6 +136,7 @@ chmod +x scripts/setup.sh
 ```
 
 This script will:
+
 - ✅ Check Go and PostgreSQL installation
 - ✅ Install golang-migrate (if needed)
 - ✅ Install Go dependencies
@@ -220,17 +226,20 @@ pnpm dev
 ### Running Tests
 
 #### All Tests
+
 ```bash
 cd backend
 make test
 ```
 
 #### Unit Tests Only (no database required)
+
 ```bash
 make test-unit
 ```
 
 #### Integration Tests Only (requires database)
+
 ```bash
 # Set test database environment variables
 export TEST_DB_HOST=localhost
@@ -246,14 +255,14 @@ make test-integration
 
 #### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| POST | `/api/transactions` | Create a transaction |
-| GET | `/api/transactions` | List all transactions (with filters) |
-| GET | `/api/transactions/:id` | Get a transaction by ID |
-| PUT | `/api/transactions/:id` | Update a transaction |
-| DELETE | `/api/transactions/:id` | Delete a transaction |
+| Method | Path                    | Description                          |
+| ------ | ----------------------- | ------------------------------------ |
+| GET    | `/health`               | Health check                         |
+| POST   | `/api/transactions`     | Create a transaction                 |
+| GET    | `/api/transactions`     | List all transactions (with filters) |
+| GET    | `/api/transactions/:id` | Get a transaction by ID              |
+| PUT    | `/api/transactions/:id` | Update a transaction                 |
+| DELETE | `/api/transactions/:id` | Delete a transaction                 |
 
 #### Example: Create a Transaction
 
@@ -297,7 +306,7 @@ For more examples, see [`backend/README_PHASE1.md`](backend/README_PHASE1.md).
 
 The backend follows a **clean architecture** pattern with clear separation of concerns:
 
-```
+```bash
 Client Request
       ↓
 API Handler Layer (HTTP handling, request/response formatting)
@@ -312,16 +321,19 @@ Database (PostgreSQL)
 #### Layers
 
 1. **API Handler Layer** (`internal/api/`)
+
    - HTTP request/response handling
    - Input validation and parsing
    - Error handling and status codes
 
 2. **Service Layer** (`internal/service/`)
+
    - Business logic implementation
    - Data validation
    - Orchestration of multiple repositories
 
 3. **Repository Layer** (`internal/repository/`)
+
    - Database CRUD operations
    - SQL query construction
    - Data mapping
@@ -370,12 +382,14 @@ For detailed architecture documentation, see [`backend/ARCHITECTURE.md`](backend
 ## 🗺️ Roadmap
 
 ### Phase 1: Backend Transaction API ✅ COMPLETED
+
 - ✅ Database design and migrations
 - ✅ Transaction CRUD API
 - ✅ Comprehensive testing
 - ✅ Documentation
 
 ### Phase 2: Frontend Integration 🔄 IN PROGRESS
+
 - [ ] Install frontend dependencies (React Query, react-hook-form, zod)
 - [ ] Create API client layer
 - [ ] Implement transaction list page
@@ -383,18 +397,21 @@ For detailed architecture documentation, see [`backend/ARCHITECTURE.md`](backend
 - [ ] Implement edit/delete functionality
 
 ### Phase 3: Holdings Calculation
+
 - [ ] Implement FIFO cost calculation
 - [ ] Holdings API endpoints
 - [ ] Holdings dashboard page
 - [ ] Real-time price integration
 
 ### Phase 4: Analytics & Reporting
+
 - [ ] Asset allocation calculation
 - [ ] P&L calculation (realized/unrealized)
 - [ ] Performance analytics
 - [ ] Charts and visualizations
 
 ### Phase 5: Advanced Features
+
 - [ ] Discord notifications
 - [ ] Rebalancing alerts
 - [ ] Multi-currency support
@@ -416,6 +433,7 @@ This is a personal project, but suggestions and feedback are welcome!
 ### Coding Standards
 
 - **Backend (Go)**
+
   - Use `gofmt` and `goimports` for formatting
   - Follow clean architecture principles
   - Write comprehensive tests
