@@ -15,6 +15,9 @@ type FIFOCalculator interface {
 
 	// CalculateAllHoldings 計算所有標的的持倉
 	CalculateAllHoldings(transactions []*models.Transaction) (map[string]*models.Holding, error)
+
+	// CalculateCostBasis 計算賣出交易的成本基礎（使用 FIFO 規則）
+	CalculateCostBasis(symbol string, sellTransaction *models.Transaction, allTransactions []*models.Transaction) (float64, error)
 }
 
 // fifoCalculator FIFO 計算器實作
@@ -188,6 +191,85 @@ func (c *fifoCalculator) calculateHoldingFromBatches(symbol, name string, assetT
 	}
 }
 
+// CalculateCostBasis 計算賣出交易的成本基礎（使用 FIFO 規則）
+func (c *fifoCalculator) CalculateCostBasis(symbol string, sellTransaction *models.Transaction, allTransactions []*models.Transaction) (float64, error) {
+	// 驗證賣出交易
+	if sellTransaction.TransactionType != models.TransactionTypeSell {
+		return 0, fmt.Errorf("transaction is not a sell transaction")
+	}
+
+	if sellTransaction.Symbol != symbol {
+		return 0, fmt.Errorf("transaction symbol %s does not match requested symbol %s", sellTransaction.Symbol, symbol)
+	}
+
+	// 篩選出該標的在賣出交易之前的所有交易
+	symbolTransactions := filterTransactionsBeforeSell(allTransactions, symbol, sellTransaction.Date)
+
+	// 按日期排序（FIFO 需要按時間順序處理）
+	sort.Slice(symbolTransactions, func(i, j int) bool {
+		return symbolTransactions[i].Date.Before(symbolTransactions[j].Date)
+	})
+
+	// 建立成本批次
+	costBatches := []*models.CostBatch{}
+
+	for _, tx := range symbolTransactions {
+		switch tx.TransactionType {
+		case models.TransactionTypeBuy:
+			batch, err := c.processBuy(tx)
+			if err != nil {
+				return 0, err
+			}
+			costBatches = append(costBatches, batch)
+
+		case models.TransactionTypeSell:
+			var err error
+			costBatches, err = c.processSell(tx, costBatches)
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	// 使用 FIFO 規則計算賣出的成本基礎
+	costBasis, err := c.calculateCostBasisFromBatches(sellTransaction.Quantity, costBatches)
+	if err != nil {
+		return 0, err
+	}
+
+	return costBasis, nil
+}
+
+// calculateCostBasisFromBatches 從成本批次計算賣出的成本基礎
+func (c *fifoCalculator) calculateCostBasisFromBatches(sellQuantity float64, batches []*models.CostBatch) (float64, error) {
+	remainingToSell := sellQuantity
+	totalCostBasis := 0.0
+
+	for _, batch := range batches {
+		if remainingToSell <= 0 {
+			break
+		}
+
+		if batch.Quantity <= remainingToSell {
+			// 這個批次全部賣出
+			totalCostBasis += batch.Quantity * batch.UnitCost
+			remainingToSell -= batch.Quantity
+		} else {
+			// 這個批次部分賣出
+			totalCostBasis += remainingToSell * batch.UnitCost
+			remainingToSell = 0
+		}
+	}
+
+	// 如果還有剩餘要賣的數量，表示賣超了
+	if remainingToSell > 0 {
+		return 0, fmt.Errorf("insufficient quantity to sell: trying to sell %.2f but only have %.2f available",
+			sellQuantity, sellQuantity-remainingToSell)
+	}
+
+	return totalCostBasis, nil
+}
+
 // ==================== 輔助函式 ====================
 
 // filterTransactionsBySymbol 篩選出特定標的的交易記錄
@@ -214,5 +296,17 @@ func getUniqueSymbols(transactions []*models.Transaction) []string {
 	}
 
 	return symbols
+}
+
+// filterTransactionsBeforeSell 篩選出賣出交易之前的所有交易
+func filterTransactionsBeforeSell(transactions []*models.Transaction, symbol string, sellDate time.Time) []*models.Transaction {
+	result := []*models.Transaction{}
+	for _, tx := range transactions {
+		// 只保留相同標的且在賣出日期之前的交易
+		if tx.Symbol == symbol && tx.Date.Before(sellDate) {
+			result = append(result, tx)
+		}
+	}
+	return result
 }
 

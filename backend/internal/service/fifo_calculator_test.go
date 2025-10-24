@@ -575,6 +575,246 @@ func TestFIFO_CalculateAllHoldings_WithSoldOut(t *testing.T) {
 	assert.False(t, exists)
 }
 
+// ==================== CalculateCostBasis 測試 ====================
+
+// TestCalculateCostBasis_SingleBatch 測試單一批次賣出
+func TestCalculateCostBasis_SingleBatch(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+		},
+	}
+
+	sellTransaction := &models.Transaction{
+		Date:            time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        30,
+		Price:           550,
+		Amount:          16500,
+		Fee:             ptrFloat64(10),
+	}
+
+	calculator := NewFIFOCalculator()
+
+	// Act
+	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	// 成本基礎 = 30 股 × 500.28 = 15008.4
+	assert.InDelta(t, 15008.4, costBasis, 0.01)
+}
+
+// TestCalculateCostBasis_MultipleBatches 測試跨多個批次賣出
+func TestCalculateCostBasis_MultipleBatches(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+		},
+		{
+			Date:            time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        50,
+			Price:           520,
+			Amount:          26000,
+			Fee:             ptrFloat64(15),
+		},
+	}
+
+	sellTransaction := &models.Transaction{
+		Date:            time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        120,
+		Price:           550,
+		Amount:          66000,
+		Fee:             ptrFloat64(30),
+	}
+
+	calculator := NewFIFOCalculator()
+
+	// Act
+	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	// FIFO: 賣出 100 股來自第一批 (500.28) + 20 股來自第二批 (520.30)
+	// 成本基礎 = (100 × 500.28) + (20 × 520.30) = 50028 + 10406 = 60434
+	assert.InDelta(t, 60434.0, costBasis, 0.01)
+}
+
+// TestCalculateCostBasis_WithPreviousSell 測試考慮之前的賣出交易
+func TestCalculateCostBasis_WithPreviousSell(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+		},
+		{
+			Date:            time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeSell,
+			Quantity:        30,
+			Price:           520,
+			Amount:          15600,
+			Fee:             ptrFloat64(10),
+		},
+		{
+			Date:            time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        50,
+			Price:           530,
+			Amount:          26500,
+			Fee:             ptrFloat64(15),
+		},
+	}
+
+	sellTransaction := &models.Transaction{
+		Date:            time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        50,
+		Price:           550,
+		Amount:          27500,
+		Fee:             ptrFloat64(20),
+	}
+
+	calculator := NewFIFOCalculator()
+
+	// Act
+	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	// 第一批買入 100 股 @ 500.28
+	// 第一次賣出 30 股，剩餘 70 股 @ 500.28
+	// 第二批買入 50 股 @ 530.30
+	// 第二次賣出 50 股：全部來自第一批剩餘的 70 股
+	// 成本基礎 = 50 × 500.28 = 25014
+	assert.InDelta(t, 25014.0, costBasis, 0.01)
+}
+
+// TestCalculateCostBasis_InsufficientQuantity 測試賣出數量超過持有
+func TestCalculateCostBasis_InsufficientQuantity(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+		},
+	}
+
+	sellTransaction := &models.Transaction{
+		Date:            time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        150,
+		Price:           550,
+		Amount:          82500,
+		Fee:             ptrFloat64(30),
+	}
+
+	calculator := NewFIFOCalculator()
+
+	// Act
+	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, costBasis)
+	assert.Contains(t, err.Error(), "insufficient quantity")
+}
+
+// TestCalculateCostBasis_NotSellTransaction 測試非賣出交易
+func TestCalculateCostBasis_NotSellTransaction(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+		},
+	}
+
+	buyTransaction := &models.Transaction{
+		Date:            time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeBuy,
+		Quantity:        50,
+		Price:           520,
+		Amount:          26000,
+		Fee:             ptrFloat64(15),
+	}
+
+	calculator := NewFIFOCalculator()
+
+	// Act
+	costBasis, err := calculator.CalculateCostBasis("2330", buyTransaction, transactions)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, costBasis)
+	assert.Contains(t, err.Error(), "not a sell transaction")
+}
+
 // ==================== 輔助函式 ====================
 
 // ptrFloat64 建立 float64 指標（方便測試）
