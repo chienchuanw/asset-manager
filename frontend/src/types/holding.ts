@@ -20,6 +20,9 @@ export interface Holding {
   market_value: number;
   unrealized_pl: number;
   unrealized_pl_pct: number;
+  price_source?: string; // 價格來源 (cache, api, stale-cache)
+  is_price_stale?: boolean; // 價格是否過期
+  price_stale_reason?: string; // 價格過期原因
 }
 
 /**
@@ -48,6 +51,9 @@ export const holdingSchema = z.object({
   market_value: z.number(),
   unrealized_pl: z.number(),
   unrealized_pl_pct: z.number(),
+  price_source: z.string().optional(),
+  is_price_stale: z.boolean().optional(),
+  price_stale_reason: z.string().optional(),
 });
 
 /**
@@ -139,17 +145,14 @@ export function calculateTotalProfitLossPct(holdings: Holding[]): number {
 export function groupHoldingsByAssetType(
   holdings: Holding[]
 ): Record<AssetType, Holding[]> {
-  return holdings.reduce(
-    (groups, holding) => {
-      const type = holding.asset_type;
-      if (!groups[type]) {
-        groups[type] = [];
-      }
-      groups[type].push(holding);
-      return groups;
-    },
-    {} as Record<AssetType, Holding[]>
-  );
+  return holdings.reduce((groups, holding) => {
+    const type = holding.asset_type;
+    if (!groups[type]) {
+      groups[type] = [];
+    }
+    groups[type].push(holding);
+    return groups;
+  }, {} as Record<AssetType, Holding[]>);
 }
 
 /**
@@ -200,4 +203,3 @@ export function searchHoldings(holdings: Holding[], query: string): Holding[] {
       h.name.toLowerCase().includes(lowerQuery)
   );
 }
-

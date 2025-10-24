@@ -110,6 +110,11 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 			if holding.TotalCost > 0 {
 				holding.UnrealizedPLPct = (holding.UnrealizedPL / holding.TotalCost) * 100
 			}
+
+			// 傳遞價格來源資訊
+			holding.PriceSource = price.Source
+			holding.IsPriceStale = price.IsStale
+			holding.PriceStaleReason = price.StaleReason
 		}
 
 		holdings = append(holdings, holding)
@@ -176,6 +181,11 @@ func (s *holdingService) GetHoldingBySymbol(symbol string) (*models.Holding, err
 	if holding.TotalCost > 0 {
 		holding.UnrealizedPLPct = (holding.UnrealizedPL / holding.TotalCost) * 100
 	}
+
+	// 傳遞價格來源資訊
+	holding.PriceSource = price.Source
+	holding.IsPriceStale = price.IsStale
+	holding.PriceStaleReason = price.StaleReason
 
 	return holding, nil
 }

@@ -8,19 +8,22 @@ import (
 // 代表某個標的（symbol）的當前持倉狀況
 // 所有金額欄位（成本、市值、損益）統一以 TWD 計價
 type Holding struct {
-	Symbol           string    `json:"symbol"`             // 標的代碼（例如：2330, AAPL, BTC）
-	Name             string    `json:"name"`               // 標的名稱
-	AssetType        AssetType `json:"asset_type"`         // 資產類型
-	Quantity         float64   `json:"quantity"`           // 當前持有數量
-	AvgCost          float64   `json:"avg_cost"`           // FIFO 計算的平均成本（含手續費，TWD）
-	TotalCost        float64   `json:"total_cost"`         // 總成本 = AvgCost * Quantity（TWD）
-	CurrentPrice     float64   `json:"current_price"`      // 當前市場價格（原始幣別）
-	Currency         Currency  `json:"currency"`           // 價格幣別
-	CurrentPriceTWD  float64   `json:"current_price_twd"`  // 當前市場價格（TWD）
-	MarketValue      float64   `json:"market_value"`       // 市值 = CurrentPriceTWD * Quantity（TWD）
-	UnrealizedPL     float64   `json:"unrealized_pl"`      // 未實現損益 = MarketValue - TotalCost（TWD）
-	UnrealizedPLPct  float64   `json:"unrealized_pl_pct"`  // 未實現損益百分比
-	LastUpdated      time.Time `json:"last_updated"`       // 最後更新時間
+	Symbol           string    `json:"symbol"`                       // 標的代碼（例如：2330, AAPL, BTC）
+	Name             string    `json:"name"`                         // 標的名稱
+	AssetType        AssetType `json:"asset_type"`                   // 資產類型
+	Quantity         float64   `json:"quantity"`                     // 當前持有數量
+	AvgCost          float64   `json:"avg_cost"`                     // FIFO 計算的平均成本（含手續費，TWD）
+	TotalCost        float64   `json:"total_cost"`                   // 總成本 = AvgCost * Quantity（TWD）
+	CurrentPrice     float64   `json:"current_price"`                // 當前市場價格（原始幣別）
+	Currency         Currency  `json:"currency"`                     // 價格幣別
+	CurrentPriceTWD  float64   `json:"current_price_twd"`            // 當前市場價格（TWD）
+	MarketValue      float64   `json:"market_value"`                 // 市值 = CurrentPriceTWD * Quantity（TWD）
+	UnrealizedPL     float64   `json:"unrealized_pl"`                // 未實現損益 = MarketValue - TotalCost（TWD）
+	UnrealizedPLPct  float64   `json:"unrealized_pl_pct"`            // 未實現損益百分比
+	LastUpdated      time.Time `json:"last_updated"`                 // 最後更新時間
+	PriceSource      string    `json:"price_source,omitempty"`       // 價格來源（cache, api, stale-cache）
+	IsPriceStale     bool      `json:"is_price_stale,omitempty"`     // 價格是否過期
+	PriceStaleReason string    `json:"price_stale_reason,omitempty"` // 價格過期原因
 }
 
 // CostBatch FIFO 成本批次

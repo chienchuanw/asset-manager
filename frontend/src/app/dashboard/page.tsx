@@ -15,7 +15,8 @@ import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { useHoldings, useTransactions } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 
 export default function DashboardPage() {
   // 取得持倉資料
@@ -83,6 +84,24 @@ export default function DashboardPage() {
     if (!transactions) return [];
     return transactions.slice(0, 5);
   }, [transactions]);
+
+  // 檢查是否有過期的價格資料
+  const stalePriceInfo = useMemo(() => {
+    if (!holdings) return null;
+
+    const staleHoldings = holdings.filter((h) => h.is_price_stale);
+    if (staleHoldings.length === 0) return null;
+
+    // 取得過期原因（通常所有過期的持倉原因相同）
+    const reason = staleHoldings[0].price_stale_reason || "API 請求失敗";
+    const symbols = staleHoldings.map((h) => h.symbol).join(", ");
+
+    return {
+      count: staleHoldings.length,
+      reason,
+      symbols,
+    };
+  }, [holdings]);
 
   // Loading 狀態
   if (holdingsLoading || transactionsLoading) {
@@ -160,6 +179,23 @@ export default function DashboardPage() {
       {/* 內容區域 */}
       <main className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
+          {/* 過期價格警告 */}
+          {stalePriceInfo && (
+            <Alert variant="default" className="border-amber-200 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-900">價格資料警告</AlertTitle>
+              <AlertDescription className="text-amber-800">
+                部分資產價格來自快取資料，可能不是最新價格。
+                <br />
+                <span className="text-sm">
+                  原因：{stalePriceInfo.reason}
+                  <br />
+                  受影響的標的：{stalePriceInfo.symbols}
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* 統計卡片區 - 響應式網格 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
