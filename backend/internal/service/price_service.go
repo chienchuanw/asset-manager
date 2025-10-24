@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/cache"
@@ -105,18 +106,28 @@ func (s *mockPriceService) RefreshPrice(symbol string, assetType models.AssetTyp
 
 // cachedPriceService 帶 Redis 快取的價格服務
 type cachedPriceService struct {
-	cache          *cache.RedisCache
-	fallback       PriceService // 當快取失效時使用的備用服務（例如 Mock 或真實 API）
-	cacheExpiration time.Duration
+	cache               *cache.RedisCache
+	fallback            PriceService // 當快取失效時使用的備用服務（例如 Mock 或真實 API）
+	defaultExpiration   time.Duration
+	usStockExpiration   time.Duration // 美股專用快取時間（較長，避免 API 限制）
 }
 
 // NewCachedPriceService 建立帶快取的價格服務
 func NewCachedPriceService(redisCache *cache.RedisCache, fallback PriceService, cacheExpiration time.Duration) PriceService {
 	return &cachedPriceService{
-		cache:          redisCache,
-		fallback:       fallback,
-		cacheExpiration: cacheExpiration,
+		cache:             redisCache,
+		fallback:          fallback,
+		defaultExpiration: cacheExpiration,
+		usStockExpiration: 1 * time.Hour, // 美股快取 1 小時（避免 Alpha Vantage API 限制）
 	}
+}
+
+// getCacheExpiration 根據資產類型取得快取過期時間
+func (s *cachedPriceService) getCacheExpiration(assetType models.AssetType) time.Duration {
+	if assetType == models.AssetTypeUSStock {
+		return s.usStockExpiration
+	}
+	return s.defaultExpiration
 }
 
 // getCacheKey 產生快取 key
@@ -130,8 +141,8 @@ func (s *cachedPriceService) GetPrice(symbol string, assetType models.AssetType)
 
 	// 1. 嘗試從快取取得
 	var cachedPrice models.PriceCache
-	err := s.cache.Get(cacheKey, &cachedPrice)
-	if err == nil {
+	cacheErr := s.cache.Get(cacheKey, &cachedPrice)
+	if cacheErr == nil {
 		// 快取命中，返回快取資料
 		return &models.Price{
 			Symbol:    cachedPrice.Symbol,
@@ -146,10 +157,32 @@ func (s *cachedPriceService) GetPrice(symbol string, assetType models.AssetType)
 	// 2. 快取未命中，從 fallback 服務取得
 	price, err := s.fallback.GetPrice(symbol, assetType)
 	if err != nil {
+		// 檢查是否為 API rate limit 錯誤
+		errMsg := strings.ToLower(err.Error())
+		isRateLimit := strings.Contains(errMsg, "rate limit") ||
+		               strings.Contains(errMsg, "api rate limit") ||
+		               strings.Contains(errMsg, "standard api rate limit")
+
+		// 如果是 rate limit 且有舊的快取資料，返回舊快取
+		if isRateLimit && cacheErr == nil {
+			fmt.Printf("Warning: API rate limit for %s, using stale cache\n", symbol)
+			return &models.Price{
+				Symbol:      cachedPrice.Symbol,
+				AssetType:   cachedPrice.AssetType,
+				Price:       cachedPrice.Price,
+				Currency:    cachedPrice.Currency,
+				Source:      "stale-cache",
+				UpdatedAt:   cachedPrice.CachedAt,
+				IsStale:     true,
+				StaleReason: "API rate limit exceeded",
+			}, nil
+		}
+
+		// 其他錯誤或沒有快取資料，返回錯誤
 		return nil, fmt.Errorf("failed to get price from fallback: %w", err)
 	}
 
-	// 3. 儲存到快取
+	// 3. 儲存到快取（根據資產類型使用不同的過期時間）
 	cacheData := models.PriceCache{
 		Symbol:    price.Symbol,
 		AssetType: price.AssetType,
@@ -158,7 +191,8 @@ func (s *cachedPriceService) GetPrice(symbol string, assetType models.AssetType)
 		CachedAt:  time.Now(),
 	}
 
-	if err := s.cache.Set(cacheKey, cacheData, s.cacheExpiration); err != nil {
+	expiration := s.getCacheExpiration(assetType)
+	if err := s.cache.Set(cacheKey, cacheData, expiration); err != nil {
 		// 快取失敗不影響返回結果，只記錄錯誤
 		fmt.Printf("Warning: failed to cache price for %s: %v\n", symbol, err)
 	}
@@ -204,7 +238,7 @@ func (s *cachedPriceService) RefreshPrice(symbol string, assetType models.AssetT
 		return nil, fmt.Errorf("failed to refresh price: %w", err)
 	}
 
-	// 3. 儲存到快取
+	// 3. 儲存到快取（根據資產類型使用不同的過期時間）
 	cacheData := models.PriceCache{
 		Symbol:    price.Symbol,
 		AssetType: price.AssetType,
@@ -213,7 +247,8 @@ func (s *cachedPriceService) RefreshPrice(symbol string, assetType models.AssetT
 		CachedAt:  time.Now(),
 	}
 
-	if err := s.cache.Set(cacheKey, cacheData, s.cacheExpiration); err != nil {
+	expiration := s.getCacheExpiration(assetType)
+	if err := s.cache.Set(cacheKey, cacheData, expiration); err != nil {
 		fmt.Printf("Warning: failed to cache refreshed price for %s: %v\n", symbol, err)
 	}
 

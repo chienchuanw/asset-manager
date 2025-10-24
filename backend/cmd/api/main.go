@@ -116,7 +116,7 @@ func main() {
 	// 加上 Redis 快取層
 	priceService := service.NewCachedPriceService(redisCache, basePriceService, cacheExpiration)
 
-	log.Printf("Redis cache enabled with %v expiration", cacheExpiration)
+	log.Printf("Redis cache enabled: default=%v, US stocks=1h (to avoid Alpha Vantage API limits)", cacheExpiration)
 
 	// 初始化匯率服務（帶 Redis 快取）
 	bankClient := client.NewTaiwanBankClient()

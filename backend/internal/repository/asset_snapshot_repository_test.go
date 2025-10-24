@@ -14,6 +14,10 @@ func TestAssetSnapshotRepository_Create(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
+	// 清理測試資料
+	err = cleanupAssetSnapshots(db)
+	require.NoError(t, err)
+
 	repo := NewAssetSnapshotRepository(db)
 
 	t.Run("成功建立資產快照", func(t *testing.T) {
@@ -76,6 +80,10 @@ func TestAssetSnapshotRepository_GetByDateAndType(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
+	// 清理測試資料
+	err = cleanupAssetSnapshots(db)
+	require.NoError(t, err)
+
 	repo := NewAssetSnapshotRepository(db)
 
 	// 準備測試資料
@@ -109,6 +117,10 @@ func TestAssetSnapshotRepository_GetByDateRange(t *testing.T) {
 	db, err := setupTestDB()
 	require.NoError(t, err)
 	defer db.Close()
+
+	// 清理測試資料
+	err = cleanupAssetSnapshots(db)
+	require.NoError(t, err)
 
 	repo := NewAssetSnapshotRepository(db)
 
@@ -209,6 +221,10 @@ func TestAssetSnapshotRepository_Update(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
+	// 清理測試資料
+	err = cleanupAssetSnapshots(db)
+	require.NoError(t, err)
+
 	repo := NewAssetSnapshotRepository(db)
 
 	// 準備測試資料
@@ -244,6 +260,10 @@ func TestAssetSnapshotRepository_Delete(t *testing.T) {
 	db, err := setupTestDB()
 	require.NoError(t, err)
 	defer db.Close()
+
+	// 清理測試資料
+	err = cleanupAssetSnapshots(db)
+	require.NoError(t, err)
 
 	repo := NewAssetSnapshotRepository(db)
 
