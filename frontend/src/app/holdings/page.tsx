@@ -3,13 +3,19 @@
  * 顯示所有資產的詳細持倉資訊,支援篩選、排序、搜尋功能
  */
 
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState, useMemo } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -17,19 +23,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Search, ArrowUpDown, Download, RefreshCw } from 'lucide-react';
-import { useHoldings } from '@/hooks';
-import { AssetType } from '@/types/transaction';
-import { getAssetTypeLabel } from '@/types/transaction';
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Search, ArrowUpDown, Download, RefreshCw } from "lucide-react";
+import { useHoldings } from "@/hooks";
+import { AssetType } from "@/types/transaction";
+import { getAssetTypeLabel } from "@/types/transaction";
 import {
   sortHoldings,
   searchHoldings,
@@ -40,17 +46,25 @@ import {
   formatCurrency,
   formatPercentage,
   getProfitLossColor,
-} from '@/types/holding';
+} from "@/types/holding";
 
 export default function HoldingsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<AssetType | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'market_value' | 'unrealized_pl' | 'quantity'>('market_value');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<AssetType | "all">("all");
+  const [sortBy, setSortBy] = useState<
+    "market_value" | "unrealized_pl" | "quantity"
+  >("market_value");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // 從 API 取得持倉資料
-  const { data: holdings, isLoading, error, refetch, isFetching } = useHoldings(
-    filterType !== 'all' ? { asset_type: filterType } : undefined
+  const {
+    data: holdings,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useHoldings(
+    filterType !== "all" ? { asset_type: filterType } : undefined
   );
 
   // 篩選與排序邏輯（使用 useMemo 優化效能）
@@ -72,29 +86,57 @@ export default function HoldingsPage() {
         totalCost: 0,
         totalProfitLoss: 0,
         totalProfitLossPercent: 0,
+        twStockValue: 0,
+        usStockValue: 0,
+        cryptoValue: 0,
+        availableCash: 0,
       };
     }
 
-    const totalMarketValue = calculateTotalMarketValue(filteredAndSortedHoldings);
+    const totalMarketValue = calculateTotalMarketValue(
+      filteredAndSortedHoldings
+    );
     const totalCost = calculateTotalCost(filteredAndSortedHoldings);
     const totalProfitLoss = calculateTotalProfitLoss(filteredAndSortedHoldings);
-    const totalProfitLossPercent = calculateTotalProfitLossPct(filteredAndSortedHoldings);
+    const totalProfitLossPercent = calculateTotalProfitLossPct(
+      filteredAndSortedHoldings
+    );
+
+    // 計算各類資產市值
+    const twStockValue = filteredAndSortedHoldings
+      .filter((h) => h.asset_type === "tw-stock")
+      .reduce((sum, h) => sum + h.market_value, 0);
+
+    const usStockValue = filteredAndSortedHoldings
+      .filter((h) => h.asset_type === "us-stock")
+      .reduce((sum, h) => sum + h.market_value, 0);
+
+    const cryptoValue = filteredAndSortedHoldings
+      .filter((h) => h.asset_type === "crypto")
+      .reduce((sum, h) => sum + h.market_value, 0);
+
+    // 計算可用現金 (總市值 - 總成本 = 未實現損益)
+    const availableCash = totalProfitLoss;
 
     return {
       totalMarketValue,
       totalCost,
       totalProfitLoss,
       totalProfitLossPercent,
+      twStockValue,
+      usStockValue,
+      cryptoValue,
+      availableCash,
     };
   }, [filteredAndSortedHoldings]);
 
   // 切換排序
-  const toggleSort = (field: 'market_value' | 'unrealized_pl' | 'quantity') => {
+  const toggleSort = (field: "market_value" | "unrealized_pl" | "quantity") => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortOrder('desc');
+      setSortOrder("desc");
     }
   };
 
@@ -128,7 +170,11 @@ export default function HoldingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => refetch()} variant="outline" className="w-full">
+                <Button
+                  onClick={() => refetch()}
+                  variant="outline"
+                  className="w-full"
+                >
                   <RefreshCw className="mr-2 h-4 w-4" />
                   重新載入
                 </Button>
@@ -167,9 +213,11 @@ export default function HoldingsPage() {
               <CardHeader className="pb-2">
                 <CardDescription>未實現損益</CardDescription>
                 <CardTitle
-                  className={`text-2xl tabular-nums ${getProfitLossColor(stats.totalProfitLoss)}`}
+                  className={`text-2xl tabular-nums ${getProfitLossColor(
+                    stats.totalProfitLoss
+                  )}`}
                 >
-                  {formatCurrency(stats.totalProfitLoss, 'TWD')}
+                  {formatCurrency(stats.totalProfitLoss, "TWD")}
                 </CardTitle>
               </CardHeader>
             </Card>
@@ -177,9 +225,51 @@ export default function HoldingsPage() {
               <CardHeader className="pb-2">
                 <CardDescription>報酬率</CardDescription>
                 <CardTitle
-                  className={`text-2xl tabular-nums ${getProfitLossColor(stats.totalProfitLossPercent)}`}
+                  className={`text-2xl tabular-nums ${getProfitLossColor(
+                    stats.totalProfitLossPercent
+                  )}`}
                 >
                   {formatPercentage(stats.totalProfitLossPercent)}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
+          {/* 統計摘要卡片 - 第二列 */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>台股市值</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">
+                  NT$ {stats.twStockValue.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>美股市值</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">
+                  NT$ {stats.usStockValue.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>加密貨幣市值</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">
+                  NT$ {stats.cryptoValue.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>可用現金</CardDescription>
+                <CardTitle
+                  className={`text-2xl tabular-nums ${getProfitLossColor(
+                    stats.availableCash
+                  )}`}
+                >
+                  {formatCurrency(stats.availableCash, "TWD")}
                 </CardTitle>
               </CardHeader>
             </Card>
@@ -193,7 +283,9 @@ export default function HoldingsPage() {
                   <CardTitle>持倉列表</CardTitle>
                   <CardDescription>
                     共 {filteredAndSortedHoldings.length} 筆持倉
-                    {isFetching && <span className="ml-2 text-xs">(更新中...)</span>}
+                    {isFetching && (
+                      <span className="ml-2 text-xs">(更新中...)</span>
+                    )}
                   </CardDescription>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -211,7 +303,9 @@ export default function HoldingsPage() {
                   {/* 資產類別篩選 */}
                   <Select
                     value={filterType}
-                    onValueChange={(value) => setFilterType(value as AssetType | 'all')}
+                    onValueChange={(value) =>
+                      setFilterType(value as AssetType | "all")
+                    }
                   >
                     <SelectTrigger className="sm:w-[150px]">
                       <SelectValue placeholder="資產類別" />
@@ -231,7 +325,11 @@ export default function HoldingsPage() {
                     onClick={() => refetch()}
                     disabled={isFetching}
                   >
-                    <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                    <RefreshCw
+                      className={`mr-2 h-4 w-4 ${
+                        isFetching ? "animate-spin" : ""
+                      }`}
+                    />
                     重新整理
                   </Button>
 
@@ -253,7 +351,7 @@ export default function HoldingsPage() {
                       <TableHead>類別</TableHead>
                       <TableHead
                         className="cursor-pointer"
-                        onClick={() => toggleSort('quantity')}
+                        onClick={() => toggleSort("quantity")}
                       >
                         <div className="flex items-center gap-1">
                           持有數量
@@ -264,7 +362,7 @@ export default function HoldingsPage() {
                       <TableHead className="text-right">現價</TableHead>
                       <TableHead
                         className="cursor-pointer text-right"
-                        onClick={() => toggleSort('market_value')}
+                        onClick={() => toggleSort("market_value")}
                       >
                         <div className="flex items-center justify-end gap-1">
                           市值
@@ -273,7 +371,7 @@ export default function HoldingsPage() {
                       </TableHead>
                       <TableHead
                         className="cursor-pointer text-right"
-                        onClick={() => toggleSort('unrealized_pl')}
+                        onClick={() => toggleSort("unrealized_pl")}
                       >
                         <div className="flex items-center justify-end gap-1">
                           損益
@@ -294,7 +392,9 @@ export default function HoldingsPage() {
                         <TableRow key={holding.symbol}>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="font-medium">{holding.symbol}</span>
+                              <span className="font-medium">
+                                {holding.symbol}
+                              </span>
                               <span className="text-sm text-muted-foreground">
                                 {holding.name}
                               </span>
@@ -306,35 +406,45 @@ export default function HoldingsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="tabular-nums">
-                            {holding.quantity.toLocaleString('zh-TW', {
+                            {holding.quantity.toLocaleString("zh-TW", {
                               minimumFractionDigits: 0,
                               maximumFractionDigits: 8,
                             })}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {holding.avg_cost.toLocaleString('zh-TW', {
+                            {holding.avg_cost.toLocaleString("zh-TW", {
                               minimumFractionDigits: 0,
                               maximumFractionDigits: 2,
                             })}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {holding.current_price.toLocaleString('zh-TW', {
+                            {holding.current_price.toLocaleString("zh-TW", {
                               minimumFractionDigits: 0,
                               maximumFractionDigits: 2,
                             })}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {formatCurrency(holding.market_value, holding.currency)}
+                            {formatCurrency(
+                              holding.market_value,
+                              holding.currency
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex flex-col items-end">
                               <span
-                                className={`font-medium tabular-nums ${getProfitLossColor(holding.unrealized_pl)}`}
+                                className={`font-medium tabular-nums ${getProfitLossColor(
+                                  holding.unrealized_pl
+                                )}`}
                               >
-                                {formatCurrency(holding.unrealized_pl, holding.currency)}
+                                {formatCurrency(
+                                  holding.unrealized_pl,
+                                  holding.currency
+                                )}
                               </span>
                               <span
-                                className={`text-sm tabular-nums ${getProfitLossColor(holding.unrealized_pl_pct)}`}
+                                className={`text-sm tabular-nums ${getProfitLossColor(
+                                  holding.unrealized_pl_pct
+                                )}`}
                               >
                                 {formatPercentage(holding.unrealized_pl_pct)}
                               </span>
@@ -353,4 +463,3 @@ export default function HoldingsPage() {
     </AppLayout>
   );
 }
-
