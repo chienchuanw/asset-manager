@@ -21,3 +21,8 @@ export {
   holdingKeys,
 } from "./useHoldings";
 
+export {
+  useAssetTrend,
+  useLatestSnapshot,
+  useTriggerDailySnapshots,
+} from "./useAssetSnapshots";

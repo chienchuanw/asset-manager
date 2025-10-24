@@ -3,26 +3,34 @@
  * 整合所有 Dashboard 元件,顯示資產概況
  */
 
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { AssetTrendChart } from '@/components/dashboard/AssetTrendChart';
-import { HoldingsTable } from '@/components/dashboard/HoldingsTable';
-import { AssetAllocationChart } from '@/components/dashboard/AssetAllocationChart';
-import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
-import { useHoldings, useTransactions } from '@/hooks';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { useMemo } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { AssetTrendChart } from "@/components/dashboard/AssetTrendChart";
+import { HoldingsTable } from "@/components/dashboard/HoldingsTable";
+import { AssetAllocationChart } from "@/components/dashboard/AssetAllocationChart";
+import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+import { useHoldings, useTransactions } from "@/hooks";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 export default function DashboardPage() {
   // 取得持倉資料
-  const { data: holdings, isLoading: holdingsLoading, error: holdingsError } = useHoldings();
+  const {
+    data: holdings,
+    isLoading: holdingsLoading,
+    error: holdingsError,
+  } = useHoldings();
 
   // 取得交易資料
-  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useTransactions();
+  const {
+    data: transactions,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+  } = useTransactions();
 
   // 計算統計資料
   const stats = useMemo(() => {
@@ -135,7 +143,10 @@ export default function DashboardPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-red-600">
                 <AlertCircle className="h-5 w-5" />
-                <p>載入資料失敗：{holdingsError?.message || transactionsError?.message}</p>
+                <p>
+                  載入資料失敗：
+                  {holdingsError?.message || transactionsError?.message}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -153,21 +164,29 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="總資產價值"
-              value={`TWD ${stats.totalValue.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}`}
+              value={`TWD ${stats.totalValue.toLocaleString("zh-TW", {
+                maximumFractionDigits: 0,
+              })}`}
               change={stats.totalPLPct}
               description="所有持倉市值總和"
             />
             <StatCard
               title="總成本"
-              value={`TWD ${stats.totalCost.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}`}
+              value={`TWD ${stats.totalCost.toLocaleString("zh-TW", {
+                maximumFractionDigits: 0,
+              })}`}
               change={0}
               description="所有持倉成本總和"
             />
             <StatCard
               title="未實現損益"
-              value={`TWD ${stats.totalPL.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}`}
+              value={`TWD ${stats.totalPL.toLocaleString("zh-TW", {
+                maximumFractionDigits: 0,
+              })}`}
               change={stats.totalPLPct}
-              description={`${stats.totalPLPct >= 0 ? '+' : ''}${stats.totalPLPct.toFixed(2)}%`}
+              description={`${
+                stats.totalPLPct >= 0 ? "+" : ""
+              }${stats.totalPLPct.toFixed(1)}%`}
             />
             <StatCard
               title="持倉數量"
@@ -181,7 +200,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-7 md:gap-6">
             {/* 左側：資產趨勢圖表 */}
             <div className="lg:col-span-4">
-              <AssetTrendChart data={[]} />
+              <AssetTrendChart />
             </div>
 
             {/* 右側：資產配置圓餅圖 */}
@@ -207,4 +226,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-

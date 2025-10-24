@@ -3,12 +3,18 @@
  * 顯示各類資產的佔比分布
  */
 
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { AssetType, getAssetTypeLabel } from '@/types/transaction';
+import { useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { AssetType, getAssetTypeLabel } from "@/types/transaction";
 
 interface AssetAllocationData {
   name: string;
@@ -21,9 +27,9 @@ interface AssetAllocationChartProps {
 
 // 資產類型顏色對應
 const ASSET_COLORS: Record<string, string> = {
-  'tw-stock': '#3b82f6',  // 藍色
-  'us-stock': '#10b981',  // 綠色
-  'crypto': '#f59e0b',    // 橘色
+  "tw-stock": "#3b82f6", // 藍色
+  "us-stock": "#10b981", // 綠色
+  crypto: "#f59e0b", // 橘色
 };
 
 export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
@@ -35,7 +41,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
       assetType: item.name,
       value: item.value,
       percentage: total > 0 ? (item.value / total) * 100 : 0,
-      color: ASSET_COLORS[item.name] || '#6b7280',
+      color: ASSET_COLORS[item.name] || "#6b7280",
     }));
   }, [data]);
 
@@ -54,7 +60,8 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
               <span className="text-sm font-medium">{data.name}</span>
             </div>
             <div className="text-sm text-muted-foreground">
-              TWD {data.value.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}
+              TWD{" "}
+              {data.value.toLocaleString("zh-TW", { maximumFractionDigits: 0 })}
             </div>
             <div className="text-sm font-medium">
               {data.percentage.toFixed(1)}%
@@ -74,7 +81,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
             暫無資料
           </div>
         ) : (
@@ -87,7 +94,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    outerRadius={80}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -103,7 +110,10 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
             {/* 圖例列表 */}
             <div className="mt-6 space-y-3">
               {chartData.map((item) => (
-                <div key={item.assetType} className="flex items-center justify-between text-sm">
+                <div
+                  key={item.assetType}
+                  className="flex items-center justify-between text-sm"
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className="h-2 w-2 rounded-full"
@@ -113,7 +123,9 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-medium tabular-nums">
-                      {item.value.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}
+                      {item.value.toLocaleString("zh-TW", {
+                        maximumFractionDigits: 0,
+                      })}
                     </span>
                     <span className="text-muted-foreground w-12 text-right tabular-nums">
                       {item.percentage.toFixed(1)}%
@@ -128,4 +140,3 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
     </Card>
   );
 }
-
