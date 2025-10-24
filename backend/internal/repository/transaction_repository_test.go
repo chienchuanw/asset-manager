@@ -61,6 +61,7 @@ func (suite *TransactionRepositoryTestSuite) TestCreate() {
 		Price:           620,
 		Amount:          6200,
 		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
 		Note:            &note,
 	}
 
@@ -101,6 +102,7 @@ func (suite *TransactionRepositoryTestSuite) TestGetByID() {
 		Price:           620,
 		Amount:          6200,
 		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
 	}
 	created, err := suite.repo.Create(input)
 	assert.NoError(suite.T(), err)
@@ -142,6 +144,7 @@ func (suite *TransactionRepositoryTestSuite) TestGetAll() {
 			Quantity:        10,
 			Price:           620,
 			Amount:          6200,
+			Currency:        models.CurrencyTWD,
 		},
 		{
 			Date:            time.Date(2025, 10, 21, 0, 0, 0, 0, time.UTC),
@@ -152,6 +155,7 @@ func (suite *TransactionRepositoryTestSuite) TestGetAll() {
 			Quantity:        2,
 			Price:           50000,
 			Amount:          100000,
+			Currency:        models.CurrencyUSD,
 		},
 	}
 
@@ -184,6 +188,7 @@ func (suite *TransactionRepositoryTestSuite) TestGetAll_WithFilters() {
 			Quantity:        10,
 			Price:           620,
 			Amount:          6200,
+			Currency:        models.CurrencyTWD,
 		},
 		{
 			Date:            time.Date(2025, 10, 21, 0, 0, 0, 0, time.UTC),
@@ -194,6 +199,7 @@ func (suite *TransactionRepositoryTestSuite) TestGetAll_WithFilters() {
 			Quantity:        2,
 			Price:           50000,
 			Amount:          100000,
+			Currency:        models.CurrencyUSD,
 		},
 	}
 
@@ -228,6 +234,7 @@ func (suite *TransactionRepositoryTestSuite) TestUpdate() {
 		Price:           620,
 		Amount:          6200,
 		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
 	}
 	created, err := suite.repo.Create(input)
 	assert.NoError(suite.T(), err)
@@ -268,6 +275,7 @@ func (suite *TransactionRepositoryTestSuite) TestDelete() {
 		Price:           620,
 		Amount:          6200,
 		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
 	}
 	created, err := suite.repo.Create(input)
 	assert.NoError(suite.T(), err)

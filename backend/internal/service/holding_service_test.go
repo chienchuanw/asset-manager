@@ -84,6 +84,31 @@ func (m *MockPriceService) RefreshPrice(symbol string, assetType models.AssetTyp
 	return args.Get(0).(*models.Price), args.Error(1)
 }
 
+// MockExchangeRateService Exchange Rate Service 的 Mock
+type MockExchangeRateService struct {
+	mock.Mock
+}
+
+func (m *MockExchangeRateService) GetRate(fromCurrency, toCurrency models.Currency, date time.Time) (float64, error) {
+	args := m.Called(fromCurrency, toCurrency, date)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateService) GetTodayRate(fromCurrency, toCurrency models.Currency) (float64, error) {
+	args := m.Called(fromCurrency, toCurrency)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateService) RefreshTodayRate() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockExchangeRateService) ConvertToTWD(amount float64, currency models.Currency, date time.Time) (float64, error) {
+	args := m.Called(amount, currency, date)
+	return args.Get(0).(float64), args.Error(1)
+}
+
 // ==================== 測試案例 ====================
 
 // TestGetAllHoldings_Success 測試成功取得所有持倉
@@ -91,8 +116,9 @@ func TestGetAllHoldings_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
+	mockExchangeRateService := new(MockExchangeRateService)
 	fifoCalculator := NewFIFOCalculator()
-	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService)
+	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	// 準備交易記錄
 	transactions := []*models.Transaction{
@@ -143,6 +169,10 @@ func TestGetAllHoldings_Success(t *testing.T) {
 	// Mock 設定
 	mockRepo.On("GetAll", mock.Anything).Return(transactions, nil)
 	mockPriceService.On("GetPrices", mock.Anything, mock.Anything).Return(prices, nil)
+	// Mock ConvertToTWD - TWD 620 (台積電價格)
+	mockExchangeRateService.On("ConvertToTWD", 620.0, models.CurrencyTWD, mock.Anything).Return(620.0, nil)
+	// Mock ConvertToTWD - USD 175 (AAPL 價格) 轉 TWD (匯率 30)
+	mockExchangeRateService.On("ConvertToTWD", 175.0, models.CurrencyUSD, mock.Anything).Return(5250.0, nil)
 
 	// Act
 	holdings, err := service.GetAllHoldings(models.HoldingFilters{})
@@ -176,8 +206,9 @@ func TestGetAllHoldings_EmptyTransactions(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
+	mockExchangeRateService := new(MockExchangeRateService)
 	fifoCalculator := NewFIFOCalculator()
-	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService)
+	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	// Mock 設定
 	mockRepo.On("GetAll", mock.Anything).Return([]*models.Transaction{}, nil)
@@ -197,8 +228,9 @@ func TestGetAllHoldings_WithAssetTypeFilter(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
+	mockExchangeRateService := new(MockExchangeRateService)
 	fifoCalculator := NewFIFOCalculator()
-	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService)
+	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	assetType := models.AssetTypeTWStock
 	filters := models.HoldingFilters{
@@ -236,6 +268,8 @@ func TestGetAllHoldings_WithAssetTypeFilter(t *testing.T) {
 		return f.AssetType != nil && *f.AssetType == models.AssetTypeTWStock
 	})).Return(transactions, nil)
 	mockPriceService.On("GetPrices", mock.Anything, mock.Anything).Return(prices, nil)
+	// Mock ConvertToTWD - TWD 620 (台積電價格)
+	mockExchangeRateService.On("ConvertToTWD", 620.0, models.CurrencyTWD, mock.Anything).Return(620.0, nil)
 
 	// Act
 	holdings, err := service.GetAllHoldings(filters)
@@ -254,8 +288,9 @@ func TestGetHoldingBySymbol_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
+	mockExchangeRateService := new(MockExchangeRateService)
 	fifoCalculator := NewFIFOCalculator()
-	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService)
+	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	symbol := "2330"
 	transactions := []*models.Transaction{
@@ -286,6 +321,8 @@ func TestGetHoldingBySymbol_Success(t *testing.T) {
 		return f.Symbol != nil && *f.Symbol == symbol
 	})).Return(transactions, nil)
 	mockPriceService.On("GetPrice", symbol, models.AssetTypeTWStock).Return(price, nil)
+	// Mock ConvertToTWD - TWD 620 (台積電價格)
+	mockExchangeRateService.On("ConvertToTWD", 620.0, models.CurrencyTWD, mock.Anything).Return(620.0, nil)
 
 	// Act
 	holding, err := service.GetHoldingBySymbol(symbol)
@@ -306,8 +343,9 @@ func TestGetHoldingBySymbol_NotFound(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
+	mockExchangeRateService := new(MockExchangeRateService)
 	fifoCalculator := NewFIFOCalculator()
-	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService)
+	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	symbol := "9999"
 

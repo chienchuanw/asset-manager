@@ -97,6 +97,7 @@ func TestCreateTransaction_Success(t *testing.T) {
 		Price:           620,
 		Amount:          6200,
 		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
 	}
 
 	expectedTransaction := &models.Transaction{
@@ -110,6 +111,7 @@ func TestCreateTransaction_Success(t *testing.T) {
 		Price:           input.Price,
 		Amount:          input.Amount,
 		Fee:             input.Fee,
+		Currency:        input.Currency,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
