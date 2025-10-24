@@ -13,7 +13,7 @@ NC     := \033[0m # No Color
 # Go 工具路徑
 GOTESTSUM := ./scripts/run-tests.sh
 
-.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop
+.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean
 
 # 顯示幫助訊息
 help:
@@ -41,6 +41,10 @@ help:
 	@echo "  $(GREEN)make run$(NC)              - 啟動 API 伺服器"
 	@echo "  $(GREEN)make build$(NC)            - 編譯應用程式"
 	@echo "  $(GREEN)make clean$(NC)            - 清理編譯產物"
+	@echo ""
+	@echo "$(YELLOW)Data Seeding:$(NC)"
+	@echo "  $(GREEN)make seed$(NC)             - 匯入 Mock 資料（保留現有資料）"
+	@echo "  $(GREEN)make seed-clean$(NC)       - 清空資料庫並匯入 Mock 資料"
 	@echo ""
 
 # 安裝依賴套件
@@ -152,4 +156,16 @@ migrate-test-up-env:
 	@echo "Loading .env.test and running migrations..."
 	@set -a && . ./.env.test && set +a && \
 	migrate -path migrations -database "postgresql://$$TEST_DB_USER:$$TEST_DB_PASSWORD@$$TEST_DB_HOST:$$TEST_DB_PORT/$$TEST_DB_NAME?sslmode=disable" up
+
+# 匯入 Mock 資料（保留現有資料）
+seed:
+	@echo "$(BLUE)Seeding database with mock data...$(NC)"
+	@go run cmd/seed/main.go
+	@echo "$(GREEN)Seeding completed!$(NC)"
+
+# 清空資料庫並匯入 Mock 資料
+seed-clean:
+	@echo "$(RED)Cleaning database and seeding with mock data...$(NC)"
+	@go run cmd/seed/main.go --clean
+	@echo "$(GREEN)Database cleaned and seeded successfully!$(NC)"
 
