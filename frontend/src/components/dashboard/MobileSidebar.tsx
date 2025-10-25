@@ -3,12 +3,12 @@
  * 提供手機版的導航功能
  */
 
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   HomeIcon,
   BarChart3Icon,
@@ -19,7 +19,7 @@ import {
   UserIcon,
   LogOutIcon,
   XIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -31,17 +31,27 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
   // 主要導航項目
   const mainNavItems = [
-    { id: 'dashboard', label: '首頁', icon: HomeIcon, href: '/dashboard' },
-    { id: 'holdings', label: '持倉明細', icon: WalletIcon, href: '/holdings' },
-    { id: 'transactions', label: '交易記錄', icon: ArrowLeftRightIcon, href: '/transactions' },
-    { id: 'analytics', label: '分析報表', icon: BarChart3Icon, href: '/analytics' },
+    { id: "dashboard", label: "首頁", icon: HomeIcon, href: "/dashboard" },
+    { id: "holdings", label: "持倉明細", icon: WalletIcon, href: "/holdings" },
+    {
+      id: "transactions",
+      label: "交易記錄",
+      icon: ArrowLeftRightIcon,
+      href: "/transactions",
+    },
+    {
+      id: "analytics",
+      label: "分析報表",
+      icon: BarChart3Icon,
+      href: "/analytics",
+    },
   ];
 
   // 工具區項目
   const toolItems = [
-    { id: 'settings', label: '設定', icon: SettingsIcon },
-    { id: 'help', label: '幫助', icon: HelpCircleIcon },
-    { id: 'user', label: '使用者管理', icon: UserIcon },
+    { id: "settings", label: "設定", icon: SettingsIcon },
+    { id: "help", label: "幫助", icon: HelpCircleIcon },
+    { id: "user", label: "使用者管理", icon: UserIcon },
   ];
 
   if (!isOpen) return null;
@@ -62,7 +72,9 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
             <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <WalletIcon className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">Asset Manager</span>
+            <span className="text-xl font-bold text-gray-900">
+              Asset Manager
+            </span>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <XIcon className="h-5 w-5" />
@@ -77,11 +89,11 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
             return (
               <Link key={item.id} href={item.href} onClick={onClose}>
                 <Button
-                  variant={isActive ? 'default' : 'ghost'}
+                  variant={isActive ? "default" : "ghost"}
                   className={`w-full justify-start gap-3 ${
                     isActive
-                      ? 'bg-gray-900 text-white hover:bg-gray-800'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? "bg-gray-900 text-white hover:bg-gray-800"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -117,7 +129,10 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
         {/* 登出按鈕 */}
         <div className="p-4 border-t border-gray-200">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100"
+          >
             <LogOutIcon className="h-5 w-5" />
             登出
           </Button>
@@ -126,4 +141,3 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
     </>
   );
 }
-

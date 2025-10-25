@@ -3,12 +3,12 @@
  * 提供主要導航功能
  */
 
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   HomeIcon,
   BarChart3Icon,
@@ -18,24 +18,34 @@ import {
   HelpCircleIcon,
   UserIcon,
   LogOutIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
 
   // 主要導航項目
   const mainNavItems = [
-    { id: 'dashboard', label: '首頁', icon: HomeIcon, href: '/dashboard' },
-    { id: 'holdings', label: '持倉明細', icon: WalletIcon, href: '/holdings' },
-    { id: 'transactions', label: '交易記錄', icon: ArrowLeftRightIcon, href: '/transactions' },
-    { id: 'analytics', label: '分析報表', icon: BarChart3Icon, href: '/analytics' },
+    { id: "dashboard", label: "首頁", icon: HomeIcon, href: "/dashboard" },
+    { id: "holdings", label: "持倉明細", icon: WalletIcon, href: "/holdings" },
+    {
+      id: "transactions",
+      label: "交易記錄",
+      icon: ArrowLeftRightIcon,
+      href: "/transactions",
+    },
+    {
+      id: "analytics",
+      label: "分析報表",
+      icon: BarChart3Icon,
+      href: "/analytics",
+    },
   ];
 
   // 工具區項目
   const toolItems = [
-    { id: 'settings', label: '設定', icon: SettingsIcon },
-    { id: 'help', label: '幫助', icon: HelpCircleIcon },
-    { id: 'user', label: '使用者管理', icon: UserIcon },
+    { id: "settings", label: "設定", icon: SettingsIcon },
+    { id: "help", label: "幫助", icon: HelpCircleIcon },
+    { id: "user", label: "使用者管理", icon: UserIcon },
   ];
 
   return (
@@ -55,11 +65,11 @@ export function Sidebar() {
           return (
             <Link key={item.id} href={item.href}>
               <Button
-                variant={isActive ? 'default' : 'ghost'}
+                variant={isActive ? "default" : "ghost"}
                 className={`w-full justify-start gap-3 ${
                   isActive
-                    ? 'bg-gray-900 text-white hover:bg-gray-800'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -94,7 +104,10 @@ export function Sidebar() {
 
       {/* 登出按鈕 */}
       <div className="p-4 border-t border-gray-200">
-        <Button variant="ghost" className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100"
+        >
           <LogOutIcon className="h-5 w-5" />
           登出
         </Button>
@@ -102,4 +115,3 @@ export function Sidebar() {
     </aside>
   );
 }
-
