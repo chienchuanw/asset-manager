@@ -245,14 +245,23 @@ export interface AllocationSettings {
   rebalance_threshold: number;
 }
 
+export interface NotificationSettings {
+  daily_billing: boolean;
+  subscription_expiry: boolean;
+  installment_completion: boolean;
+  expiry_days: number;
+}
+
 export interface SettingsGroup {
   discord: DiscordSettings;
   allocation: AllocationSettings;
+  notification: NotificationSettings;
 }
 
 export interface UpdateSettingsGroupInput {
   discord?: DiscordSettings;
   allocation?: AllocationSettings;
+  notification?: NotificationSettings;
 }
 
 /**

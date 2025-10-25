@@ -19,7 +19,11 @@ import { Separator } from "@/components/ui/separator";
 import { Loading } from "@/components/ui/loading";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
-import type { DiscordSettings, AllocationSettings } from "@/types/analytics";
+import type {
+  DiscordSettings,
+  AllocationSettings,
+  NotificationSettings,
+} from "@/types/analytics";
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
@@ -43,11 +47,21 @@ export default function SettingsPage() {
       rebalance_threshold: 5,
     });
 
+  // 通知設定狀態
+  const [notificationSettings, setNotificationSettings] =
+    useState<NotificationSettings>({
+      daily_billing: true,
+      subscription_expiry: true,
+      installment_completion: true,
+      expiry_days: 7,
+    });
+
   // 當設定載入完成時，更新狀態
   useEffect(() => {
     if (settings) {
       setDiscordSettings(settings.discord);
       setAllocationSettings(settings.allocation);
+      setNotificationSettings(settings.notification);
     }
   }, [settings]);
 
@@ -69,6 +83,7 @@ export default function SettingsPage() {
       await updateSettingsMutation.mutateAsync({
         discord: discordSettings,
         allocation: allocationSettings,
+        notification: notificationSettings,
       });
 
       toast.success("儲存成功", {
@@ -86,6 +101,7 @@ export default function SettingsPage() {
     if (settings) {
       setDiscordSettings(settings.discord);
       setAllocationSettings(settings.allocation);
+      setNotificationSettings(settings.notification);
       toast.info("已重置", {
         description: "設定已重置為上次儲存的值",
       });
@@ -143,7 +159,7 @@ export default function SettingsPage() {
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
-          {/* 設定卡片區域 - 並排顯示 */}
+          {/* Discord 和資產配置設定 - 並排顯示 */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Discord 設定 */}
             <Card>
@@ -409,6 +425,108 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* 通知設定 - 獨立一行 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>訂閱分期通知設定</CardTitle>
+              <CardDescription>設定訂閱和分期相關的通知選項</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 每日扣款通知 */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notification-daily-billing">
+                    每日扣款通知
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    每天自動扣款後發送通知到 Discord
+                  </p>
+                </div>
+                <Switch
+                  id="notification-daily-billing"
+                  checked={notificationSettings.daily_billing}
+                  onCheckedChange={(checked) =>
+                    setNotificationSettings({
+                      ...notificationSettings,
+                      daily_billing: checked,
+                    })
+                  }
+                />
+              </div>
+
+              <Separator />
+
+              {/* 訂閱到期通知 */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notification-subscription-expiry">
+                    訂閱到期通知
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    訂閱即將到期時發送提醒通知
+                  </p>
+                </div>
+                <Switch
+                  id="notification-subscription-expiry"
+                  checked={notificationSettings.subscription_expiry}
+                  onCheckedChange={(checked) =>
+                    setNotificationSettings({
+                      ...notificationSettings,
+                      subscription_expiry: checked,
+                    })
+                  }
+                />
+              </div>
+
+              <Separator />
+
+              {/* 分期完成通知 */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notification-installment-completion">
+                    分期完成通知
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    分期即將完成時發送提醒通知
+                  </p>
+                </div>
+                <Switch
+                  id="notification-installment-completion"
+                  checked={notificationSettings.installment_completion}
+                  onCheckedChange={(checked) =>
+                    setNotificationSettings({
+                      ...notificationSettings,
+                      installment_completion: checked,
+                    })
+                  }
+                />
+              </div>
+
+              <Separator />
+
+              {/* 到期提醒天數 */}
+              <div className="space-y-2">
+                <Label htmlFor="notification-expiry-days">到期提醒天數</Label>
+                <Input
+                  id="notification-expiry-days"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={notificationSettings.expiry_days}
+                  onChange={(e) =>
+                    setNotificationSettings({
+                      ...notificationSettings,
+                      expiry_days: parseInt(e.target.value) || 7,
+                    })
+                  }
+                />
+                <p className="text-sm text-muted-foreground">
+                  提前幾天發送到期提醒（1-30 天）
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* 操作按鈕 */}
           <div className="flex justify-end gap-4">

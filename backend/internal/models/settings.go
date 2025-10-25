@@ -23,8 +23,9 @@ type UpdateSettingInput struct {
 
 // SettingsGroup 設定群組（用於批次取得和更新）
 type SettingsGroup struct {
-	Discord    DiscordSettings    `json:"discord"`
-	Allocation AllocationSettings `json:"allocation"`
+	Discord      DiscordSettings      `json:"discord"`
+	Allocation   AllocationSettings   `json:"allocation"`
+	Notification NotificationSettings `json:"notification"`
 }
 
 // DiscordSettings Discord 設定
@@ -42,9 +43,18 @@ type AllocationSettings struct {
 	RebalanceThreshold float64 `json:"rebalance_threshold"` // 再平衡閾值百分比
 }
 
+// NotificationSettings 通知設定
+type NotificationSettings struct {
+	DailyBilling            bool `json:"daily_billing"`             // 每日扣款通知
+	SubscriptionExpiry      bool `json:"subscription_expiry"`       // 訂閱到期通知
+	InstallmentCompletion   bool `json:"installment_completion"`    // 分期完成通知
+	ExpiryDays              int  `json:"expiry_days"`               // 到期提醒天數
+}
+
 // UpdateSettingsGroupInput 更新設定群組輸入
 type UpdateSettingsGroupInput struct {
-	Discord    *DiscordSettings    `json:"discord,omitempty"`
-	Allocation *AllocationSettings `json:"allocation,omitempty"`
+	Discord      *DiscordSettings      `json:"discord,omitempty"`
+	Allocation   *AllocationSettings   `json:"allocation,omitempty"`
+	Notification *NotificationSettings `json:"notification,omitempty"`
 }
 

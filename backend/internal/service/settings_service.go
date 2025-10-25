@@ -52,6 +52,12 @@ func (s *settingsService) GetSettings() (*models.SettingsGroup, error) {
 			Crypto:             parseFloat(settingsMap["target_allocation_crypto"]),
 			RebalanceThreshold: parseFloat(settingsMap["rebalance_threshold"]),
 		},
+		Notification: models.NotificationSettings{
+			DailyBilling:          settingsMap["notification_daily_billing"] == "true",
+			SubscriptionExpiry:    settingsMap["notification_subscription_expiry"] == "true",
+			InstallmentCompletion: settingsMap["notification_installment_completion"] == "true",
+			ExpiryDays:            parseInt(settingsMap["notification_expiry_days"]),
+		},
 	}
 
 	return group, nil
@@ -69,6 +75,13 @@ func (s *settingsService) UpdateSettings(input *models.UpdateSettingsGroupInput)
 	// 更新資產配置設定
 	if input.Allocation != nil {
 		if err := s.updateAllocationSettings(input.Allocation); err != nil {
+			return nil, err
+		}
+	}
+
+	// 更新通知設定
+	if input.Notification != nil {
+		if err := s.updateNotificationSettings(input.Notification); err != nil {
 			return nil, err
 		}
 	}
@@ -146,9 +159,48 @@ func (s *settingsService) updateAllocationSettings(allocation *models.Allocation
 	return nil
 }
 
+// updateNotificationSettings 更新通知設定
+func (s *settingsService) updateNotificationSettings(notification *models.NotificationSettings) error {
+	// 更新每日扣款通知
+	if _, err := s.repo.Update("notification_daily_billing", &models.UpdateSettingInput{
+		Value: fmt.Sprintf("%t", notification.DailyBilling),
+	}); err != nil {
+		return fmt.Errorf("failed to update notification_daily_billing: %w", err)
+	}
+
+	// 更新訂閱到期通知
+	if _, err := s.repo.Update("notification_subscription_expiry", &models.UpdateSettingInput{
+		Value: fmt.Sprintf("%t", notification.SubscriptionExpiry),
+	}); err != nil {
+		return fmt.Errorf("failed to update notification_subscription_expiry: %w", err)
+	}
+
+	// 更新分期完成通知
+	if _, err := s.repo.Update("notification_installment_completion", &models.UpdateSettingInput{
+		Value: fmt.Sprintf("%t", notification.InstallmentCompletion),
+	}); err != nil {
+		return fmt.Errorf("failed to update notification_installment_completion: %w", err)
+	}
+
+	// 更新到期提醒天數
+	if _, err := s.repo.Update("notification_expiry_days", &models.UpdateSettingInput{
+		Value: fmt.Sprintf("%d", notification.ExpiryDays),
+	}); err != nil {
+		return fmt.Errorf("failed to update notification_expiry_days: %w", err)
+	}
+
+	return nil
+}
+
 // parseFloat 解析浮點數字串
 func parseFloat(s string) float64 {
 	f, _ := strconv.ParseFloat(s, 64)
 	return f
+}
+
+// parseInt 解析整數字串
+func parseInt(s string) int {
+	i, _ := strconv.Atoi(s)
+	return i
 }
 
