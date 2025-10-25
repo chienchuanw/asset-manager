@@ -90,12 +90,17 @@ func TestAnalyticsHandler_GetSummary(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response models.AnalyticsSummary
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	var apiResponse struct {
+		Data  *models.AnalyticsSummary `json:"data"`
+		Error *APIError                `json:"error"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &apiResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, mockSummary.TotalRealizedPL, response.TotalRealizedPL)
-	assert.Equal(t, mockSummary.TransactionCount, response.TransactionCount)
-	assert.Equal(t, "month", response.TimeRange)
+	assert.Nil(t, apiResponse.Error)
+	assert.NotNil(t, apiResponse.Data)
+	assert.Equal(t, mockSummary.TotalRealizedPL, apiResponse.Data.TotalRealizedPL)
+	assert.Equal(t, mockSummary.TransactionCount, apiResponse.Data.TransactionCount)
+	assert.Equal(t, "month", apiResponse.Data.TimeRange)
 
 	mockService.AssertExpectations(t)
 }
@@ -157,12 +162,17 @@ func TestAnalyticsHandler_GetPerformance(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response []*models.PerformanceData
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	var apiResponse struct {
+		Data  []*models.PerformanceData `json:"data"`
+		Error *APIError                 `json:"error"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &apiResponse)
 	assert.NoError(t, err)
-	assert.Len(t, response, 2)
-	assert.Equal(t, "台股", response[0].Name)
-	assert.Equal(t, 9930.0, response[0].RealizedPL)
+	assert.Nil(t, apiResponse.Error)
+	assert.NotNil(t, apiResponse.Data)
+	assert.Len(t, apiResponse.Data, 2)
+	assert.Equal(t, "台股", apiResponse.Data[0].Name)
+	assert.Equal(t, 9930.0, apiResponse.Data[0].RealizedPL)
 
 	mockService.AssertExpectations(t)
 }
@@ -205,12 +215,17 @@ func TestAnalyticsHandler_GetTopAssets(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response []*models.TopAsset
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	var apiResponse struct {
+		Data  []*models.TopAsset `json:"data"`
+		Error *APIError          `json:"error"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &apiResponse)
 	assert.NoError(t, err)
-	assert.Len(t, response, 2)
-	assert.Equal(t, "BTC", response[0].Symbol)
-	assert.Equal(t, 200000.0, response[0].RealizedPL)
+	assert.Nil(t, apiResponse.Error)
+	assert.NotNil(t, apiResponse.Data)
+	assert.Len(t, apiResponse.Data, 2)
+	assert.Equal(t, "BTC", apiResponse.Data[0].Symbol)
+	assert.Equal(t, 200000.0, apiResponse.Data[0].RealizedPL)
 
 	mockService.AssertExpectations(t)
 }
