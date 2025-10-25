@@ -37,6 +37,7 @@ func main() {
 	exchangeRateRepo := repository.NewExchangeRateRepository(database)
 	realizedProfitRepo := repository.NewRealizedProfitRepository(database)
 	assetSnapshotRepo := repository.NewAssetSnapshotRepository(database)
+	settingsRepo := repository.NewSettingsRepository(database)
 
 	// PerformanceSnapshotRepository 需要 sqlx.DB
 	dbx := sqlx.NewDb(database, "postgres")
@@ -86,6 +87,7 @@ func main() {
 		unrealizedAnalyticsService := service.NewUnrealizedAnalyticsService(holdingService)
 		allocationService := service.NewAllocationService(holdingService)
 		performanceTrendService := service.NewPerformanceTrendService(performanceSnapshotRepo, unrealizedAnalyticsService, analyticsService)
+		settingsService := service.NewSettingsService(settingsRepo)
 
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -97,11 +99,12 @@ func main() {
 		unrealizedAnalyticsHandler := api.NewUnrealizedAnalyticsHandler(unrealizedAnalyticsService)
 		allocationHandler := api.NewAllocationHandler(allocationService)
 		performanceTrendHandler := api.NewPerformanceTrendHandler(performanceTrendService)
+		settingsHandler := api.NewSettingsHandler(settingsService)
 		assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Snapshot scheduler is disabled (Redis not available)")
-		startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, assetSnapshotHandler)
+		startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -148,6 +151,7 @@ func main() {
 	unrealizedAnalyticsService := service.NewUnrealizedAnalyticsService(holdingService)
 	allocationService := service.NewAllocationService(holdingService)
 	performanceTrendService := service.NewPerformanceTrendService(performanceSnapshotRepo, unrealizedAnalyticsService, analyticsService)
+	settingsService := service.NewSettingsService(settingsRepo)
 
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -159,6 +163,7 @@ func main() {
 	unrealizedAnalyticsHandler := api.NewUnrealizedAnalyticsHandler(unrealizedAnalyticsService)
 	allocationHandler := api.NewAllocationHandler(allocationService)
 	performanceTrendHandler := api.NewPerformanceTrendHandler(performanceTrendService)
+	settingsHandler := api.NewSettingsHandler(settingsService)
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 
 	// 初始化並啟動排程器
@@ -173,7 +178,7 @@ func main() {
 	defer snapshotScheduler.Stop()
 
 	// 啟動伺服器
-	startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, assetSnapshotHandler)
+	startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -186,7 +191,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, assetSnapshotHandler *api.AssetSnapshotHandler) {
+func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -251,6 +256,13 @@ func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api
 			performanceTrends.POST("/snapshot", performanceTrendHandler.CreateDailySnapshot)
 			performanceTrends.GET("/range", performanceTrendHandler.GetTrendByDateRange)
 			performanceTrends.GET("/latest", performanceTrendHandler.GetLatestTrend)
+		}
+
+		// Settings 路由
+		settings := apiGroup.Group("/settings")
+		{
+			settings.GET("", settingsHandler.GetSettings)
+			settings.PUT("", settingsHandler.UpdateSettings)
 		}
 
 		// Asset Snapshots 路由
