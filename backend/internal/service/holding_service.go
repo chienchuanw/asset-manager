@@ -77,17 +77,20 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 		assetTypes[symbol] = holding.AssetType
 	}
 
-	// 4. 批次取得價格
+	// 4. 批次取得價格（採用優雅降級策略）
 	prices, err := s.priceService.GetPrices(symbols, assetTypes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get prices: %w", err)
+		// 如果完全無法取得價格，記錄警告但繼續處理（使用成本價作為市值）
+		fmt.Printf("Warning: failed to get prices: %v\n", err)
+		prices = make(map[string]*models.Price) // 空的價格 map
 	}
 
 	// 5. 整合價格資訊並計算損益（統一轉換為 TWD）
 	holdings := make([]*models.Holding, 0, len(holdingsMap))
 	for symbol, holding := range holdingsMap {
 		price, exists := prices[symbol]
-		if exists {
+		if exists && price.Price > 0 {
+			// 有價格資訊且價格有效
 			holding.CurrentPrice = price.Price
 
 			// 根據資產類型決定幣別
@@ -115,6 +118,16 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 			holding.PriceSource = price.Source
 			holding.IsPriceStale = price.IsStale
 			holding.PriceStaleReason = price.StaleReason
+		} else {
+			// 無價格資訊或價格為 0，使用成本價作為市值（保守估計）
+			holding.CurrentPrice = 0
+			holding.CurrentPriceTWD = 0
+			holding.MarketValue = holding.TotalCost // 使用成本價作為市值
+			holding.UnrealizedPL = 0
+			holding.UnrealizedPLPct = 0
+			holding.PriceSource = "unavailable"
+			holding.IsPriceStale = true
+			holding.PriceStaleReason = "Price not available"
 		}
 
 		holdings = append(holdings, holding)

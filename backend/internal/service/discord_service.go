@@ -73,10 +73,19 @@ func (s *discordService) FormatDailyReport(data *models.DailyReportData) *models
 		color = 0xFF0000 // 紅色
 	}
 
+	// 檢查是否有價格資料問題
+	priceWarning := s.checkPriceDataQuality(data)
+
+	// 建立描述（包含日期和可能的警告）
+	description := fmt.Sprintf("報告日期：%s", data.Date.Format("2006-01-02"))
+	if priceWarning != "" {
+		description += "\n\n" + priceWarning
+	}
+
 	// 建立 Embed
 	embed := models.DiscordEmbed{
 		Title:       "📊 每日資產報告",
-		Description: fmt.Sprintf("報告日期：%s", data.Date.Format("2006-01-02")),
+		Description: description,
 		Color:       color,
 		Fields:      []models.DiscordEmbedField{},
 		Timestamp:   time.Now().Format(time.RFC3339),
@@ -258,5 +267,37 @@ func getDeviationSign(deviation float64) string {
 	if deviation > 0 {
 		return "+"
 	}
+	return ""
+}
+
+// checkPriceDataQuality 檢查價格資料品質並返回警告訊息
+func (s *discordService) checkPriceDataQuality(data *models.DailyReportData) string {
+	if data == nil || len(data.TopHoldings) == 0 {
+		return ""
+	}
+
+	staleCount := 0
+	unavailableCount := 0
+
+	for _, holding := range data.TopHoldings {
+		if holding.PriceSource == "unavailable" {
+			unavailableCount++
+		} else if holding.IsPriceStale {
+			staleCount++
+		}
+	}
+
+	// 如果有價格問題，返回警告訊息
+	if unavailableCount > 0 || staleCount > 0 {
+		warning := "⚠️ **價格資料警告**\n"
+		if unavailableCount > 0 {
+			warning += fmt.Sprintf("• %d 個標的無法取得價格（使用成本價估算）\n", unavailableCount)
+		}
+		if staleCount > 0 {
+			warning += fmt.Sprintf("• %d 個標的使用快取價格（API 達到速率限制）\n", staleCount)
+		}
+		return warning
+	}
+
 	return ""
 }

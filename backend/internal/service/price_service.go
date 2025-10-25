@@ -163,18 +163,38 @@ func (s *cachedPriceService) GetPrice(symbol string, assetType models.AssetType)
 		               strings.Contains(errMsg, "api rate limit") ||
 		               strings.Contains(errMsg, "standard api rate limit")
 
-		// 如果是 rate limit 且有舊的快取資料，返回舊快取
-		if isRateLimit && cacheErr == nil {
-			fmt.Printf("Warning: API rate limit for %s, using stale cache\n", symbol)
+		// 如果是 rate limit
+		if isRateLimit {
+			// 嘗試使用舊的快取資料（即使已過期）
+			if cacheErr == nil {
+				fmt.Printf("Warning: API rate limit for %s, using stale cache\n", symbol)
+				return &models.Price{
+					Symbol:      cachedPrice.Symbol,
+					AssetType:   cachedPrice.AssetType,
+					Price:       cachedPrice.Price,
+					Currency:    cachedPrice.Currency,
+					Source:      "stale-cache",
+					UpdatedAt:   cachedPrice.CachedAt,
+					IsStale:     true,
+					StaleReason: "API rate limit exceeded, using cached price",
+				}, nil
+			}
+
+			// 如果連舊快取都沒有，返回一個預設價格（避免整個功能失敗）
+			fmt.Printf("Warning: API rate limit for %s and no cache available, using fallback price\n", symbol)
+			currency := "TWD"
+			if assetType == models.AssetTypeUSStock {
+				currency = "USD"
+			}
 			return &models.Price{
-				Symbol:      cachedPrice.Symbol,
-				AssetType:   cachedPrice.AssetType,
-				Price:       cachedPrice.Price,
-				Currency:    cachedPrice.Currency,
-				Source:      "stale-cache",
-				UpdatedAt:   cachedPrice.CachedAt,
+				Symbol:      symbol,
+				AssetType:   assetType,
+				Price:       0, // 價格設為 0，表示無法取得
+				Currency:    currency,
+				Source:      "unavailable",
+				UpdatedAt:   time.Now(),
 				IsStale:     true,
-				StaleReason: "API rate limit exceeded",
+				StaleReason: "API rate limit exceeded, no cached price available",
 			}, nil
 		}
 
@@ -203,21 +223,39 @@ func (s *cachedPriceService) GetPrice(symbol string, assetType models.AssetType)
 }
 
 // GetPrices 批次取得多個標的價格
+// 採用部分成功策略：即使部分價格無法取得，仍然返回可用的價格
 func (s *cachedPriceService) GetPrices(symbols []string, assetTypes map[string]models.AssetType) (map[string]*models.Price, error) {
 	prices := make(map[string]*models.Price)
+	var failedSymbols []string
 
 	for _, symbol := range symbols {
 		assetType, exists := assetTypes[symbol]
 		if !exists {
-			return nil, fmt.Errorf("asset type not found for symbol: %s", symbol)
+			// 資產類型不存在，記錄但繼續處理其他標的
+			fmt.Printf("Warning: asset type not found for symbol: %s\n", symbol)
+			failedSymbols = append(failedSymbols, symbol)
+			continue
 		}
 
 		price, err := s.GetPrice(symbol, assetType)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get price for %s: %w", symbol, err)
+			// 價格取得失敗，記錄但繼續處理其他標的
+			fmt.Printf("Warning: failed to get price for %s: %v\n", symbol, err)
+			failedSymbols = append(failedSymbols, symbol)
+			continue
 		}
 
 		prices[symbol] = price
+	}
+
+	// 如果所有標的都失敗，返回錯誤
+	if len(prices) == 0 && len(symbols) > 0 {
+		return nil, fmt.Errorf("failed to get prices for all symbols")
+	}
+
+	// 如果有部分失敗，記錄警告但仍然返回成功
+	if len(failedSymbols) > 0 {
+		fmt.Printf("Warning: failed to get prices for %d symbols: %v\n", len(failedSymbols), failedSymbols)
 	}
 
 	return prices, nil
