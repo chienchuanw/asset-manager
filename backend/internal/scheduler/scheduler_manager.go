@@ -12,7 +12,7 @@ import (
 )
 
 // SchedulerManager 排程器管理器
-// 統一管理所有排程任務（快照、Discord 報告等）
+// 統一管理所有排程任務（快照、Discord 報告、每日扣款等）
 type SchedulerManager struct {
 	cron                *cron.Cron
 	snapshotService     service.AssetSnapshotService
@@ -20,13 +20,16 @@ type SchedulerManager struct {
 	settingsService     service.SettingsService
 	holdingService      service.HoldingService
 	rebalanceService    service.RebalanceService
+	billingService      service.BillingService
 	enabled             bool
 	dailySnapshotTime   string // 格式: "HH:MM" (例如: "23:59")
 	discordReportTime   string // 格式: "HH:MM" (例如: "09:00")
+	dailyBillingTime    string // 格式: "HH:MM" (例如: "00:01")
 	discordEnabled      bool
 	mu                  sync.RWMutex
 	snapshotJobID       cron.EntryID
 	discordReportJobID  cron.EntryID
+	dailyBillingJobID   cron.EntryID
 }
 
 // SchedulerManagerConfig 排程器管理器配置
@@ -42,6 +45,7 @@ func NewSchedulerManager(
 	settingsService service.SettingsService,
 	holdingService service.HoldingService,
 	rebalanceService service.RebalanceService,
+	billingService service.BillingService,
 	config SchedulerManagerConfig,
 ) *SchedulerManager {
 	return &SchedulerManager{
@@ -51,8 +55,10 @@ func NewSchedulerManager(
 		settingsService:   settingsService,
 		holdingService:    holdingService,
 		rebalanceService:  rebalanceService,
+		billingService:    billingService,
 		enabled:           config.Enabled,
 		dailySnapshotTime: config.DailySnapshotTime,
+		dailyBillingTime:  "00:01", // 預設在每天 00:01 執行扣款
 	}
 }
 
@@ -72,6 +78,12 @@ func (m *SchedulerManager) Start() error {
 	if err := m.startDiscordReportSchedule(); err != nil {
 		log.Printf("Warning: Failed to start Discord report schedule: %v", err)
 		// 不返回錯誤，因為 Discord 報告是可選的
+	}
+
+	// 啟動每日扣款排程
+	if err := m.startDailyBillingSchedule(); err != nil {
+		log.Printf("Warning: Failed to start daily billing schedule: %v", err)
+		// 不返回錯誤，因為扣款排程是可選的
 	}
 
 	// 啟動 cron
@@ -402,6 +414,81 @@ func (m *SchedulerManager) getNextRunTime(jobID cron.EntryID) time.Time {
 	}
 	entry := m.cron.Entry(jobID)
 	return entry.Next
+}
+
+// startDailyBillingSchedule 啟動每日扣款排程
+func (m *SchedulerManager) startDailyBillingSchedule() error {
+	// 解析時間
+	hour, minute, err := parseTime(m.dailyBillingTime)
+	if err != nil {
+		return fmt.Errorf("invalid daily billing time: %w", err)
+	}
+
+	// 建立 cron 表達式（每天在指定時間執行）
+	cronExpr := fmt.Sprintf("%d %d * * *", minute, hour)
+
+	// 新增排程任務
+	jobID, err := m.cron.AddFunc(cronExpr, func() {
+		log.Println("Starting daily billing process...")
+
+		// 執行每日扣款
+		result, err := m.billingService.ProcessDailyBilling(time.Now())
+		if err != nil {
+			log.Printf("Error processing daily billing: %v", err)
+			return
+		}
+
+		log.Printf("Daily billing completed: %d subscriptions, %d installments, total: %.2f TWD",
+			result.SubscriptionCount,
+			result.InstallmentCount,
+			result.TotalAmount,
+		)
+
+		// 發送 Discord 通知（如果啟用）
+		m.sendDailyBillingNotification(result)
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to add daily billing job: %w", err)
+	}
+
+	m.mu.Lock()
+	m.dailyBillingJobID = jobID
+	m.mu.Unlock()
+
+	log.Printf("Daily billing schedule started (will run at %s)", m.dailyBillingTime)
+	return nil
+}
+
+// sendDailyBillingNotification 發送每日扣款通知到 Discord
+func (m *SchedulerManager) sendDailyBillingNotification(result *service.DailyBillingResult) {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		log.Printf("Error getting settings for billing notification: %v", err)
+		return
+	}
+
+	// 檢查 Discord 是否啟用
+	if !settings.Discord.Enabled {
+		return
+	}
+
+	// 檢查 Webhook URL 是否設定
+	if settings.Discord.WebhookURL == "" {
+		return
+	}
+
+	// 檢查是否啟用每日扣款通知
+	// 這裡假設 settings 中有 notification_daily_billing 設定
+	// 如果沒有，可以直接發送通知
+
+	// 發送通知
+	if err := m.discordService.SendDailyBillingNotification(settings.Discord.WebhookURL, result); err != nil {
+		log.Printf("Error sending daily billing notification: %v", err)
+	} else {
+		log.Println("Daily billing notification sent to Discord")
+	}
 }
 
 // SchedulerStatus 排程器狀態

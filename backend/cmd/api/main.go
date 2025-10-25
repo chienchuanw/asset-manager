@@ -42,6 +42,8 @@ func main() {
 	settingsRepo := repository.NewSettingsRepository(database)
 	cashFlowRepo := repository.NewCashFlowRepository(database)
 	categoryRepo := repository.NewCategoryRepository(database)
+	subscriptionRepo := repository.NewSubscriptionRepository(database)
+	installmentRepo := repository.NewInstallmentRepository(database)
 
 	// PerformanceSnapshotRepository 需要 sqlx.DB
 	dbx := sqlx.NewDb(database, "postgres")
@@ -97,6 +99,9 @@ func main() {
 		rebalanceService := service.NewRebalanceService(settingsService, holdingService)
 		cashFlowService := service.NewCashFlowService(cashFlowRepo, categoryRepo)
 		categoryService := service.NewCategoryService(categoryRepo)
+		subscriptionService := service.NewSubscriptionService(subscriptionRepo, categoryRepo)
+		installmentService := service.NewInstallmentService(installmentRepo, categoryRepo)
+		billingService := service.NewBillingService(subscriptionRepo, installmentRepo, cashFlowRepo)
 
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -115,6 +120,9 @@ func main() {
 		rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 		cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
 		categoryHandler := api.NewCategoryHandler(categoryService)
+		subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
+		installmentHandler := api.NewInstallmentHandler(installmentService)
+		billingHandler := api.NewBillingHandler(billingService)
 
 		// 初始化排程器管理器（不啟動）
 		schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -127,13 +135,14 @@ func main() {
 			settingsService,
 			holdingService,
 			rebalanceService,
+			billingService,
 			schedulerManagerConfig,
 		)
 		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -185,6 +194,9 @@ func main() {
 	rebalanceService := service.NewRebalanceService(settingsService, holdingService)
 	cashFlowService := service.NewCashFlowService(cashFlowRepo, categoryRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
+	subscriptionService := service.NewSubscriptionService(subscriptionRepo, categoryRepo)
+	installmentService := service.NewInstallmentService(installmentRepo, categoryRepo)
+	billingService := service.NewBillingService(subscriptionRepo, installmentRepo, cashFlowRepo)
 
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -203,6 +215,9 @@ func main() {
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 	cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
 	categoryHandler := api.NewCategoryHandler(categoryService)
+	subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
+	installmentHandler := api.NewInstallmentHandler(installmentService)
+	billingHandler := api.NewBillingHandler(billingService)
 
 	// 初始化並啟動排程器管理器
 	schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -215,6 +230,7 @@ func main() {
 		settingsService,
 		holdingService,
 		rebalanceService,
+		billingService,
 		schedulerManagerConfig,
 	)
 	if err := schedulerManager.Start(); err != nil {
@@ -226,7 +242,7 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -239,7 +255,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -387,6 +403,36 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			categories.GET("/:id", categoryHandler.GetCategory)
 			categories.PUT("/:id", categoryHandler.UpdateCategory)
 			categories.DELETE("/:id", categoryHandler.DeleteCategory)
+		}
+
+		// Subscriptions 路由
+		subscriptions := apiGroup.Group("/subscriptions")
+		{
+			subscriptions.POST("", subscriptionHandler.CreateSubscription)
+			subscriptions.GET("", subscriptionHandler.ListSubscriptions)
+			subscriptions.GET("/:id", subscriptionHandler.GetSubscription)
+			subscriptions.PUT("/:id", subscriptionHandler.UpdateSubscription)
+			subscriptions.DELETE("/:id", subscriptionHandler.DeleteSubscription)
+			subscriptions.POST("/:id/cancel", subscriptionHandler.CancelSubscription)
+		}
+
+		// Installments 路由
+		installments := apiGroup.Group("/installments")
+		{
+			installments.POST("", installmentHandler.CreateInstallment)
+			installments.GET("", installmentHandler.ListInstallments)
+			installments.GET("/completing-soon", installmentHandler.GetCompletingSoon)
+			installments.GET("/:id", installmentHandler.GetInstallment)
+			installments.PUT("/:id", installmentHandler.UpdateInstallment)
+			installments.DELETE("/:id", installmentHandler.DeleteInstallment)
+		}
+
+		// Billing 路由
+		billing := apiGroup.Group("/billing")
+		{
+			billing.POST("/process-daily", billingHandler.ProcessDailyBilling)
+			billing.POST("/process-subscriptions", billingHandler.ProcessSubscriptionBilling)
+			billing.POST("/process-installments", billingHandler.ProcessInstallmentBilling)
 		}
 	}
 
