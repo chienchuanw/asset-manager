@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -233,7 +234,20 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 	router := gin.Default()
 
 	// 設定 CORS
-	router.Use(cors.Default())
+	// 從環境變數讀取允許的來源，預設為 localhost:3000
+	allowedOrigins := []string{"http://localhost:3000"}
+	if origins := os.Getenv("CORS_ALLOWED_ORIGINS"); origins != "" {
+		allowedOrigins = strings.Split(origins, ",")
+	}
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     allowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true, // 重要：允許發送 cookies
+		MaxAge:           12 * 3600,
+	}))
 
 	// Health check endpoint (不需要驗證)
 	router.GET("/health", func(c *gin.Context) {
