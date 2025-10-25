@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/ui/loading";
 import { Search, ArrowUpDown, Download, RefreshCw } from "lucide-react";
 import { useHoldings } from "@/hooks";
 import { AssetType } from "@/types/transaction";
@@ -145,11 +146,8 @@ export default function HoldingsPage() {
     return (
       <AppLayout>
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
-          <div className="container flex items-center justify-center h-96">
-            <div className="flex flex-col items-center gap-4">
-              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-muted-foreground">載入持倉資料中...</p>
-            </div>
+          <div className="container">
+            <Loading variant="page" size="lg" text="載入持倉資料中..." />
           </div>
         </main>
       </AppLayout>

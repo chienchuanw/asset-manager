@@ -34,7 +34,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Loader2, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
+import { Loading } from "@/components/ui/loading";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useUnrealizedAnalytics } from "@/hooks/useUnrealizedAnalytics";
 import { TimeRange } from "@/types/analytics";
@@ -93,10 +94,7 @@ export default function AnalyticsPage() {
 
               {/* Loading 狀態 */}
               {realizedData.isLoading && (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">載入中...</span>
-                </div>
+                <Loading variant="inline" size="md" text="載入中..." />
               )}
 
               {/* Error 狀態 */}
@@ -446,10 +444,7 @@ export default function AnalyticsPage() {
             <TabsContent value="unrealized" className="space-y-6 mt-6">
               {/* Loading 狀態 */}
               {unrealizedData.isLoading && (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">載入中...</span>
-                </div>
+                <Loading variant="inline" size="md" text="載入中..." />
               )}
 
               {/* Error 狀態 */}
