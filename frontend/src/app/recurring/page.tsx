@@ -106,17 +106,28 @@ export default function RecurringPage() {
 
   const handleSubmitSubscription = async (data: CreateSubscriptionInput) => {
     try {
+      // 將日期格式轉換為 ISO 8601 格式（後端期望的格式）
+      const formattedData = {
+        ...data,
+        start_date: data.start_date
+          ? new Date(data.start_date).toISOString()
+          : new Date().toISOString(),
+        end_date: data.end_date
+          ? new Date(data.end_date).toISOString()
+          : undefined,
+      };
+
       if (editingSubscription) {
         await updateSubscription.mutateAsync({
           id: editingSubscription.id,
-          data,
+          data: formattedData,
         });
         toast({
           title: "更新成功",
           description: "訂閱已更新",
         });
       } else {
-        await createSubscription.mutateAsync(data);
+        await createSubscription.mutateAsync(formattedData);
         toast({
           title: "建立成功",
           description: "訂閱已建立",
@@ -143,7 +154,7 @@ export default function RecurringPage() {
     try {
       await cancelSubscription.mutateAsync({
         id: cancelingSubscription.id,
-        data: { end_date: new Date().toISOString().split("T")[0] },
+        data: { end_date: new Date().toISOString() },
       });
       toast({
         title: "取消成功",
@@ -195,13 +206,21 @@ export default function RecurringPage() {
 
   const handleSubmitInstallment = async (data: CreateInstallmentInput) => {
     try {
+      // 將日期格式轉換為 ISO 8601 格式（後端期望的格式）
+      const formattedData = {
+        ...data,
+        start_date: data.start_date
+          ? new Date(data.start_date).toISOString()
+          : new Date().toISOString(),
+      };
+
       if (editingInstallment) {
         await updateInstallment.mutateAsync({
           id: editingInstallment.id,
           data: {
-            name: data.name,
-            billing_day: data.billing_day,
-            note: data.note,
+            name: formattedData.name,
+            billing_day: formattedData.billing_day,
+            note: formattedData.note,
           },
         });
         toast({
@@ -209,7 +228,7 @@ export default function RecurringPage() {
           description: "分期已更新",
         });
       } else {
-        await createInstallment.mutateAsync(data);
+        await createInstallment.mutateAsync(formattedData);
         toast({
           title: "建立成功",
           description: "分期已建立",

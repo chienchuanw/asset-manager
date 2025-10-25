@@ -26,10 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type {
-  Installment,
-  CreateInstallmentInput,
-} from "@/types/installment";
+import type { Installment, CreateInstallmentInput } from "@/types/installment";
 import type { CashFlowCategory } from "@/types/cash-flow";
 
 interface InstallmentFormProps {
@@ -143,7 +140,10 @@ export function InstallmentForm({
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    field.onChange(isNaN(value) ? "" : value);
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -168,12 +168,13 @@ export function InstallmentForm({
                   min="2"
                   placeholder="12"
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    field.onChange(isNaN(value) ? "" : value);
+                  }}
                 />
               </FormControl>
-              <FormDescription>
-                分幾期付款
-              </FormDescription>
+              <FormDescription>分幾期付款</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -195,12 +196,13 @@ export function InstallmentForm({
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    field.onChange(isNaN(value) ? "" : value);
+                  }}
                 />
               </FormControl>
-              <FormDescription>
-                如果是無息分期，請輸入 0
-              </FormDescription>
+              <FormDescription>如果是無息分期，請輸入 0</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -214,19 +216,29 @@ export function InstallmentForm({
               <div>
                 <p className="text-muted-foreground">每期金額</p>
                 <p className="font-semibold tabular-nums">
-                  TWD {calculatedValues.amountPerInstallment.toLocaleString("zh-TW", { maximumFractionDigits: 2 })}
+                  TWD{" "}
+                  {calculatedValues.amountPerInstallment.toLocaleString(
+                    "zh-TW",
+                    { maximumFractionDigits: 2 }
+                  )}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground">總利息</p>
                 <p className="font-semibold tabular-nums">
-                  TWD {calculatedValues.totalInterest.toLocaleString("zh-TW", { maximumFractionDigits: 2 })}
+                  TWD{" "}
+                  {calculatedValues.totalInterest.toLocaleString("zh-TW", {
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
               <div className="col-span-2">
                 <p className="text-muted-foreground">總付款金額</p>
                 <p className="font-semibold tabular-nums">
-                  TWD {calculatedValues.totalWithInterest.toLocaleString("zh-TW", { maximumFractionDigits: 2 })}
+                  TWD{" "}
+                  {calculatedValues.totalWithInterest.toLocaleString("zh-TW", {
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
@@ -295,12 +307,13 @@ export function InstallmentForm({
                   max="31"
                   placeholder="1"
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    field.onChange(isNaN(value) ? "" : value);
+                  }}
                 />
               </FormControl>
-              <FormDescription>
-                每月的第幾天扣款（1-31）
-              </FormDescription>
+              <FormDescription>每月的第幾天扣款（1-31）</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -340,4 +353,3 @@ export function InstallmentForm({
     </Form>
   );
 }
-

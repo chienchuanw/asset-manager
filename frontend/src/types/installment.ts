@@ -15,7 +15,7 @@ export interface Installment {
   currency: string;
   installment_count: number;
   paid_count: number;
-  amount_per_installment: number;
+  installment_amount: number; // 每期金額（後端欄位名稱）
   interest_rate: number;
   total_interest: number;
   category_id: string;

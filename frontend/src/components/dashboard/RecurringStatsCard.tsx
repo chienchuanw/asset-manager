@@ -24,7 +24,9 @@ interface RecurringStatsCardProps {
 /**
  * 計算訂閱的每月總成本
  */
-function calculateMonthlySubscriptionCost(subscriptions: Subscription[]): number {
+function calculateMonthlySubscriptionCost(
+  subscriptions: Subscription[]
+): number {
   return subscriptions.reduce((total, sub) => {
     if (sub.status !== "active") return total;
 
@@ -50,7 +52,7 @@ function calculateMonthlyInstallmentPayment(
 ): number {
   return installments.reduce((total, inst) => {
     if (inst.status !== "active") return total;
-    return total + inst.amount_per_installment;
+    return total + (inst.installment_amount ?? 0);
   }, 0);
 }
 
@@ -126,11 +128,24 @@ export function RecurringStatsCard({
             </Badge>
           </div>
           <div className="text-3xl font-bold tabular-nums">
-            NT$ {totalMonthlyCost.toLocaleString("zh-TW", { maximumFractionDigits: 0 })}
+            NT${" "}
+            {totalMonthlyCost.toLocaleString("zh-TW", {
+              maximumFractionDigits: 0,
+            })}
           </div>
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <span>訂閱: NT$ {monthlySubscriptionCost.toLocaleString("zh-TW", { maximumFractionDigits: 0 })}</span>
-            <span>分期: NT$ {monthlyInstallmentPayment.toLocaleString("zh-TW", { maximumFractionDigits: 0 })}</span>
+            <span>
+              訂閱: NT${" "}
+              {monthlySubscriptionCost.toLocaleString("zh-TW", {
+                maximumFractionDigits: 0,
+              })}
+            </span>
+            <span>
+              分期: NT${" "}
+              {monthlyInstallmentPayment.toLocaleString("zh-TW", {
+                maximumFractionDigits: 0,
+              })}
+            </span>
           </div>
         </div>
 
@@ -185,14 +200,10 @@ export function RecurringStatsCard({
             <AlertCircleIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <div className="text-xs space-y-1">
               {expiringSubscriptions.length > 0 && (
-                <p>
-                  {expiringSubscriptions.length} 個訂閱即將在 30 天內到期
-                </p>
+                <p>{expiringSubscriptions.length} 個訂閱即將在 30 天內到期</p>
               )}
               {completingInstallments.length > 0 && (
-                <p>
-                  {completingInstallments.length} 個分期即將在 3 個月內完成
-                </p>
+                <p>{completingInstallments.length} 個分期即將在 3 個月內完成</p>
               )}
             </div>
           </div>
@@ -201,4 +212,3 @@ export function RecurringStatsCard({
     </Card>
   );
 }
-

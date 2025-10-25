@@ -17,11 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import {
-  MoreHorizontalIcon,
-  PencilIcon,
-  TrashIcon,
-} from "lucide-react";
+import { MoreHorizontalIcon, PencilIcon, TrashIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,22 +127,22 @@ export function InstallmentsList({
                 </TableCell>
                 <TableCell className="tabular-nums">
                   {installment.currency}{" "}
-                  {installment.amount_per_installment.toLocaleString("zh-TW")}
+                  {installment.installment_amount?.toLocaleString("zh-TW") ??
+                    "0"}
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
-                        {installment.paid_count} / {installment.installment_count}
+                        {installment.paid_count} /{" "}
+                        {installment.installment_count}
                       </span>
                       <span className="font-medium">{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
                   </div>
                 </TableCell>
-                <TableCell className="tabular-nums">
-                  {remaining} 期
-                </TableCell>
+                <TableCell className="tabular-nums">{remaining} 期</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -173,9 +169,7 @@ export function InstallmentsList({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {onEdit && (
-                        <DropdownMenuItem
-                          onClick={() => onEdit(installment)}
-                        >
+                        <DropdownMenuItem onClick={() => onEdit(installment)}>
                           <PencilIcon className="mr-2 h-4 w-4" />
                           編輯
                         </DropdownMenuItem>
@@ -200,4 +194,3 @@ export function InstallmentsList({
     </div>
   );
 }
-

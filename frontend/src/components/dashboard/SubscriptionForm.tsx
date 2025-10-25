@@ -120,7 +120,10 @@ export function SubscriptionForm({
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    field.onChange(isNaN(value) ? "" : value);
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -171,12 +174,13 @@ export function SubscriptionForm({
                   max="31"
                   placeholder="1"
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    field.onChange(isNaN(value) ? "" : value);
+                  }}
                 />
               </FormControl>
-              <FormDescription>
-                每月的第幾天扣款（1-31）
-              </FormDescription>
+              <FormDescription>每月的第幾天扣款（1-31）</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -251,9 +255,7 @@ export function SubscriptionForm({
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">自動續約</FormLabel>
-                <FormDescription>
-                  到期後自動續約訂閱
-                </FormDescription>
+                <FormDescription>到期後自動續約訂閱</FormDescription>
               </div>
               <FormControl>
                 <Switch
@@ -299,4 +301,3 @@ export function SubscriptionForm({
     </Form>
   );
 }
-
