@@ -155,3 +155,39 @@ export interface UnrealizedTopAsset {
   unrealized_pl: number;
   unrealized_pct: number;
 }
+
+// ==================== 資產配置分析 ====================
+
+/**
+ * 按資產類型的配置
+ */
+export interface AllocationByType {
+  asset_type: AssetType;
+  name: string;
+  market_value: number;
+  percentage: number;
+  count: number;
+}
+
+/**
+ * 按個別資產的配置
+ */
+export interface AllocationByAsset {
+  symbol: string;
+  name: string;
+  asset_type: AssetType;
+  market_value: number;
+  percentage: number;
+  quantity: number;
+}
+
+/**
+ * 資產配置摘要
+ */
+export interface AllocationSummary {
+  total_market_value: number;
+  by_type: AllocationByType[];
+  by_asset: AllocationByAsset[];
+  currency: string;
+  as_of_date: string;
+}

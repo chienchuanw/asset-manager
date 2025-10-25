@@ -143,3 +143,33 @@ type UnrealizedTopAsset struct {
 	UnrealizedPct float64   `json:"unrealized_pct"` // 未實現報酬率
 }
 
+// ==================== 資產配置分析 ====================
+
+// AllocationByType 按資產類型的配置
+type AllocationByType struct {
+	AssetType   AssetType `json:"asset_type"`   // 資產類型
+	Name        string    `json:"name"`         // 資產類型名稱
+	MarketValue float64   `json:"market_value"` // 市值
+	Percentage  float64   `json:"percentage"`   // 佔比（%）
+	Count       int       `json:"count"`        // 持倉數量
+}
+
+// AllocationByAsset 按個別資產的配置
+type AllocationByAsset struct {
+	Symbol      string    `json:"symbol"`       // 資產代碼
+	Name        string    `json:"name"`         // 資產名稱
+	AssetType   AssetType `json:"asset_type"`   // 資產類型
+	MarketValue float64   `json:"market_value"` // 市值
+	Percentage  float64   `json:"percentage"`   // 佔比（%）
+	Quantity    float64   `json:"quantity"`     // 持有數量
+}
+
+// AllocationSummary 資產配置摘要
+type AllocationSummary struct {
+	TotalMarketValue float64              `json:"total_market_value"` // 總市值
+	ByType           []AllocationByType   `json:"by_type"`            // 按資產類型分類
+	ByAsset          []AllocationByAsset  `json:"by_asset"`           // 按個別資產分類
+	Currency         string               `json:"currency"`           // 幣別
+	AsOfDate         time.Time            `json:"as_of_date"`         // 資料日期
+}
+
