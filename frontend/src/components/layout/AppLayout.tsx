@@ -4,10 +4,10 @@
  * 支援側邊欄收合/展開功能和鍵盤快捷鍵
  */
 
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   HomeIcon,
   BarChart3Icon,
@@ -17,7 +17,7 @@ import {
   HelpCircleIcon,
   UserIcon,
   LogOutIcon,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -31,8 +31,8 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -43,17 +43,27 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   // 主要導航項目
   const mainNavItems = [
-    { id: 'dashboard', label: '首頁', icon: HomeIcon, href: '/dashboard' },
-    { id: 'holdings', label: '持倉明細', icon: WalletIcon, href: '/holdings' },
-    { id: 'transactions', label: '交易記錄', icon: ArrowLeftRightIcon, href: '/transactions' },
-    { id: 'analytics', label: '分析報表', icon: BarChart3Icon, href: '/analytics' },
+    { id: "dashboard", label: "首頁", icon: HomeIcon, href: "/dashboard" },
+    { id: "holdings", label: "持倉明細", icon: WalletIcon, href: "/holdings" },
+    {
+      id: "transactions",
+      label: "交易記錄",
+      icon: ArrowLeftRightIcon,
+      href: "/transactions",
+    },
+    {
+      id: "analytics",
+      label: "分析報表",
+      icon: BarChart3Icon,
+      href: "/analytics",
+    },
   ];
 
   // 工具區項目
   const toolItems = [
-    { id: 'settings', label: '設定', icon: SettingsIcon },
-    { id: 'help', label: '幫助', icon: HelpCircleIcon },
-    { id: 'user', label: '使用者管理', icon: UserIcon },
+    { id: "settings", label: "設定", icon: SettingsIcon, href: "/settings" },
+    { id: "help", label: "幫助", icon: HelpCircleIcon, href: "#" },
+    { id: "user", label: "使用者管理", icon: UserIcon, href: "#" },
   ];
 
   return (
@@ -69,8 +79,12 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <WalletIcon className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Asset Manager</span>
-                    <span className="truncate text-xs text-muted-foreground">資產管理系統</span>
+                    <span className="truncate font-semibold">
+                      Asset Manager
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      資產管理系統
+                    </span>
                   </div>
                 </Link>
               </SidebarMenuButton>
@@ -89,7 +103,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                   const isActive = pathname === item.href;
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.label}
+                      >
                         <Link href={item.href}>
                           <Icon />
                           <span>{item.label}</span>
@@ -111,11 +129,18 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarMenu>
                 {toolItems.map((item) => {
                   const Icon = item.icon;
+                  const isActive = pathname === item.href;
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton tooltip={item.label}>
-                        <Icon />
-                        <span>{item.label}</span>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.label}
+                      >
+                        <Link href={item.href}>
+                          <Icon />
+                          <span>{item.label}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
