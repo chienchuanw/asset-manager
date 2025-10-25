@@ -191,3 +191,60 @@ export interface AllocationSummary {
   currency: string;
   as_of_date: string;
 }
+
+// ==================== 績效趨勢分析 ====================
+
+/**
+ * 績效趨勢資料點
+ */
+export interface PerformanceTrendPoint {
+  date: string;
+  market_value: number;
+  cost: number;
+  unrealized_pl: number;
+  unrealized_pct: number;
+  realized_pl: number;
+  realized_pct: number;
+  total_pl: number;
+  total_pct: number;
+  holding_count: number;
+}
+
+/**
+ * 按資產類型的績效趨勢
+ */
+export interface PerformanceTrendByType {
+  asset_type: AssetType;
+  name: string;
+  data: PerformanceTrendPoint[];
+}
+
+/**
+ * 績效趨勢摘要
+ */
+export interface PerformanceTrendSummary {
+  start_date: string;
+  end_date: string;
+  total_data: PerformanceTrendPoint[];
+  by_type: PerformanceTrendByType[];
+  currency: string;
+  data_point_count: number;
+}
+
+/**
+ * 每日績效快照
+ */
+export interface DailyPerformanceSnapshot {
+  id: string;
+  snapshot_date: string;
+  total_market_value: number;
+  total_cost: number;
+  total_unrealized_pl: number;
+  total_unrealized_pct: number;
+  total_realized_pl: number;
+  total_realized_pct: number;
+  holding_count: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+}
