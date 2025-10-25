@@ -52,10 +52,12 @@ type CreateInstallmentInput struct {
 
 // UpdateInstallmentInput 更新分期的輸入資料
 type UpdateInstallmentInput struct {
-	Name         *string    `json:"name,omitempty" binding:"omitempty,max=255"`
-	InterestRate *float64   `json:"interest_rate,omitempty" binding:"omitempty,gte=0"`
-	CategoryID   *uuid.UUID `json:"category_id,omitempty"`
-	Note         *string    `json:"note,omitempty"`
+	Name         *string            `json:"name,omitempty" binding:"omitempty,max=255"`
+	InterestRate *float64           `json:"interest_rate,omitempty" binding:"omitempty,gte=0"`
+	CategoryID   *uuid.UUID         `json:"category_id,omitempty"`
+	PaidCount    *int               `json:"paid_count,omitempty" binding:"omitempty,gte=0"`
+	Status       *InstallmentStatus `json:"status,omitempty"`
+	Note         *string            `json:"note,omitempty"`
 }
 
 // Validate 驗證 InstallmentStatus 是否有效

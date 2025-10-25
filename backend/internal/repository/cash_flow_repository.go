@@ -50,9 +50,9 @@ func NewCashFlowRepository(db *sql.DB) CashFlowRepository {
 // Create 建立新的現金流記錄
 func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.CashFlow, error) {
 	query := `
-		INSERT INTO cash_flows (date, type, category_id, amount, currency, description, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, date, type, category_id, amount, currency, description, note, created_at, updated_at
+		INSERT INTO cash_flows (date, type, category_id, amount, currency, description, note, source_type, source_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, date, type, category_id, amount, currency, description, note, source_type, source_id, created_at, updated_at
 	`
 
 	cashFlow := &models.CashFlow{}
@@ -65,6 +65,8 @@ func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.
 		models.CurrencyTWD, // 固定為 TWD
 		input.Description,
 		input.Note,
+		input.SourceType,
+		input.SourceID,
 	).Scan(
 		&cashFlow.ID,
 		&cashFlow.Date,
@@ -74,6 +76,8 @@ func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.
 		&cashFlow.Currency,
 		&cashFlow.Description,
 		&cashFlow.Note,
+		&cashFlow.SourceType,
+		&cashFlow.SourceID,
 		&cashFlow.CreatedAt,
 		&cashFlow.UpdatedAt,
 	)

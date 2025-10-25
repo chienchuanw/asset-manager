@@ -8,99 +8,58 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-// MockCashFlowRepository 模擬的 CashFlowRepository
-type MockCashFlowRepository struct {
-	mock.Mock
-}
+// TestCashFlowService_CreateCashFlow 測試建立現金流記錄
+func TestCashFlowService_CreateCashFlow(t *testing.T) {
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo)
 
-func (m *MockCashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.CashFlow, error) {
-	args := m.Called(input)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+	categoryID := uuid.New()
+	category := &models.CashFlowCategory{
+		ID:   categoryID,
+		Name: "薪資",
+		Type: models.CashFlowTypeIncome,
 	}
-	return args.Get(0).(*models.CashFlow), args.Error(1)
-}
 
-func (m *MockCashFlowRepository) GetByID(id uuid.UUID) (*models.CashFlow, error) {
-	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+	note := "十月薪資"
+	input := &models.CreateCashFlowInput{
+		Date:        time.Date(2025, 10, 25, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeIncome,
+		CategoryID:  categoryID,
+		Amount:      50000,
+		Description: "十月薪資",
+		Note:        &note,
 	}
-	return args.Get(0).(*models.CashFlow), args.Error(1)
-}
 
-func (m *MockCashFlowRepository) GetAll(filters repository.CashFlowFilters) ([]*models.CashFlow, error) {
-	args := m.Called(filters)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+	expectedCashFlow := &models.CashFlow{
+		ID:          uuid.New(),
+		Date:        input.Date,
+		Type:        input.Type,
+		CategoryID:  input.CategoryID,
+		Amount:      input.Amount,
+		Currency:    models.CurrencyTWD,
+		Description: input.Description,
+		Note:        input.Note,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
-	return args.Get(0).([]*models.CashFlow), args.Error(1)
-}
 
-func (m *MockCashFlowRepository) Update(id uuid.UUID, input *models.UpdateCashFlowInput) (*models.CashFlow, error) {
-	args := m.Called(id, input)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.CashFlow), args.Error(1)
-}
+	// 設定 mock 期望
+	mockCategoryRepo.On("GetByID", categoryID).Return(category, nil)
+	mockRepo.On("Create", input).Return(expectedCashFlow, nil)
 
-func (m *MockCashFlowRepository) Delete(id uuid.UUID) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
+	// 執行測試
+	result, err := service.CreateCashFlow(input)
 
-func (m *MockCashFlowRepository) GetSummary(startDate, endDate time.Time) (*repository.CashFlowSummary, error) {
-	args := m.Called(startDate, endDate)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*repository.CashFlowSummary), args.Error(1)
-}
-
-// MockCategoryRepository 模擬的 CategoryRepository
-type MockCategoryRepository struct {
-	mock.Mock
-}
-
-func (m *MockCategoryRepository) Create(input *models.CreateCategoryInput) (*models.CashFlowCategory, error) {
-	args := m.Called(input)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.CashFlowCategory), args.Error(1)
-}
-
-func (m *MockCategoryRepository) GetByID(id uuid.UUID) (*models.CashFlowCategory, error) {
-	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.CashFlowCategory), args.Error(1)
-}
-
-func (m *MockCategoryRepository) GetAll(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error) {
-	args := m.Called(flowType)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*models.CashFlowCategory), args.Error(1)
-}
-
-func (m *MockCategoryRepository) Update(id uuid.UUID, input *models.UpdateCategoryInput) (*models.CashFlowCategory, error) {
-	args := m.Called(id, input)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.CashFlowCategory), args.Error(1)
-}
-
-func (m *MockCategoryRepository) Delete(id uuid.UUID) error {
-	args := m.Called(id)
-	return args.Error(0)
+	// 驗證結果
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, expectedCashFlow.ID, result.ID)
+	assert.Equal(t, expectedCashFlow.Amount, result.Amount)
+	mockCategoryRepo.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
 }
 
 // TestCreateCashFlow_Success 測試成功建立現金流記錄

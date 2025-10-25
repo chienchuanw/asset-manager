@@ -60,6 +60,8 @@ type CreateCashFlowInput struct {
 	Amount      float64      `json:"amount" binding:"required,gt=0"`
 	Description string       `json:"description" binding:"required,max=500"`
 	Note        *string      `json:"note,omitempty"`
+	SourceType  *SourceType  `json:"source_type,omitempty"`
+	SourceID    *uuid.UUID   `json:"source_id,omitempty"`
 }
 
 // UpdateCashFlowInput 更新現金流記錄的輸入資料

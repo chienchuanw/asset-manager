@@ -17,6 +17,15 @@ type DiscordService interface {
 
 	// FormatDailyReport 格式化每日報告
 	FormatDailyReport(data *models.DailyReportData) *models.DiscordMessage
+
+	// SendDailyBillingNotification 發送每日扣款通知
+	SendDailyBillingNotification(webhookURL string, result *DailyBillingResult) error
+
+	// SendSubscriptionExpiryNotification 發送訂閱到期通知
+	SendSubscriptionExpiryNotification(webhookURL string, subscriptions []*models.Subscription, days int) error
+
+	// SendInstallmentCompletionNotification 發送分期完成通知
+	SendInstallmentCompletionNotification(webhookURL string, installments []*models.Installment, remainingCount int) error
 }
 
 // discordService Discord 服務實作
@@ -300,4 +309,186 @@ func (s *discordService) checkPriceDataQuality(data *models.DailyReportData) str
 	}
 
 	return ""
+}
+
+// SendDailyBillingNotification 發送每日扣款通知
+func (s *discordService) SendDailyBillingNotification(webhookURL string, result *DailyBillingResult) error {
+	if result == nil {
+		return fmt.Errorf("billing result is nil")
+	}
+
+	// 如果沒有任何扣款，不發送通知
+	if result.SubscriptionCount == 0 && result.InstallmentCount == 0 {
+		return nil
+	}
+
+	// 建立 Embed
+	embed := models.DiscordEmbed{
+		Title:       "💳 每日扣款通知",
+		Description: fmt.Sprintf("扣款日期：%s", result.Date.Format("2006-01-02")),
+		Color:       0x3498db, // 藍色
+		Fields:      []models.DiscordEmbedField{},
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Footer: &models.DiscordEmbedFooter{
+			Text: "Asset Manager - 訂閱分期管理",
+		},
+	}
+
+	// 總覽
+	embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+		Name: "📊 扣款總覽",
+		Value: fmt.Sprintf("訂閱扣款：%d 筆\n分期扣款：%d 筆\n總金額：NT$ %.2f",
+			result.SubscriptionCount,
+			result.InstallmentCount,
+			result.TotalAmount,
+		),
+		Inline: false,
+	})
+
+	// 訂閱扣款詳情
+	if result.SubscriptionCount > 0 && len(result.SubscriptionResult.CreatedCashFlows) > 0 {
+		subscriptionText := ""
+		for i, cf := range result.SubscriptionResult.CreatedCashFlows {
+			if i >= 5 { // 最多顯示 5 筆
+				subscriptionText += fmt.Sprintf("...及其他 %d 筆\n", result.SubscriptionCount-5)
+				break
+			}
+			subscriptionText += fmt.Sprintf("• %s - NT$ %.2f\n", cf.Description, cf.Amount)
+		}
+		embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+			Name:   "📅 訂閱扣款",
+			Value:  subscriptionText,
+			Inline: false,
+		})
+	}
+
+	// 分期扣款詳情
+	if result.InstallmentCount > 0 && len(result.InstallmentResult.CreatedCashFlows) > 0 {
+		installmentText := ""
+		for i, cf := range result.InstallmentResult.CreatedCashFlows {
+			if i >= 5 { // 最多顯示 5 筆
+				installmentText += fmt.Sprintf("...及其他 %d 筆\n", result.InstallmentCount-5)
+				break
+			}
+			installmentText += fmt.Sprintf("• %s - NT$ %.2f\n", cf.Description, cf.Amount)
+		}
+		embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+			Name:   "💰 分期扣款",
+			Value:  installmentText,
+			Inline: false,
+		})
+	}
+
+	// 錯誤訊息（如果有）
+	totalErrors := len(result.SubscriptionResult.Errors) + len(result.InstallmentResult.Errors)
+	if totalErrors > 0 {
+		errorText := fmt.Sprintf("⚠️ 有 %d 筆扣款失敗，請檢查系統日誌", totalErrors)
+		embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+			Name:   "錯誤",
+			Value:  errorText,
+			Inline: false,
+		})
+	}
+
+	message := &models.DiscordMessage{
+		Embeds: []models.DiscordEmbed{embed},
+	}
+
+	return s.SendMessage(webhookURL, message)
+}
+
+// SendSubscriptionExpiryNotification 發送訂閱到期通知
+func (s *discordService) SendSubscriptionExpiryNotification(webhookURL string, subscriptions []*models.Subscription, days int) error {
+	if len(subscriptions) == 0 {
+		return nil
+	}
+
+	// 建立 Embed
+	embed := models.DiscordEmbed{
+		Title:       "⏰ 訂閱到期提醒",
+		Description: fmt.Sprintf("以下訂閱將在 %d 天內到期", days),
+		Color:       0xf39c12, // 橘色
+		Fields:      []models.DiscordEmbedField{},
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Footer: &models.DiscordEmbedFooter{
+			Text: "Asset Manager - 訂閱分期管理",
+		},
+	}
+
+	// 訂閱列表
+	subscriptionText := ""
+	for i, sub := range subscriptions {
+		if i >= 10 { // 最多顯示 10 筆
+			subscriptionText += fmt.Sprintf("...及其他 %d 筆\n", len(subscriptions)-10)
+			break
+		}
+		if sub.EndDate != nil {
+			daysUntilExpiry := int(sub.EndDate.Sub(time.Now()).Hours() / 24)
+			subscriptionText += fmt.Sprintf("• %s - NT$ %.2f/月 (剩餘 %d 天)\n",
+				sub.Name,
+				sub.Amount,
+				daysUntilExpiry,
+			)
+		}
+	}
+
+	embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+		Name:   "即將到期的訂閱",
+		Value:  subscriptionText,
+		Inline: false,
+	})
+
+	message := &models.DiscordMessage{
+		Embeds: []models.DiscordEmbed{embed},
+	}
+
+	return s.SendMessage(webhookURL, message)
+}
+
+// SendInstallmentCompletionNotification 發送分期完成通知
+func (s *discordService) SendInstallmentCompletionNotification(webhookURL string, installments []*models.Installment, remainingCount int) error {
+	if len(installments) == 0 {
+		return nil
+	}
+
+	// 建立 Embed
+	embed := models.DiscordEmbed{
+		Title:       "🎉 分期即將完成",
+		Description: fmt.Sprintf("以下分期剩餘 %d 期或更少", remainingCount),
+		Color:       0x2ecc71, // 綠色
+		Fields:      []models.DiscordEmbedField{},
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Footer: &models.DiscordEmbedFooter{
+			Text: "Asset Manager - 訂閱分期管理",
+		},
+	}
+
+	// 分期列表
+	installmentText := ""
+	for i, inst := range installments {
+		if i >= 10 { // 最多顯示 10 筆
+			installmentText += fmt.Sprintf("...及其他 %d 筆\n", len(installments)-10)
+			break
+		}
+		remaining := inst.RemainingCount()
+		remainingAmount := inst.RemainingAmount()
+		installmentText += fmt.Sprintf("• %s - 剩餘 %d/%d 期 (NT$ %.2f)\n",
+			inst.Name,
+			remaining,
+			inst.InstallmentCount,
+			remainingAmount,
+		)
+	}
+
+	embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+		Name:   "即將完成的分期",
+		Value:  installmentText,
+		Inline: false,
+	})
+
+	message := &models.DiscordMessage{
+		Embeds: []models.DiscordEmbed{embed},
+	}
+
+	return s.SendMessage(webhookURL, message)
 }
