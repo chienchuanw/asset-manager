@@ -18,6 +18,7 @@ import {
   UserIcon,
   LogOutIcon,
   TrendingUpIcon,
+  RepeatIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -65,6 +66,12 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
       label: "現金流記錄",
       icon: TrendingUpIcon,
       href: "/cash-flows",
+    },
+    {
+      id: "recurring",
+      label: "訂閱分期",
+      icon: RepeatIcon,
+      href: "/recurring",
     },
     {
       id: "analytics",

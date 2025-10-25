@@ -44,7 +44,10 @@ import {
 } from "@/hooks";
 import { PlusIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Subscription, CreateSubscriptionInput } from "@/types/subscription";
+import type {
+  Subscription,
+  CreateSubscriptionInput,
+} from "@/types/subscription";
 import type { Installment, CreateInstallmentInput } from "@/types/installment";
 
 export default function RecurringPage() {
@@ -53,18 +56,30 @@ export default function RecurringPage() {
 
   // 訂閱相關狀態
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState<Subscription | undefined>();
-  const [cancelingSubscription, setCancelingSubscription] = useState<Subscription | undefined>();
-  const [deletingSubscriptionId, setDeletingSubscriptionId] = useState<string | undefined>();
+  const [editingSubscription, setEditingSubscription] = useState<
+    Subscription | undefined
+  >();
+  const [cancelingSubscription, setCancelingSubscription] = useState<
+    Subscription | undefined
+  >();
+  const [deletingSubscriptionId, setDeletingSubscriptionId] = useState<
+    string | undefined
+  >();
 
   // 分期相關狀態
   const [installmentDialogOpen, setInstallmentDialogOpen] = useState(false);
-  const [editingInstallment, setEditingInstallment] = useState<Installment | undefined>();
-  const [deletingInstallmentId, setDeletingInstallmentId] = useState<string | undefined>();
+  const [editingInstallment, setEditingInstallment] = useState<
+    Installment | undefined
+  >();
+  const [deletingInstallmentId, setDeletingInstallmentId] = useState<
+    string | undefined
+  >();
 
   // 資料查詢
-  const { data: subscriptions, isLoading: subscriptionsLoading } = useSubscriptions();
-  const { data: installments, isLoading: installmentsLoading } = useInstallments();
+  const { data: subscriptions, isLoading: subscriptionsLoading } =
+    useSubscriptions();
+  const { data: installments, isLoading: installmentsLoading } =
+    useInstallments();
   const { data: categories } = useCategories();
 
   // 訂閱 mutations
@@ -235,67 +250,63 @@ export default function RecurringPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        {/* 標題 */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">訂閱與分期</h1>
-            <p className="text-muted-foreground">
-              管理您的訂閱服務和分期付款
-            </p>
-          </div>
+    <AppLayout title="訂閱與分期" description="管理您的訂閱服務和分期付款">
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex flex-col gap-6">
+          {/* 統計卡片 */}
+          <RecurringStatsCard
+            subscriptions={subscriptions}
+            installments={installments}
+            isLoading={subscriptionsLoading || installmentsLoading}
+          />
+
+          {/* 分頁 */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="subscriptions">訂閱服務</TabsTrigger>
+                <TabsTrigger value="installments">分期付款</TabsTrigger>
+              </TabsList>
+              <Button
+                onClick={
+                  activeTab === "subscriptions"
+                    ? handleCreateSubscription
+                    : handleCreateInstallment
+                }
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                新增{activeTab === "subscriptions" ? "訂閱" : "分期"}
+              </Button>
+            </div>
+
+            <TabsContent value="subscriptions" className="space-y-4">
+              <SubscriptionsList
+                subscriptions={subscriptions}
+                isLoading={subscriptionsLoading}
+                onEdit={handleEditSubscription}
+                onDelete={handleDeleteSubscription}
+                onCancel={handleCancelSubscription}
+              />
+            </TabsContent>
+
+            <TabsContent value="installments" className="space-y-4">
+              <InstallmentsList
+                installments={installments}
+                isLoading={installmentsLoading}
+                onEdit={handleEditInstallment}
+                onDelete={handleDeleteInstallment}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
-
-        {/* 統計卡片 */}
-        <RecurringStatsCard
-          subscriptions={subscriptions}
-          installments={installments}
-          isLoading={subscriptionsLoading || installmentsLoading}
-        />
-
-        {/* 分頁 */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="subscriptions">訂閱服務</TabsTrigger>
-              <TabsTrigger value="installments">分期付款</TabsTrigger>
-            </TabsList>
-            <Button
-              onClick={
-                activeTab === "subscriptions"
-                  ? handleCreateSubscription
-                  : handleCreateInstallment
-              }
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              新增{activeTab === "subscriptions" ? "訂閱" : "分期"}
-            </Button>
-          </div>
-
-          <TabsContent value="subscriptions" className="space-y-4">
-            <SubscriptionsList
-              subscriptions={subscriptions}
-              isLoading={subscriptionsLoading}
-              onEdit={handleEditSubscription}
-              onDelete={handleDeleteSubscription}
-              onCancel={handleCancelSubscription}
-            />
-          </TabsContent>
-
-          <TabsContent value="installments" className="space-y-4">
-            <InstallmentsList
-              installments={installments}
-              isLoading={installmentsLoading}
-              onEdit={handleEditInstallment}
-              onDelete={handleDeleteInstallment}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
+      </main>
 
       {/* 訂閱表單對話框 */}
-      <Dialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen}>
+      <Dialog
+        open={subscriptionDialogOpen}
+        onOpenChange={setSubscriptionDialogOpen}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -307,13 +318,18 @@ export default function RecurringPage() {
             categories={categories}
             onSubmit={handleSubmitSubscription}
             onCancel={() => setSubscriptionDialogOpen(false)}
-            isSubmitting={createSubscription.isPending || updateSubscription.isPending}
+            isSubmitting={
+              createSubscription.isPending || updateSubscription.isPending
+            }
           />
         </DialogContent>
       </Dialog>
 
       {/* 分期表單對話框 */}
-      <Dialog open={installmentDialogOpen} onOpenChange={setInstallmentDialogOpen}>
+      <Dialog
+        open={installmentDialogOpen}
+        onOpenChange={setInstallmentDialogOpen}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -325,7 +341,9 @@ export default function RecurringPage() {
             categories={categories}
             onSubmit={handleSubmitInstallment}
             onCancel={() => setInstallmentDialogOpen(false)}
-            isSubmitting={createInstallment.isPending || updateInstallment.isPending}
+            isSubmitting={
+              createInstallment.isPending || updateInstallment.isPending
+            }
           />
         </DialogContent>
       </Dialog>
@@ -402,4 +420,3 @@ export default function RecurringPage() {
     </AppLayout>
   );
 }
-
