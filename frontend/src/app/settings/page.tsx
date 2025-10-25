@@ -61,7 +61,10 @@ export default function SettingsPage() {
     if (settings) {
       setDiscordSettings(settings.discord);
       setAllocationSettings(settings.allocation);
-      setNotificationSettings(settings.notification);
+      // 如果後端沒有返回 notification 設定，使用預設值
+      if (settings.notification) {
+        setNotificationSettings(settings.notification);
+      }
     }
   }, [settings]);
 
@@ -101,7 +104,10 @@ export default function SettingsPage() {
     if (settings) {
       setDiscordSettings(settings.discord);
       setAllocationSettings(settings.allocation);
-      setNotificationSettings(settings.notification);
+      // 如果後端沒有返回 notification 設定，使用預設值
+      if (settings.notification) {
+        setNotificationSettings(settings.notification);
+      }
       toast.info("已重置", {
         description: "設定已重置為上次儲存的值",
       });
