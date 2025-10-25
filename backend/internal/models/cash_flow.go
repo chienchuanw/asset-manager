@@ -14,6 +14,15 @@ const (
 	CashFlowTypeExpense CashFlowType = "expense" // 支出
 )
 
+// SourceType 現金流來源類型
+type SourceType string
+
+const (
+	SourceTypeManual       SourceType = "manual"       // 手動建立
+	SourceTypeSubscription SourceType = "subscription" // 訂閱自動產生
+	SourceTypeInstallment  SourceType = "installment"  // 分期自動產生
+)
+
 // CashFlowCategory 現金流分類模型
 type CashFlowCategory struct {
 	ID        uuid.UUID    `json:"id" db:"id"`
@@ -34,6 +43,8 @@ type CashFlow struct {
 	Currency    Currency     `json:"currency" db:"currency"`
 	Description string       `json:"description" db:"description"`
 	Note        *string      `json:"note,omitempty" db:"note"`
+	SourceType  *SourceType  `json:"source_type,omitempty" db:"source_type"`
+	SourceID    *uuid.UUID   `json:"source_id,omitempty" db:"source_id"`
 	CreatedAt   time.Time    `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time    `json:"updated_at" db:"updated_at"`
 
@@ -75,6 +86,15 @@ type UpdateCategoryInput struct {
 func (t CashFlowType) Validate() bool {
 	switch t {
 	case CashFlowTypeIncome, CashFlowTypeExpense:
+		return true
+	}
+	return false
+}
+
+// Validate 驗證 SourceType 是否有效
+func (s SourceType) Validate() bool {
+	switch s {
+	case SourceTypeManual, SourceTypeSubscription, SourceTypeInstallment:
 		return true
 	}
 	return false

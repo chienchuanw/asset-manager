@@ -54,3 +54,52 @@ func TestCashFlowType_Constants(t *testing.T) {
 	assert.Equal(t, CashFlowType("expense"), CashFlowTypeExpense, "CashFlowTypeExpense should be 'expense'")
 }
 
+// TestSourceType_Validate 測試 SourceType 驗證
+func TestSourceType_Validate(t *testing.T) {
+	tests := []struct {
+		name       string
+		sourceType SourceType
+		want       bool
+	}{
+		{
+			name:       "valid manual type",
+			sourceType: SourceTypeManual,
+			want:       true,
+		},
+		{
+			name:       "valid subscription type",
+			sourceType: SourceTypeSubscription,
+			want:       true,
+		},
+		{
+			name:       "valid installment type",
+			sourceType: SourceTypeInstallment,
+			want:       true,
+		},
+		{
+			name:       "invalid type",
+			sourceType: SourceType("invalid"),
+			want:       false,
+		},
+		{
+			name:       "empty type",
+			sourceType: SourceType(""),
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.sourceType.Validate()
+			assert.Equal(t, tt.want, got, "SourceType.Validate() should return %v for %s", tt.want, tt.sourceType)
+		})
+	}
+}
+
+// TestSourceType_Constants 測試 SourceType 常數值
+func TestSourceType_Constants(t *testing.T) {
+	assert.Equal(t, SourceType("manual"), SourceTypeManual, "SourceTypeManual should be 'manual'")
+	assert.Equal(t, SourceType("subscription"), SourceTypeSubscription, "SourceTypeSubscription should be 'subscription'")
+	assert.Equal(t, SourceType("installment"), SourceTypeInstallment, "SourceTypeInstallment should be 'installment'")
+}
+
