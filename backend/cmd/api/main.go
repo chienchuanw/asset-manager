@@ -12,6 +12,7 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/cache"
 	"github.com/chienchuanw/asset-manager/internal/client"
 	"github.com/chienchuanw/asset-manager/internal/db"
+	"github.com/chienchuanw/asset-manager/internal/middleware"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/chienchuanw/asset-manager/internal/scheduler"
 	"github.com/chienchuanw/asset-manager/internal/service"
@@ -48,6 +49,7 @@ func main() {
 
 	// 初始化 Service
 	transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
+	authService := service.NewAuthService()
 
 	// 初始化 Redis Cache
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -95,6 +97,7 @@ func main() {
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
 
 		// 初始化 Handler
+		authHandler := api.NewAuthHandler(authService)
 		transactionHandler := api.NewTransactionHandler(transactionService)
 		holdingHandler := api.NewHoldingHandler(holdingService)
 		analyticsHandler := api.NewAnalyticsHandler(analyticsService)
@@ -123,7 +126,7 @@ func main() {
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -178,6 +181,7 @@ func main() {
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
 
 	// 初始化 Handler
+	authHandler := api.NewAuthHandler(authService)
 	transactionHandler := api.NewTransactionHandler(transactionService)
 	holdingHandler := api.NewHoldingHandler(holdingService)
 	analyticsHandler := api.NewAnalyticsHandler(analyticsService)
@@ -211,7 +215,7 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器
-	startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -224,14 +228,14 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
 	// 設定 CORS
 	router.Use(cors.Default())
 
-	// Health check endpoint
+	// Health check endpoint (不需要驗證)
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "OK",
@@ -239,8 +243,17 @@ func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api
 		})
 	})
 
-	// API routes
+	// Auth routes (不需要驗證)
+	authGroup := router.Group("/api/auth")
+	{
+		authGroup.POST("/login", authHandler.Login)
+		authGroup.POST("/logout", authHandler.Logout)
+		authGroup.GET("/me", middleware.AuthMiddleware(), authHandler.GetCurrentUser)
+	}
+
+	// API routes (需要驗證)
 	apiGroup := router.Group("/api")
+	apiGroup.Use(middleware.AuthMiddleware())
 	{
 		// Transactions 路由
 		transactions := apiGroup.Group("/transactions")
