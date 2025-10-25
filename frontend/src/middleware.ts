@@ -46,14 +46,14 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * 匹配所有路徑，除了：
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * 明確指定需要保護的路徑
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)",
+    "/",
+    "/dashboard/:path*",
+    "/holdings/:path*",
+    "/transactions/:path*",
+    "/analytics/:path*",
+    "/settings/:path*",
+    "/login",
   ],
 };
-
