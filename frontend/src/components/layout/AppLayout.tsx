@@ -33,6 +33,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,11 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, title, description }: AppLayoutProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   // 主要導航項目
   const mainNavItems = [
@@ -156,7 +162,7 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="登出">
+              <SidebarMenuButton tooltip="登出" onClick={handleLogout}>
                 <LogOutIcon />
                 <span>登出</span>
               </SidebarMenuButton>

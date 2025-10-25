@@ -3,10 +3,10 @@
  * 顯示歡迎訊息、搜尋、通知和使用者資訊
  */
 
-'use client';
+"use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,15 +14,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { SearchIcon, BellIcon, ChevronDownIcon, MenuIcon } from 'lucide-react';
+} from "@/components/ui/dropdown-menu";
+import { SearchIcon, BellIcon, ChevronDownIcon, MenuIcon } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface HeaderProps {
   userName?: string;
   onMenuClick?: () => void;
 }
 
-export function Header({ userName = '使用者', onMenuClick }: HeaderProps) {
+export function Header({ userName = "使用者", onMenuClick }: HeaderProps) {
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="flex items-center justify-between px-6 py-4">
@@ -86,7 +93,12 @@ export function Header({ userName = '使用者', onMenuClick }: HeaderProps) {
               <DropdownMenuItem>帳戶設定</DropdownMenuItem>
               <DropdownMenuItem>偏好設定</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">登出</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600 cursor-pointer"
+                onClick={handleLogout}
+              >
+                登出
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -94,4 +106,3 @@ export function Header({ userName = '使用者', onMenuClick }: HeaderProps) {
     </header>
   );
 }
-

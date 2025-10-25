@@ -19,9 +19,15 @@ import {
   UserIcon,
   LogOutIcon,
 } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   // 主要導航項目
   const mainNavItems = [
@@ -107,6 +113,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100"
+          onClick={handleLogout}
         >
           <LogOutIcon className="h-5 w-5" />
           登出

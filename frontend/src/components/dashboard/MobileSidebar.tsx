@@ -20,6 +20,7 @@ import {
   LogOutIcon,
   XIcon,
 } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -28,6 +29,11 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   // 主要導航項目
   const mainNavItems = [
@@ -132,6 +138,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-gray-700 hover:bg-gray-100"
+            onClick={handleLogout}
           >
             <LogOutIcon className="h-5 w-5" />
             登出
