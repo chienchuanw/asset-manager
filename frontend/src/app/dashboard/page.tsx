@@ -12,7 +12,13 @@ import { AssetTrendChart } from "@/components/dashboard/AssetTrendChart";
 import { HoldingsTable } from "@/components/dashboard/HoldingsTable";
 import { AssetAllocationChart } from "@/components/dashboard/AssetAllocationChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { useHoldings, useTransactions } from "@/hooks";
+import { RecurringStatsCard } from "@/components/dashboard/RecurringStatsCard";
+import {
+  useHoldings,
+  useTransactions,
+  useSubscriptions,
+  useInstallments,
+} from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,6 +38,12 @@ export default function DashboardPage() {
     isLoading: transactionsLoading,
     error: transactionsError,
   } = useTransactions();
+
+  // 取得訂閱和分期資料
+  const { data: subscriptions, isLoading: subscriptionsLoading } =
+    useSubscriptions();
+  const { data: installments, isLoading: installmentsLoading } =
+    useInstallments();
 
   // 計算統計資料
   const stats = useMemo(() => {
@@ -252,9 +264,14 @@ export default function DashboardPage() {
               <HoldingsTable holdings={holdings || []} />
             </div>
 
-            {/* 右側：近期交易 */}
-            <div className="lg:col-span-3">
+            {/* 右側：近期交易和訂閱分期 */}
+            <div className="lg:col-span-3 space-y-4">
               <RecentTransactions transactions={recentTransactions} />
+              <RecurringStatsCard
+                subscriptions={subscriptions}
+                installments={installments}
+                isLoading={subscriptionsLoading || installmentsLoading}
+              />
             </div>
           </div>
         </div>
