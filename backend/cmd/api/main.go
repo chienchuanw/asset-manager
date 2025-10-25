@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	"github.com/chienchuanw/asset-manager/internal/api"
 	"github.com/chienchuanw/asset-manager/internal/cache"
 	"github.com/chienchuanw/asset-manager/internal/client"
@@ -19,6 +17,8 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -40,6 +40,8 @@ func main() {
 	realizedProfitRepo := repository.NewRealizedProfitRepository(database)
 	assetSnapshotRepo := repository.NewAssetSnapshotRepository(database)
 	settingsRepo := repository.NewSettingsRepository(database)
+	cashFlowRepo := repository.NewCashFlowRepository(database)
+	categoryRepo := repository.NewCategoryRepository(database)
 
 	// PerformanceSnapshotRepository 需要 sqlx.DB
 	dbx := sqlx.NewDb(database, "postgres")
@@ -93,6 +95,8 @@ func main() {
 		settingsService := service.NewSettingsService(settingsRepo)
 		discordService := service.NewDiscordService()
 		rebalanceService := service.NewRebalanceService(settingsService, holdingService)
+		cashFlowService := service.NewCashFlowService(cashFlowRepo, categoryRepo)
+		categoryService := service.NewCategoryService(categoryRepo)
 
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -109,6 +113,8 @@ func main() {
 		assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 		discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
 		rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
+		cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
+		categoryHandler := api.NewCategoryHandler(categoryService)
 
 		// 初始化排程器管理器（不啟動）
 		schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -127,7 +133,7 @@ func main() {
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -177,6 +183,8 @@ func main() {
 	settingsService := service.NewSettingsService(settingsRepo)
 	discordService := service.NewDiscordService()
 	rebalanceService := service.NewRebalanceService(settingsService, holdingService)
+	cashFlowService := service.NewCashFlowService(cashFlowRepo, categoryRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
 
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -193,6 +201,8 @@ func main() {
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
+	cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
+	categoryHandler := api.NewCategoryHandler(categoryService)
 
 	// 初始化並啟動排程器管理器
 	schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -216,7 +226,7 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -229,7 +239,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -356,6 +366,27 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			snapshots.GET("/latest", assetSnapshotHandler.GetLatestSnapshot)
 			snapshots.PUT("", assetSnapshotHandler.UpdateSnapshot)
 			snapshots.DELETE("", assetSnapshotHandler.DeleteSnapshot)
+		}
+
+		// Cash Flows 路由
+		cashFlows := apiGroup.Group("/cash-flows")
+		{
+			cashFlows.POST("", cashFlowHandler.CreateCashFlow)
+			cashFlows.GET("", cashFlowHandler.ListCashFlows)
+			cashFlows.GET("/summary", cashFlowHandler.GetSummary)
+			cashFlows.GET("/:id", cashFlowHandler.GetCashFlow)
+			cashFlows.PUT("/:id", cashFlowHandler.UpdateCashFlow)
+			cashFlows.DELETE("/:id", cashFlowHandler.DeleteCashFlow)
+		}
+
+		// Categories 路由
+		categories := apiGroup.Group("/categories")
+		{
+			categories.POST("", categoryHandler.CreateCategory)
+			categories.GET("", categoryHandler.ListCategories)
+			categories.GET("/:id", categoryHandler.GetCategory)
+			categories.PUT("/:id", categoryHandler.UpdateCategory)
+			categories.DELETE("/:id", categoryHandler.DeleteCategory)
 		}
 	}
 
