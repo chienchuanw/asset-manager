@@ -88,7 +88,10 @@ export function getTimeRangeOptions() {
 /**
  * 格式化金額（加上千分位）
  */
-export function formatCurrency(amount: number, currency: string = "TWD"): string {
+export function formatCurrency(
+  amount: number,
+  currency: string = "TWD"
+): string {
   return `${currency} ${amount.toLocaleString("zh-TW", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -110,3 +113,45 @@ export function isPositive(value: number): boolean {
   return value >= 0;
 }
 
+// ==================== 未實現損益分析 ====================
+
+/**
+ * 未實現損益摘要
+ */
+export interface UnrealizedSummary {
+  total_cost: number;
+  total_market_value: number;
+  total_unrealized_pl: number;
+  total_unrealized_pct: number;
+  holding_count: number;
+  currency: string;
+}
+
+/**
+ * 未實現績效資料
+ */
+export interface UnrealizedPerformance {
+  asset_type: AssetType;
+  name: string;
+  cost: number;
+  market_value: number;
+  unrealized_pl: number;
+  unrealized_pct: number;
+  holding_count: number;
+}
+
+/**
+ * Top 未實現損益資產
+ */
+export interface UnrealizedTopAsset {
+  symbol: string;
+  name: string;
+  asset_type: AssetType;
+  quantity: number;
+  avg_cost: number;
+  current_price: number;
+  cost: number;
+  market_value: number;
+  unrealized_pl: number;
+  unrealized_pct: number;
+}

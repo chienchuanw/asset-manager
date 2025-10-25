@@ -106,3 +106,40 @@ func GetAssetTypeName(assetType AssetType) string {
 	return string(assetType)
 }
 
+// ==================== 未實現損益分析 ====================
+
+// UnrealizedSummary 未實現損益摘要
+type UnrealizedSummary struct {
+	TotalCost          float64 `json:"total_cost"`           // 總成本
+	TotalMarketValue   float64 `json:"total_market_value"`   // 總市值
+	TotalUnrealizedPL  float64 `json:"total_unrealized_pl"`  // 總未實現損益
+	TotalUnrealizedPct float64 `json:"total_unrealized_pct"` // 總未實現報酬率
+	HoldingCount       int     `json:"holding_count"`        // 持倉數量
+	Currency           string  `json:"currency"`             // 幣別
+}
+
+// UnrealizedPerformance 各資產類型未實現績效
+type UnrealizedPerformance struct {
+	AssetType     AssetType `json:"asset_type"`     // 資產類型
+	Name          string    `json:"name"`           // 資產類型名稱
+	Cost          float64   `json:"cost"`           // 成本
+	MarketValue   float64   `json:"market_value"`   // 市值
+	UnrealizedPL  float64   `json:"unrealized_pl"`  // 未實現損益
+	UnrealizedPct float64   `json:"unrealized_pct"` // 未實現報酬率
+	HoldingCount  int       `json:"holding_count"`  // 持倉數量
+}
+
+// UnrealizedTopAsset Top 未實現損益資產
+type UnrealizedTopAsset struct {
+	Symbol        string    `json:"symbol"`         // 標的代碼
+	Name          string    `json:"name"`           // 標的名稱
+	AssetType     AssetType `json:"asset_type"`     // 資產類型
+	Quantity      float64   `json:"quantity"`       // 持有數量
+	AvgCost       float64   `json:"avg_cost"`       // 平均成本
+	CurrentPrice  float64   `json:"current_price"`  // 當前價格
+	Cost          float64   `json:"cost"`           // 總成本
+	MarketValue   float64   `json:"market_value"`   // 市值
+	UnrealizedPL  float64   `json:"unrealized_pl"`  // 未實現損益
+	UnrealizedPct float64   `json:"unrealized_pct"` // 未實現報酬率
+}
+

@@ -78,6 +78,7 @@ func main() {
 
 		// 初始化 Analytics Service
 		analyticsService := service.NewAnalyticsService(realizedProfitRepo)
+		unrealizedAnalyticsService := service.NewUnrealizedAnalyticsService(holdingService)
 
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -86,11 +87,12 @@ func main() {
 		transactionHandler := api.NewTransactionHandler(transactionService)
 		holdingHandler := api.NewHoldingHandler(holdingService)
 		analyticsHandler := api.NewAnalyticsHandler(analyticsService)
+		unrealizedAnalyticsHandler := api.NewUnrealizedAnalyticsHandler(unrealizedAnalyticsService)
 		assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Snapshot scheduler is disabled (Redis not available)")
-		startServer(transactionHandler, holdingHandler, analyticsHandler, assetSnapshotHandler)
+		startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, assetSnapshotHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -134,6 +136,7 @@ func main() {
 
 	// 初始化 Analytics Service
 	analyticsService := service.NewAnalyticsService(realizedProfitRepo)
+	unrealizedAnalyticsService := service.NewUnrealizedAnalyticsService(holdingService)
 
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -142,6 +145,7 @@ func main() {
 	transactionHandler := api.NewTransactionHandler(transactionService)
 	holdingHandler := api.NewHoldingHandler(holdingService)
 	analyticsHandler := api.NewAnalyticsHandler(analyticsService)
+	unrealizedAnalyticsHandler := api.NewUnrealizedAnalyticsHandler(unrealizedAnalyticsService)
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 
 	// 初始化並啟動排程器
@@ -156,7 +160,7 @@ func main() {
 	defer snapshotScheduler.Stop()
 
 	// 啟動伺服器
-	startServer(transactionHandler, holdingHandler, analyticsHandler, assetSnapshotHandler)
+	startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, assetSnapshotHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -169,7 +173,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, assetSnapshotHandler *api.AssetSnapshotHandler) {
+func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, assetSnapshotHandler *api.AssetSnapshotHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -210,6 +214,14 @@ func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api
 			analytics.GET("/summary", analyticsHandler.GetSummary)
 			analytics.GET("/performance", analyticsHandler.GetPerformance)
 			analytics.GET("/top-assets", analyticsHandler.GetTopAssets)
+
+			// Unrealized Analytics 路由
+			unrealized := analytics.Group("/unrealized")
+			{
+				unrealized.GET("/summary", unrealizedAnalyticsHandler.GetSummary)
+				unrealized.GET("/performance", unrealizedAnalyticsHandler.GetPerformance)
+				unrealized.GET("/top-assets", unrealizedAnalyticsHandler.GetTopAssets)
+			}
 		}
 
 		// Asset Snapshots 路由
