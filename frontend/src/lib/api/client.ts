@@ -3,18 +3,13 @@ import type { APIResponse } from "@/types/transaction";
 /**
  * API 基礎 URL
  */
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
  * API 錯誤類別
  */
 export class APIError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-    public status?: number
-  ) {
+  constructor(public code: string, message: string, public status?: number) {
     super(message);
     this.name = "APIError";
   }
@@ -104,6 +99,7 @@ async function apiCall<T>(
     const response = await fetch(url, {
       ...fetchOptions,
       headers,
+      credentials: fetchOptions.credentials || "include", // 預設包含 cookies
     });
 
     // 處理回應
@@ -170,4 +166,3 @@ export const apiClient = {
 export function getAPIBaseURL(): string {
   return API_BASE_URL;
 }
-
