@@ -231,6 +231,30 @@ export interface PerformanceTrendSummary {
   data_point_count: number;
 }
 
+// Settings 相關型別
+export interface DiscordSettings {
+  webhook_url: string;
+  enabled: boolean;
+  report_time: string; // HH:MM 格式
+}
+
+export interface AllocationSettings {
+  tw_stock: number;
+  us_stock: number;
+  crypto: number;
+  rebalance_threshold: number;
+}
+
+export interface SettingsGroup {
+  discord: DiscordSettings;
+  allocation: AllocationSettings;
+}
+
+export interface UpdateSettingsGroupInput {
+  discord?: DiscordSettings;
+  allocation?: AllocationSettings;
+}
+
 /**
  * 每日績效快照
  */
