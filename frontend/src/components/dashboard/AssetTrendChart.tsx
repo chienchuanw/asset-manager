@@ -25,7 +25,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useAssetTrend } from "@/hooks";
-import { AssetTrendData } from "@/types/asset-snapshot";
 
 export function AssetTrendChart() {
   // 使用 state 來延遲渲染圖表,避免 SSR 問題
@@ -58,27 +57,36 @@ export function AssetTrendChart() {
   const chartData = useMemo(() => {
     if (!totalData) return [];
 
-    // 建立日期對應的資料 map
-    const dataMap = new Map<string, AssetTrendData>();
+    // 建立日期對應的資料 map (使用原始日期字串作為 key)
+    const dataMap = new Map<
+      string,
+      {
+        rawDate: string;
+        date: string;
+        total?: number;
+        twStock?: number;
+        usStock?: number;
+        crypto?: number;
+      }
+    >();
 
     // 加入總資產資料
     totalData.forEach((snapshot) => {
-      const date = new Date(snapshot.snapshot_date).toLocaleDateString(
-        "zh-TW",
-        {
-          month: "numeric",
-          day: "numeric",
-        }
-      );
-      dataMap.set(snapshot.snapshot_date, {
-        date,
+      const rawDate = snapshot.date; // 保留原始日期字串用於排序
+      const displayDate = new Date(snapshot.date).toLocaleDateString("zh-TW", {
+        month: "numeric",
+        day: "numeric",
+      });
+      dataMap.set(rawDate, {
+        rawDate,
+        date: displayDate,
         total: snapshot.value_twd,
       });
     });
 
     // 加入台股資料
     twStockData?.forEach((snapshot) => {
-      const existing = dataMap.get(snapshot.snapshot_date);
+      const existing = dataMap.get(snapshot.date);
       if (existing) {
         existing.twStock = snapshot.value_twd;
       }
@@ -86,7 +94,7 @@ export function AssetTrendChart() {
 
     // 加入美股資料
     usStockData?.forEach((snapshot) => {
-      const existing = dataMap.get(snapshot.snapshot_date);
+      const existing = dataMap.get(snapshot.date);
       if (existing) {
         existing.usStock = snapshot.value_twd;
       }
@@ -94,18 +102,26 @@ export function AssetTrendChart() {
 
     // 加入加密貨幣資料
     cryptoData?.forEach((snapshot) => {
-      const existing = dataMap.get(snapshot.snapshot_date);
+      const existing = dataMap.get(snapshot.date);
       if (existing) {
         existing.crypto = snapshot.value_twd;
       }
     });
 
-    // 轉換為陣列並排序
-    return Array.from(dataMap.values()).sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateA.getTime() - dateB.getTime();
-    });
+    // 轉換為陣列並按原始日期排序
+    return Array.from(dataMap.values())
+      .sort((a, b) => {
+        const dateA = new Date(a.rawDate);
+        const dateB = new Date(b.rawDate);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .map(({ date, total, twStock, usStock, crypto }) => ({
+        date,
+        total,
+        twStock,
+        usStock,
+        crypto,
+      }));
   }, [totalData, twStockData, usStockData, cryptoData]);
 
   const isLoading =
@@ -172,81 +188,75 @@ export function AssetTrendChart() {
         )}
 
         {/* 圖表 */}
-        {!isLoading && !totalError && chartData.length > 0 && (
-          <div className="h-[300px] w-full">
-            {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{
-                    top: 5,
-                    right: 10,
-                    left: 10,
-                    bottom: 0,
-                  }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    className="stroke-muted"
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    name="總資產"
-                    stroke="#111827"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="twStock"
-                    name="台股"
-                    stroke="#3b82f6"
-                    strokeWidth={1.5}
-                    dot={false}
-                    strokeOpacity={0.7}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="usStock"
-                    name="美股"
-                    stroke="#10b981"
-                    strokeWidth={1.5}
-                    dot={false}
-                    strokeOpacity={0.7}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="crypto"
-                    name="加密貨幣"
-                    stroke="#f59e0b"
-                    strokeWidth={1.5}
-                    dot={false}
-                    strokeOpacity={0.7}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                載入中...
-              </div>
-            )}
+        {!isLoading && !totalError && chartData.length > 0 && mounted && (
+          <div className="h-[300px] w-full min-h-[300px]">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={chartData}
+                margin={{
+                  top: 5,
+                  right: 10,
+                  left: 10,
+                  bottom: 0,
+                }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  className="stroke-muted"
+                />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  className="text-xs"
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  className="text-xs"
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  name="總資產"
+                  stroke="#111827"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="twStock"
+                  name="台股"
+                  stroke="#3b82f6"
+                  strokeWidth={1.5}
+                  dot={false}
+                  strokeOpacity={0.7}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="usStock"
+                  name="美股"
+                  stroke="#10b981"
+                  strokeWidth={1.5}
+                  dot={false}
+                  strokeOpacity={0.7}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="crypto"
+                  name="加密貨幣"
+                  stroke="#f59e0b"
+                  strokeWidth={1.5}
+                  dot={false}
+                  strokeOpacity={0.7}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>

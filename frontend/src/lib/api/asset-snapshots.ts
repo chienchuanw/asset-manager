@@ -4,19 +4,23 @@
  */
 
 import { apiClient } from "./client";
-import { AssetSnapshot, SnapshotAssetType } from "@/types/asset-snapshot";
+import {
+  AssetSnapshot,
+  AssetTrendResponse,
+  SnapshotAssetType,
+} from "@/types/asset-snapshot";
 
 /**
  * Get asset trend data for a specific asset type
  * @param assetType - Type of asset (total, tw-stock, us-stock, crypto)
  * @param days - Number of days to retrieve (default: 30)
- * @returns Array of asset snapshots
+ * @returns Array of asset trend responses
  */
 export async function getAssetTrend(
   assetType: SnapshotAssetType,
   days: number = 30
-): Promise<AssetSnapshot[]> {
-  return await apiClient.get<AssetSnapshot[]>("/api/snapshots/trend", {
+): Promise<AssetTrendResponse[]> {
+  return await apiClient.get<AssetTrendResponse[]>("/api/snapshots/trend", {
     params: {
       asset_type: assetType,
       days,

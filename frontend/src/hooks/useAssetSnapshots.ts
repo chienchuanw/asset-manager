@@ -3,19 +3,27 @@
  * React Query hooks for asset snapshots data
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAssetTrend, getLatestSnapshot, triggerDailySnapshots } from '@/lib/api/asset-snapshots';
-import { SnapshotAssetType, AssetSnapshot } from '@/types/asset-snapshot';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getAssetTrend,
+  getLatestSnapshot,
+  triggerDailySnapshots,
+} from "@/lib/api/asset-snapshots";
+import {
+  SnapshotAssetType,
+  AssetSnapshot,
+  AssetTrendResponse,
+} from "@/types/asset-snapshot";
 
 /**
  * Hook to fetch asset trend data
  * @param assetType - Type of asset to fetch
  * @param days - Number of days to retrieve
- * @returns React Query result with asset snapshots array
+ * @returns React Query result with asset trend responses array
  */
 export function useAssetTrend(assetType: SnapshotAssetType, days: number = 30) {
-  return useQuery<AssetSnapshot[], Error>({
-    queryKey: ['asset-trend', assetType, days],
+  return useQuery<AssetTrendResponse[], Error>({
+    queryKey: ["asset-trend", assetType, days],
     queryFn: () => getAssetTrend(assetType, days),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
@@ -29,7 +37,7 @@ export function useAssetTrend(assetType: SnapshotAssetType, days: number = 30) {
  */
 export function useLatestSnapshot(assetType: SnapshotAssetType) {
   return useQuery<AssetSnapshot | null, Error>({
-    queryKey: ['latest-snapshot', assetType],
+    queryKey: ["latest-snapshot", assetType],
     queryFn: () => getLatestSnapshot(assetType),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
@@ -47,9 +55,8 @@ export function useTriggerDailySnapshots() {
     mutationFn: triggerDailySnapshots,
     onSuccess: () => {
       // Invalidate all snapshot queries to refetch data
-      queryClient.invalidateQueries({ queryKey: ['asset-trend'] });
-      queryClient.invalidateQueries({ queryKey: ['latest-snapshot'] });
+      queryClient.invalidateQueries({ queryKey: ["asset-trend"] });
+      queryClient.invalidateQueries({ queryKey: ["latest-snapshot"] });
     },
   });
 }
-

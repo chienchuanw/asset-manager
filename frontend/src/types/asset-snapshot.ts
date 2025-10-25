@@ -3,7 +3,7 @@
  * Defines data structures for asset snapshots
  */
 
-export type SnapshotAssetType = 'total' | 'tw-stock' | 'us-stock' | 'crypto';
+export type SnapshotAssetType = "total" | "tw-stock" | "us-stock" | "crypto";
 
 export interface AssetSnapshot {
   id: string;
@@ -14,6 +14,15 @@ export interface AssetSnapshot {
   updated_at: string;
 }
 
+/**
+ * Asset Trend Response (from API)
+ * Simplified response format for trend data
+ */
+export interface AssetTrendResponse {
+  date: string; // ISO date string (YYYY-MM-DD)
+  value_twd: number;
+}
+
 export interface AssetTrendData {
   date: string;
   total?: number;
@@ -21,4 +30,3 @@ export interface AssetTrendData {
   usStock?: number;
   crypto?: number;
 }
-
