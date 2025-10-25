@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
+import { useTestDiscord, useSendDailyReport } from "@/hooks/useDiscord";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +17,14 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import type { DiscordSettings, AllocationSettings } from "@/types/analytics";
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateSettingsMutation = useUpdateSettings();
+  const testDiscordMutation = useTestDiscord();
+  const sendDailyReportMutation = useSendDailyReport();
 
   // Discord 設定狀態
   const [discordSettings, setDiscordSettings] = useState<DiscordSettings>({
@@ -85,6 +88,42 @@ export default function SettingsPage() {
       toast.info("已重置", {
         description: "設定已重置為上次儲存的值",
       });
+    }
+  };
+
+  // 處理測試 Discord
+  const handleTestDiscord = async () => {
+    // 檢查 Webhook URL 是否已設定
+    if (!discordSettings.webhook_url) {
+      toast.error("測試失敗", {
+        description: "請先設定 Discord Webhook URL",
+      });
+      return;
+    }
+
+    try {
+      await testDiscordMutation.mutateAsync({
+        message: "📢（測試）資產管理系統的測試訊息！",
+      });
+    } catch (error) {
+      // 錯誤已在 mutation 的 onError 中處理
+    }
+  };
+
+  // 處理發送每日報告
+  const handleSendDailyReport = async () => {
+    // 檢查 Webhook URL 是否已設定
+    if (!discordSettings.webhook_url) {
+      toast.error("發送失敗", {
+        description: "請先設定 Discord Webhook URL",
+      });
+      return;
+    }
+
+    try {
+      await sendDailyReportMutation.mutateAsync();
+    } catch (error) {
+      // 錯誤已在 mutation 的 onError 中處理
     }
   };
 
@@ -173,6 +212,62 @@ export default function SettingsPage() {
                   />
                   <p className="text-sm text-muted-foreground">
                     每日報告發送時間（24 小時制）
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Discord 測試按鈕 */}
+                <div className="space-y-3">
+                  <Label>測試 Discord 功能</Label>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleTestDiscord}
+                      disabled={
+                        !discordSettings.webhook_url ||
+                        testDiscordMutation.isPending
+                      }
+                      className="flex-1"
+                    >
+                      {testDiscordMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          發送中...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          發送測試訊息
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSendDailyReport}
+                      disabled={
+                        !discordSettings.webhook_url ||
+                        sendDailyReportMutation.isPending
+                      }
+                      className="flex-1"
+                    >
+                      {sendDailyReportMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          發送中...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          發送每日報告
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    測試 Discord Webhook 是否正常運作
                   </p>
                 </div>
               </CardContent>
