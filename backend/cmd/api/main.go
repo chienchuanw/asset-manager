@@ -104,9 +104,23 @@ func main() {
 		assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 		discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService)
 
+		// 初始化排程器管理器（不啟動）
+		schedulerManagerConfig := scheduler.SchedulerManagerConfig{
+			Enabled:           false, // Redis 不可用時停用排程器
+			DailySnapshotTime: "23:59",
+		}
+		schedulerManager := scheduler.NewSchedulerManager(
+			assetSnapshotService,
+			discordService,
+			settingsService,
+			holdingService,
+			schedulerManagerConfig,
+		)
+		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
+
 		// 建立 router 並啟動（簡化版，不啟動排程器）
-		log.Println("Warning: Snapshot scheduler is disabled (Redis not available)")
-		startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler)
+		log.Println("Warning: Scheduler is disabled (Redis not available)")
+		startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -170,19 +184,28 @@ func main() {
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService)
 
-	// 初始化並啟動排程器
-	snapshotSchedulerConfig := scheduler.SnapshotSchedulerConfig{
-		Enabled:           os.Getenv("SNAPSHOT_SCHEDULER_ENABLED") == "true",
-		DailySnapshotTime: getEnvOrDefault("SNAPSHOT_SCHEDULER_TIME", "23:59"),
+	// 初始化並啟動排程器管理器
+	schedulerManagerConfig := scheduler.SchedulerManagerConfig{
+		Enabled:           os.Getenv("SCHEDULER_ENABLED") == "true",
+		DailySnapshotTime: getEnvOrDefault("SCHEDULER_SNAPSHOT_TIME", "23:59"),
 	}
-	snapshotScheduler := scheduler.NewSnapshotScheduler(assetSnapshotService, snapshotSchedulerConfig)
-	if err := snapshotScheduler.Start(); err != nil {
-		log.Printf("Warning: Failed to start snapshot scheduler: %v", err)
+	schedulerManager := scheduler.NewSchedulerManager(
+		assetSnapshotService,
+		discordService,
+		settingsService,
+		holdingService,
+		schedulerManagerConfig,
+	)
+	if err := schedulerManager.Start(); err != nil {
+		log.Printf("Warning: Failed to start scheduler manager: %v", err)
 	}
-	defer snapshotScheduler.Stop()
+	defer schedulerManager.Stop()
+
+	// 初始化排程器 Handler
+	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器
-	startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler)
+	startServer(transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -195,7 +218,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler) {
+func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -274,6 +297,15 @@ func startServer(transactionHandler *api.TransactionHandler, holdingHandler *api
 		{
 			discord.POST("/test", discordHandler.TestDiscord)
 			discord.POST("/daily-report", discordHandler.SendDailyReport)
+		}
+
+		// Scheduler 路由
+		schedulerGroup := apiGroup.Group("/scheduler")
+		{
+			schedulerGroup.GET("/status", schedulerHandler.GetStatus)
+			schedulerGroup.POST("/trigger/snapshot", schedulerHandler.TriggerSnapshot)
+			schedulerGroup.POST("/trigger/discord-report", schedulerHandler.TriggerDiscordReport)
+			schedulerGroup.POST("/reload/discord", schedulerHandler.ReloadDiscordSchedule)
 		}
 
 		// Asset Snapshots 路由
