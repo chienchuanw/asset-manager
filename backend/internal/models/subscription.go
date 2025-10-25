@@ -59,14 +59,15 @@ type CreateSubscriptionInput struct {
 
 // UpdateSubscriptionInput 更新訂閱的輸入資料
 type UpdateSubscriptionInput struct {
-	Name         *string       `json:"name,omitempty" binding:"omitempty,max=255"`
-	Amount       *float64      `json:"amount,omitempty" binding:"omitempty,gt=0"`
-	BillingCycle *BillingCycle `json:"billing_cycle,omitempty"`
-	BillingDay   *int          `json:"billing_day,omitempty" binding:"omitempty,min=1,max=31"`
-	CategoryID   *uuid.UUID    `json:"category_id,omitempty"`
-	EndDate      *time.Time    `json:"end_date,omitempty"`
-	AutoRenew    *bool         `json:"auto_renew,omitempty"`
-	Note         *string       `json:"note,omitempty"`
+	Name         *string              `json:"name,omitempty" binding:"omitempty,max=255"`
+	Amount       *float64             `json:"amount,omitempty" binding:"omitempty,gt=0"`
+	BillingCycle *BillingCycle        `json:"billing_cycle,omitempty"`
+	BillingDay   *int                 `json:"billing_day,omitempty" binding:"omitempty,min=1,max=31"`
+	CategoryID   *uuid.UUID           `json:"category_id,omitempty"`
+	EndDate      *time.Time           `json:"end_date,omitempty"`
+	AutoRenew    *bool                `json:"auto_renew,omitempty"`
+	Status       *SubscriptionStatus  `json:"status,omitempty"`
+	Note         *string              `json:"note,omitempty"`
 }
 
 // Validate 驗證 BillingCycle 是否有效

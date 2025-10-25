@@ -279,6 +279,12 @@ func (r *subscriptionRepository) Update(id uuid.UUID, input *models.UpdateSubscr
 		argCount++
 	}
 
+	if input.Status != nil {
+		updates = append(updates, fmt.Sprintf("status = $%d", argCount))
+		args = append(args, *input.Status)
+		argCount++
+	}
+
 	if input.Note != nil {
 		updates = append(updates, fmt.Sprintf("note = $%d", argCount))
 		args = append(args, *input.Note)
