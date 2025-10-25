@@ -3,11 +3,20 @@
  * 顯示最近的交易記錄
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Transaction } from '@/types/transaction';
-import { getAssetTypeLabel, getTransactionTypeLabel } from '@/types/transaction';
-import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Transaction } from "@/types/transaction";
+import {
+  getAssetTypeLabel,
+  getTransactionTypeLabel,
+} from "@/types/transaction";
+import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -28,23 +37,23 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
         ) : (
           <div className="space-y-4">
             {transactions.map((transaction) => {
-              const isBuy = transaction.type === 'buy';
+              const isBuy = transaction.type === "buy";
               return (
                 <div
                   key={transaction.id}
                   className="flex items-start justify-between pb-4 border-b last:border-0 last:pb-0"
                 >
                   <div className="flex items-start gap-3">
-                    {/* 買賣圖示 */}
+                    {/* 買賣圖示（台灣習慣：紅漲綠跌） */}
                     <div
                       className={`mt-0.5 p-1 rounded-full ${
-                        isBuy ? 'bg-green-100' : 'bg-red-100'
+                        isBuy ? "bg-red-100" : "bg-green-100"
                       }`}
                     >
                       {isBuy ? (
-                        <ArrowDownIcon className="h-3 w-3 text-green-600" />
+                        <ArrowDownIcon className="h-3 w-3 text-red-600" />
                       ) : (
-                        <ArrowUpIcon className="h-3 w-3 text-red-600" />
+                        <ArrowUpIcon className="h-3 w-3 text-green-600" />
                       )}
                     </div>
 
@@ -54,10 +63,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                         <span className="font-medium text-sm">
                           {transaction.symbol}
                         </span>
-                        <Badge
-                          variant="outline"
-                          className="text-xs"
-                        >
+                        <Badge variant="outline" className="text-xs">
                           {getTransactionTypeLabel(transaction.type)}
                         </Badge>
                       </div>
@@ -65,7 +71,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                         {getAssetTypeLabel(transaction.asset_type)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(transaction.date).toLocaleDateString('zh-TW')}
+                        {new Date(transaction.date).toLocaleDateString("zh-TW")}
                       </p>
                     </div>
                   </div>
@@ -73,10 +79,19 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                   {/* 金額 */}
                   <div className="text-right space-y-1">
                     <p className="font-medium text-sm tabular-nums">
-                      {transaction.currency} {transaction.amount.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}
+                      {transaction.currency}{" "}
+                      {transaction.amount.toLocaleString("zh-TW", {
+                        maximumFractionDigits: 0,
+                      })}
                     </p>
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      {transaction.quantity.toLocaleString('zh-TW', { maximumFractionDigits: 2 })} × {transaction.price.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
+                      {transaction.quantity.toLocaleString("zh-TW", {
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      ×{" "}
+                      {transaction.price.toLocaleString("zh-TW", {
+                        maximumFractionDigits: 2,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -88,4 +103,3 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
     </Card>
   );
 }
-

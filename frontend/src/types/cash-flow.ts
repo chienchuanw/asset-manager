@@ -142,9 +142,7 @@ export const createCashFlowSchema = z.object({
   date: z.string().min(1, "日期為必填"),
   type: cashFlowTypeSchema,
   category_id: z.string().min(1, "分類為必填"),
-  amount: z
-    .number({ message: "金額必須為數字" })
-    .positive("金額必須大於 0"),
+  amount: z.number({ message: "金額必須為數字" }).positive("金額必須大於 0"),
   description: z
     .string()
     .min(1, "描述為必填")
@@ -213,22 +211,24 @@ export function getCashFlowTypeLabel(cashFlowType: CashFlowType): string {
 
 /**
  * 取得現金流類型的顏色（用於 UI 顯示）
+ * 台灣習慣：紅漲綠跌 - 收入為紅色，支出為綠色
  */
 export function getCashFlowTypeColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
-    [CashFlowType.INCOME]: "text-green-600",
-    [CashFlowType.EXPENSE]: "text-red-600",
+    [CashFlowType.INCOME]: "text-red-600",
+    [CashFlowType.EXPENSE]: "text-green-600",
   };
   return colors[cashFlowType];
 }
 
 /**
  * 取得現金流類型的背景顏色（用於 UI 顯示）
+ * 台灣習慣：紅漲綠跌 - 收入為紅色，支出為綠色
  */
 export function getCashFlowTypeBgColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
-    [CashFlowType.INCOME]: "bg-green-100",
-    [CashFlowType.EXPENSE]: "bg-red-100",
+    [CashFlowType.INCOME]: "bg-red-100",
+    [CashFlowType.EXPENSE]: "bg-green-100",
   };
   return colors[cashFlowType];
 }
@@ -274,7 +274,15 @@ export function getSystemCategories(): {
 } {
   return {
     income: ["薪資", "獎金", "利息", "其他收入"],
-    expense: ["飲食", "交通", "娛樂", "醫療", "房租", "水電", "保險", "其他支出"],
+    expense: [
+      "飲食",
+      "交通",
+      "娛樂",
+      "醫療",
+      "房租",
+      "水電",
+      "保險",
+      "其他支出",
+    ],
   };
 }
-

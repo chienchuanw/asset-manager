@@ -278,8 +278,8 @@ export default function AnalyticsPage() {
                                         key={`cell-${index}`}
                                         fill={
                                           entry.realized_pl_pct >= 0
-                                            ? "#10b981"
-                                            : "#ef4444"
+                                            ? "#ef4444"
+                                            : "#10b981"
                                         }
                                       />
                                     )
@@ -610,8 +610,8 @@ export default function AnalyticsPage() {
                                         key={`cell-${index}`}
                                         fill={
                                           entry.unrealized_pct >= 0
-                                            ? "#10b981"
-                                            : "#ef4444"
+                                            ? "#ef4444"
+                                            : "#10b981"
                                         }
                                       />
                                     )

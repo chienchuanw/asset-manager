@@ -170,13 +170,13 @@ export default function TransactionsPage() {
     }
   };
 
-  // 取得交易類型的顏色
+  // 取得交易類型的顏色（台灣習慣：紅漲綠跌）
   const getTransactionTypeColor = (type: TransactionType) => {
     switch (type) {
       case TransactionType.BUY:
-        return "bg-green-100 text-green-800";
-      case TransactionType.SELL:
         return "bg-red-100 text-red-800";
+      case TransactionType.SELL:
+        return "bg-green-100 text-green-800";
       case TransactionType.DIVIDEND:
         return "bg-blue-100 text-blue-800";
       case TransactionType.FEE:
