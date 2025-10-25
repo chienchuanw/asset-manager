@@ -36,9 +36,11 @@ import { Separator } from "@/components/ui/separator";
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  title?: string;
+  description?: string;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, title, description }: AppLayoutProps) {
   const pathname = usePathname();
 
   // 主要導航項目
@@ -165,13 +167,26 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* 主要內容區域 */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header with Sidebar Trigger */}
+        {/* Header with Sidebar Trigger and Page Title */}
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur px-4 lg:px-6">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-6" />
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Asset Manager</span>
-          </div>
+
+          {/* 動態頁面標題 */}
+          {title ? (
+            <div className="flex flex-col">
+              <span className="font-semibold text-base">{title}</span>
+              {description && (
+                <span className="text-xs text-muted-foreground hidden sm:block">
+                  {description}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Asset Manager</span>
+            </div>
+          )}
         </header>
 
         {/* 頁面內容 */}

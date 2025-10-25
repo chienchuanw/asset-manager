@@ -144,7 +144,7 @@ export default function HoldingsPage() {
   // Loading 狀態
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="container">
             <Loading variant="page" size="lg" text="載入持倉資料中..." />
@@ -157,7 +157,7 @@ export default function HoldingsPage() {
   // 錯誤狀態
   if (error) {
     return (
-      <AppLayout>
+      <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="container flex items-center justify-center h-96">
             <Card className="w-full max-w-md">
@@ -185,7 +185,7 @@ export default function HoldingsPage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="container flex flex-col gap-6">

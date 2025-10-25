@@ -130,7 +130,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout title="設定" description="管理系統設定和偏好">
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
           <Loading variant="page" size="lg" text="載入設定中..." />
         </main>
@@ -139,18 +139,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout title="設定" description="管理系統設定和偏好">
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
-          {/* 頁面標題卡片 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">設定</CardTitle>
-              <CardDescription>管理系統設定和偏好</CardDescription>
-            </CardHeader>
-          </Card>
-
           {/* 設定卡片區域 - 並排顯示 */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Discord 設定 */}

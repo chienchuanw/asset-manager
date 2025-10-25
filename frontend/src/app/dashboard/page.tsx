@@ -106,7 +106,7 @@ export default function DashboardPage() {
   // Loading 狀態
   if (holdingsLoading || transactionsLoading) {
     return (
-      <AppLayout>
+      <AppLayout title="首頁" description="資產概況總覽">
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
             {/* 統計卡片 Loading */}
@@ -156,7 +156,7 @@ export default function DashboardPage() {
   // Error 狀態
   if (holdingsError || transactionsError) {
     return (
-      <AppLayout>
+      <AppLayout title="首頁" description="資產概況總覽">
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
           <Card>
             <CardContent className="pt-6">
@@ -175,7 +175,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout title="首頁" description="資產概況總覽">
       {/* 內容區域 */}
       <main className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
