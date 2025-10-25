@@ -40,12 +40,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
+import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog";
 import { useTransactions, useDeleteTransaction } from "@/hooks";
 import {
   getAssetTypeLabel,
   getTransactionTypeLabel,
   AssetType,
   TransactionType,
+  type Transaction,
 } from "@/types/transaction";
 import {
   Search,
@@ -63,6 +65,8 @@ export default function TransactionsPage() {
   const [filterAssetType, setFilterAssetType] = useState<AssetType | "all">(
     "all"
   );
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
 
   // 取得交易列表資料
   const { data: transactions, isLoading, error, refetch } = useTransactions();
@@ -526,8 +530,7 @@ export default function TransactionsPage() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    // TODO: 實作編輯功能
-                                    alert("編輯功能尚未實作");
+                                    setEditingTransaction(transaction);
                                   }}
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
@@ -553,6 +556,18 @@ export default function TransactionsPage() {
           </Card>
         </div>
       </main>
+
+      {/* 編輯交易對話框 */}
+      {editingTransaction && (
+        <EditTransactionDialog
+          transaction={editingTransaction}
+          open={!!editingTransaction}
+          onOpenChange={(open) => {
+            if (!open) setEditingTransaction(null);
+          }}
+          onSuccess={() => refetch()}
+        />
+      )}
     </AppLayout>
   );
 }
