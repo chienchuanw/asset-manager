@@ -50,7 +50,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [analysisType, setAnalysisType] = useState<"realized" | "unrealized">(
-    "realized"
+    "unrealized"
   );
 
   // 使用 Analytics Hook 取得已實現損益資料
@@ -72,8 +72,8 @@ export default function AnalyticsPage() {
             }
           >
             <TabsList>
-              <TabsTrigger value="realized">已實現損益</TabsTrigger>
               <TabsTrigger value="unrealized">未實現損益</TabsTrigger>
+              <TabsTrigger value="realized">已實現損益</TabsTrigger>
             </TabsList>
 
             {/* 已實現損益 Tab */}
