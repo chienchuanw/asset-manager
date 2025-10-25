@@ -205,7 +205,7 @@ export default function TransactionsPage() {
   return (
     <AppLayout title="交易記錄" description="管理和查看所有交易記錄">
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
           {/* 統計摘要卡片 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -555,7 +555,7 @@ export default function TransactionsPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </div>
 
       {/* 編輯交易對話框 */}
       {editingTransaction && (

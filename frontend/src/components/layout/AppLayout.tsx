@@ -47,6 +47,17 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
   const pathname = usePathname();
   const { logout } = useAuth();
 
+  // 從 cookie 讀取 sidebar 初始狀態
+  const getInitialSidebarState = () => {
+    if (typeof document === "undefined") return true; // SSR 時預設為 true
+    const cookies = document.cookie.split("; ");
+    const sidebarCookie = cookies.find((c) => c.startsWith("sidebar_state="));
+    if (sidebarCookie) {
+      return sidebarCookie.split("=")[1] === "true";
+    }
+    return true; // 預設為展開
+  };
+
   const handleLogout = async () => {
     await logout();
   };
@@ -89,7 +100,7 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
   ];
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={getInitialSidebarState()}>
       <Sidebar collapsible="icon">
         {/* Header: Logo */}
         <SidebarHeader>
@@ -204,8 +215,8 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
           )}
         </header>
 
-        {/* 頁面內容 */}
-        {children}
+        {/* 頁面內容 - 加入適當的 padding 和 overflow 處理 */}
+        <div className="flex-1 overflow-auto">{children}</div>
       </main>
     </SidebarProvider>
   );

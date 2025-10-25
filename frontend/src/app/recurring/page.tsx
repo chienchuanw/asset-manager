@@ -271,7 +271,7 @@ export default function RecurringPage() {
   return (
     <AppLayout title="訂閱與分期" description="管理您的訂閱服務和分期付款">
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
           {/* 統計卡片 */}
           <RecurringStatsCard
@@ -319,7 +319,7 @@ export default function RecurringPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </div>
 
       {/* 訂閱表單對話框 */}
       <Dialog

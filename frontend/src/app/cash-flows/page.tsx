@@ -126,7 +126,7 @@ export default function CashFlowsPage() {
   return (
     <AppLayout title="現金流記錄" description="追蹤和管理您的收入與支出">
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
           {/* 摘要統計卡片 */}
           <CashFlowSummaryCard startDate={startDate} endDate={endDate} />
@@ -254,8 +254,7 @@ export default function CashFlowsPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }
-

@@ -163,7 +163,7 @@ export default function SettingsPage() {
   return (
     <AppLayout title="設定" description="管理系統設定和偏好">
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
           {/* Discord 和資產配置設定 - 並排顯示 */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -554,7 +554,7 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }

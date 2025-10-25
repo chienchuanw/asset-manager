@@ -145,11 +145,11 @@ export default function HoldingsPage() {
   if (isLoading) {
     return (
       <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
-        <main className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="container">
             <Loading variant="page" size="lg" text="載入持倉資料中..." />
           </div>
-        </main>
+        </div>
       </AppLayout>
     );
   }
@@ -158,7 +158,7 @@ export default function HoldingsPage() {
   if (error) {
     return (
       <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
-        <main className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="container flex items-center justify-center h-96">
             <Card className="w-full max-w-md">
               <CardHeader>
@@ -179,7 +179,7 @@ export default function HoldingsPage() {
               </CardContent>
             </Card>
           </div>
-        </main>
+        </div>
       </AppLayout>
     );
   }
@@ -187,7 +187,7 @@ export default function HoldingsPage() {
   return (
     <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="container flex flex-col gap-6">
           {/* 統計摘要卡片 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -457,7 +457,7 @@ export default function HoldingsPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }

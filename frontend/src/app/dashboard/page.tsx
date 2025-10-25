@@ -119,7 +119,7 @@ export default function DashboardPage() {
   if (holdingsLoading || transactionsLoading) {
     return (
       <AppLayout title="首頁" description="資產概況總覽">
-        <main className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
             {/* 統計卡片 Loading */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -160,7 +160,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </AppLayout>
     );
   }
@@ -169,7 +169,7 @@ export default function DashboardPage() {
   if (holdingsError || transactionsError) {
     return (
       <AppLayout title="首頁" description="資產概況總覽">
-        <main className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-red-600">
@@ -181,7 +181,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </main>
+        </div>
       </AppLayout>
     );
   }
@@ -189,7 +189,7 @@ export default function DashboardPage() {
   return (
     <AppLayout title="首頁" description="資產概況總覽">
       {/* 內容區域 */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
           {/* 過期價格警告 */}
           {stalePriceInfo && (
@@ -275,7 +275,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }

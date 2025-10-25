@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
   return (
     <AppLayout title="分析報表" description="查看投資績效分析">
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
           {/* 分析類型切換 */}
           <Tabs
@@ -782,7 +782,7 @@ export default function AnalyticsPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }
