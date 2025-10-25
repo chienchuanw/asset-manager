@@ -159,6 +159,73 @@ func (s *discordService) FormatDailyReport(data *models.DailyReportData) *models
 		}
 	}
 
+	// 再平衡檢查
+	if data.RebalanceCheck != nil && data.RebalanceCheck.NeedsRebalance {
+		embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+			Name:   "\n⚠️ 再平衡提醒",
+			Value:  "\u200B",
+			Inline: false,
+		})
+
+		embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+			Name:   "狀態",
+			Value:  fmt.Sprintf("⚠️ 需要再平衡（閾值: %.1f%%）", data.RebalanceCheck.Threshold),
+			Inline: false,
+		})
+
+		// 顯示偏離情況
+		deviationText := ""
+		for _, deviation := range data.RebalanceCheck.Deviations {
+			if deviation.ExceedsThreshold {
+				typeLabel := getAssetTypeLabel(deviation.AssetType)
+				symbol := "📈"
+				if deviation.Deviation < 0 {
+					symbol = "📉"
+				}
+				deviationText += fmt.Sprintf("%s %s: %.1f%% → %.1f%% (%s%.1f%%)\n",
+					symbol,
+					typeLabel,
+					deviation.TargetPercent,
+					deviation.CurrentPercent,
+					getDeviationSign(deviation.Deviation),
+					deviation.DeviationAbs,
+				)
+			}
+		}
+		if deviationText != "" {
+			embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+				Name:   "偏離情況",
+				Value:  deviationText,
+				Inline: false,
+			})
+		}
+
+		// 顯示建議（最多 3 個）
+		if len(data.RebalanceCheck.Suggestions) > 0 {
+			suggestionText := ""
+			for i, suggestion := range data.RebalanceCheck.Suggestions {
+				if i >= 3 {
+					break
+				}
+				actionSymbol := "🔴"
+				if suggestion.Action == "buy" {
+					actionSymbol = "🟢"
+				}
+				typeLabel := getAssetTypeLabel(suggestion.AssetType)
+				suggestionText += fmt.Sprintf("%s %s: NT$ %s\n",
+					actionSymbol,
+					typeLabel,
+					formatNumber(suggestion.Amount),
+				)
+			}
+			embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+				Name:   "建議操作",
+				Value:  suggestionText,
+				Inline: false,
+			})
+		}
+	}
+
 	return &models.DiscordMessage{
 		Embeds: []models.DiscordEmbed{embed},
 	}
@@ -186,3 +253,10 @@ func getAssetTypeLabel(assetType string) string {
 	}
 }
 
+// getDeviationSign 取得偏離符號
+func getDeviationSign(deviation float64) string {
+	if deviation > 0 {
+		return "+"
+	}
+	return ""
+}

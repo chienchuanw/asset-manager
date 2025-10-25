@@ -103,7 +103,7 @@ func main() {
 		performanceTrendHandler := api.NewPerformanceTrendHandler(performanceTrendService)
 		settingsHandler := api.NewSettingsHandler(settingsService)
 		assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
-		discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService)
+		discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
 		rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 
 		// 初始化排程器管理器（不啟動）
@@ -116,6 +116,7 @@ func main() {
 			discordService,
 			settingsService,
 			holdingService,
+			rebalanceService,
 			schedulerManagerConfig,
 		)
 		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
@@ -185,7 +186,7 @@ func main() {
 	performanceTrendHandler := api.NewPerformanceTrendHandler(performanceTrendService)
 	settingsHandler := api.NewSettingsHandler(settingsService)
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
-	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService)
+	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 
 	// 初始化並啟動排程器管理器
@@ -198,6 +199,7 @@ func main() {
 		discordService,
 		settingsService,
 		holdingService,
+		rebalanceService,
 		schedulerManagerConfig,
 	)
 	if err := schedulerManager.Start(); err != nil {

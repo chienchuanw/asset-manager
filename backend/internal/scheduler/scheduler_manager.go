@@ -19,6 +19,7 @@ type SchedulerManager struct {
 	discordService      service.DiscordService
 	settingsService     service.SettingsService
 	holdingService      service.HoldingService
+	rebalanceService    service.RebalanceService
 	enabled             bool
 	dailySnapshotTime   string // 格式: "HH:MM" (例如: "23:59")
 	discordReportTime   string // 格式: "HH:MM" (例如: "09:00")
@@ -40,6 +41,7 @@ func NewSchedulerManager(
 	discordService service.DiscordService,
 	settingsService service.SettingsService,
 	holdingService service.HoldingService,
+	rebalanceService service.RebalanceService,
 	config SchedulerManagerConfig,
 ) *SchedulerManager {
 	return &SchedulerManager{
@@ -48,6 +50,7 @@ func NewSchedulerManager(
 		discordService:    discordService,
 		settingsService:   settingsService,
 		holdingService:    holdingService,
+		rebalanceService:  rebalanceService,
 		enabled:           config.Enabled,
 		dailySnapshotTime: config.DailySnapshotTime,
 	}
@@ -237,6 +240,16 @@ func (m *SchedulerManager) sendDailyDiscordReport() error {
 
 	// 計算報告資料（與 discord_handler.go 相同的邏輯）
 	reportData := m.buildReportData(holdings)
+
+	// 檢查是否需要再平衡
+	rebalanceCheck, err := m.rebalanceService.CheckRebalance()
+	if err != nil {
+		log.Printf("Warning: Failed to check rebalance: %v", err)
+		// 不返回錯誤，繼續發送報告
+	} else {
+		// 將再平衡檢查結果加入報告
+		reportData.RebalanceCheck = rebalanceCheck
+	}
 
 	// 格式化報告
 	message := m.discordService.FormatDailyReport(reportData)

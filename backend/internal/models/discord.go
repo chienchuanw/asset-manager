@@ -41,6 +41,7 @@ type DailyReportData struct {
 	HoldingCount       int                             // 持倉數量
 	TopHoldings        []*Holding                      // 前 5 大持倉
 	ByAssetType        map[string]*AssetTypePerformance // 按資產類型分類
+	RebalanceCheck     *RebalanceCheck                 // 再平衡檢查結果（可選）
 }
 
 // AssetTypePerformance 資產類型績效

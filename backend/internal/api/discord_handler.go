@@ -12,9 +12,10 @@ import (
 
 // DiscordHandler Discord API Handler
 type DiscordHandler struct {
-	discordService  service.DiscordService
-	settingsService service.SettingsService
-	holdingService  service.HoldingService
+	discordService   service.DiscordService
+	settingsService  service.SettingsService
+	holdingService   service.HoldingService
+	rebalanceService service.RebalanceService
 }
 
 // NewDiscordHandler 建立新的 Discord Handler
@@ -22,11 +23,13 @@ func NewDiscordHandler(
 	discordService service.DiscordService,
 	settingsService service.SettingsService,
 	holdingService service.HoldingService,
+	rebalanceService service.RebalanceService,
 ) *DiscordHandler {
 	return &DiscordHandler{
-		discordService:  discordService,
-		settingsService: settingsService,
-		holdingService:  holdingService,
+		discordService:   discordService,
+		settingsService:  settingsService,
+		holdingService:   holdingService,
+		rebalanceService: rebalanceService,
 	}
 }
 
@@ -227,6 +230,16 @@ func (h *DiscordHandler) SendDailyReport(c *gin.Context) {
 		HoldingCount:       len(holdings),
 		TopHoldings:        topHoldings,
 		ByAssetType:        byAssetType,
+	}
+
+	// 檢查是否需要再平衡
+	rebalanceCheck, err := h.rebalanceService.CheckRebalance()
+	if err != nil {
+		// 不返回錯誤，繼續發送報告（但不包含再平衡資訊）
+		// 可以記錄警告日誌
+	} else {
+		// 將再平衡檢查結果加入報告
+		reportData.RebalanceCheck = rebalanceCheck
 	}
 
 	// 格式化報告
