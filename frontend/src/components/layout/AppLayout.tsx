@@ -127,40 +127,35 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-
-          <Separator />
-
-          {/* 工具區 */}
-          <SidebarGroup>
-            <SidebarGroupLabel>工具</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {toolItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        tooltip={item.label}
-                      >
-                        <Link href={item.href}>
-                          <Icon />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
         </SidebarContent>
 
-        {/* Footer: 登出 */}
+        {/* Footer: 工具區 + 登出 */}
         <SidebarFooter>
           <SidebarMenu>
+            {/* 工具區項目 */}
+            {toolItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <Icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+
+            {/* 分隔線 */}
+            <Separator className="my-2" />
+
+            {/* 登出按鈕 */}
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="登出" onClick={handleLogout}>
                 <LogOutIcon />
