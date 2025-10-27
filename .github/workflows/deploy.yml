@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-  
+
   # 允許手動觸發部署
   workflow_dispatch:
 
@@ -13,12 +13,12 @@ jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    
+
     steps:
       # Step 1: Checkout 程式碼
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       # Step 2: 設定 SSH
       - name: Setup SSH
         env:
@@ -28,7 +28,7 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-      
+
       # Step 3: 部署前通知 Discord
       - name: Discord notification - Deploy started
         if: always()
@@ -64,7 +64,7 @@ jobs:
               }' \
               $DISCORD_WEBHOOK
           fi
-      
+
       # Step 4: 備份資料庫
       - name: Backup database
         run: |
@@ -79,7 +79,7 @@ jobs:
               echo "資料庫容器未運行,跳過備份"
             fi
           EOF
-      
+
       # Step 5: 拉取最新程式碼
       - name: Pull latest code
         run: |
@@ -89,7 +89,7 @@ jobs:
             git reset --hard origin/main
             git clean -fd
           EOF
-      
+
       # Step 6: 建立環境變數檔案
       - name: Create .env.production file
         run: |
@@ -103,39 +103,39 @@ jobs:
           DB_USER=${{ secrets.PROD_DB_USER }}
           DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
           DB_NAME=${{ secrets.PROD_DB_NAME }}
-          
+
           # Redis
           REDIS_ADDR=redis:6379
           REDIS_PASSWORD=${{ secrets.PROD_REDIS_PASSWORD }}
           REDIS_DB=0
           PRICE_CACHE_EXPIRATION=5m
-          
+
           # Application
           APP_PORT=8080
           GIN_MODE=release
-          
+
           # API Keys
           FINMIND_API_KEY=${{ secrets.PROD_FINMIND_API_KEY }}
           COINGECKO_API_KEY=${{ secrets.PROD_COINGECKO_API_KEY }}
           ALPHA_VANTAGE_API_KEY=${{ secrets.PROD_ALPHA_VANTAGE_API_KEY }}
-          
+
           # Scheduler
           SNAPSHOT_SCHEDULER_ENABLED=true
           SNAPSHOT_SCHEDULER_TIME=23:59
-          
+
           # Auth
           AUTH_USERNAME=${{ secrets.PROD_AUTH_USERNAME }}
           AUTH_PASSWORD=${{ secrets.PROD_AUTH_PASSWORD }}
           JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
-          
+
           # CORS
           CORS_ALLOWED_ORIGINS=http://${{ secrets.EC2_HOST }}
-          
+
           # Frontend
           NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api
           ENVEOF
           EOF
-      
+
       # Step 7: 部署應用程式
       - name: Deploy application
         run: |
@@ -155,7 +155,7 @@ jobs:
             echo "等待服務啟動..."
             sleep 30
           EOF
-      
+
       # Step 8: 健康檢查
       - name: Health check
         run: |
@@ -187,7 +187,7 @@ jobs:
               exit 1
             fi
           EOF
-      
+
       # Step 9: 清理舊映像檔
       - name: Cleanup old images
         if: success()
@@ -195,7 +195,7 @@ jobs:
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             docker image prune -f
           EOF
-      
+
       # Step 10: 部署成功通知
       - name: Discord notification - Deploy success
         if: success()
@@ -226,7 +226,7 @@ jobs:
               }' \
               $DISCORD_WEBHOOK
           fi
-      
+
       # Step 11: 部署失敗通知
       - name: Discord notification - Deploy failed
         if: failure()
@@ -262,4 +262,3 @@ jobs:
               }' \
               $DISCORD_WEBHOOK
           fi
-
