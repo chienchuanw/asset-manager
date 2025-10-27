@@ -1,12 +1,17 @@
 module github.com/chienchuanw/asset-manager
 
-go 1.25.3
+go 1.24.0
 
 require (
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
+	github.com/jmoiron/sqlx v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/redis/go-redis/v9 v9.16.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -25,9 +30,6 @@ require (
 	github.com/go-playground/validator/v10 v10.28.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
-	github.com/jmoiron/sqlx v1.4.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -39,8 +41,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.55.0 // indirect
-	github.com/redis/go-redis/v9 v9.16.0 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
