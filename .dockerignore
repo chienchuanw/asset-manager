@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+LICENSE
+doc/
+docs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+*.test
+test/
+tests/
+
+# Build artifacts
+bin/
+dist/
+build/
+
+# Dependencies (will be installed in Docker)
+node_modules/
+vendor/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+*.backup
+backups/
+
+# Mock data
+mock/
+
+# Scripts (not needed in production)
+scripts/
+

@@ -1,0 +1,265 @@
+name: Deploy to EC2
+
+on:
+  # 當 push 到 main 分支時自動部署
+  push:
+    branches:
+      - main
+  
+  # 允許手動觸發部署
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Checkout 程式碼
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Step 2: 設定 SSH
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      
+      # Step 3: 部署前通知 Discord
+      - name: Discord notification - Deploy started
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{
+                "embeds": [{
+                  "title": "🚀 部署開始",
+                  "description": "Asset Manager 正在部署到正式環境",
+                  "color": 3447003,
+                  "fields": [
+                    {
+                      "name": "分支",
+                      "value": "'"$GITHUB_REF_NAME"'",
+                      "inline": true
+                    },
+                    {
+                      "name": "提交者",
+                      "value": "'"$GITHUB_ACTOR"'",
+                      "inline": true
+                    },
+                    {
+                      "name": "提交訊息",
+                      "value": "'"$(git log -1 --pretty=%B | head -n 1)"'",
+                      "inline": false
+                    }
+                  ],
+                  "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
+                }]
+              }' \
+              $DISCORD_WEBHOOK
+          fi
+      
+      # Step 4: 備份資料庫
+      - name: Backup database
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/asset-manager
+            
+            # 如果容器正在運行,執行備份
+            if docker ps | grep -q "asset-manager-postgres"; then
+              echo "正在備份資料庫..."
+              bash ./scripts/backup-db.sh || echo "備份失敗,但繼續部署"
+            else
+              echo "資料庫容器未運行,跳過備份"
+            fi
+          EOF
+      
+      # Step 5: 拉取最新程式碼
+      - name: Pull latest code
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/asset-manager
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+          EOF
+      
+      # Step 6: 建立環境變數檔案
+      - name: Create .env.production file
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/asset-manager
+            
+            cat > .env.production << 'ENVEOF'
+          # Database
+          DB_HOST=postgres
+          DB_PORT=5432
+          DB_USER=${{ secrets.PROD_DB_USER }}
+          DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+          DB_NAME=${{ secrets.PROD_DB_NAME }}
+          
+          # Redis
+          REDIS_ADDR=redis:6379
+          REDIS_PASSWORD=${{ secrets.PROD_REDIS_PASSWORD }}
+          REDIS_DB=0
+          PRICE_CACHE_EXPIRATION=5m
+          
+          # Application
+          APP_PORT=8080
+          GIN_MODE=release
+          
+          # API Keys
+          FINMIND_API_KEY=${{ secrets.PROD_FINMIND_API_KEY }}
+          COINGECKO_API_KEY=${{ secrets.PROD_COINGECKO_API_KEY }}
+          ALPHA_VANTAGE_API_KEY=${{ secrets.PROD_ALPHA_VANTAGE_API_KEY }}
+          
+          # Scheduler
+          SNAPSHOT_SCHEDULER_ENABLED=true
+          SNAPSHOT_SCHEDULER_TIME=23:59
+          
+          # Auth
+          AUTH_USERNAME=${{ secrets.PROD_AUTH_USERNAME }}
+          AUTH_PASSWORD=${{ secrets.PROD_AUTH_PASSWORD }}
+          JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
+          
+          # CORS
+          CORS_ALLOWED_ORIGINS=http://${{ secrets.EC2_HOST }}
+          
+          # Frontend
+          NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api
+          ENVEOF
+          EOF
+      
+      # Step 7: 部署應用程式
+      - name: Deploy application
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/asset-manager
+            
+            # 停止現有容器
+            docker-compose down || true
+            
+            # 建置新映像檔
+            docker-compose --env-file .env.production build --no-cache
+            
+            # 啟動容器
+            docker-compose --env-file .env.production up -d
+            
+            # 等待服務啟動
+            echo "等待服務啟動..."
+            sleep 30
+          EOF
+      
+      # Step 8: 健康檢查
+      - name: Health check
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # 檢查 Backend API
+            if curl -f http://localhost:8080/health > /dev/null 2>&1; then
+              echo "✓ Backend API 健康檢查通過"
+            else
+              echo "✗ Backend API 健康檢查失敗"
+              docker-compose logs --tail=50 backend
+              exit 1
+            fi
+            
+            # 檢查 Frontend
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✓ Frontend 健康檢查通過"
+            else
+              echo "✗ Frontend 健康檢查失敗"
+              docker-compose logs --tail=50 frontend
+              exit 1
+            fi
+            
+            # 檢查 Nginx
+            if curl -f http://localhost/health > /dev/null 2>&1; then
+              echo "✓ Nginx 健康檢查通過"
+            else
+              echo "✗ Nginx 健康檢查失敗"
+              docker-compose logs --tail=50 nginx
+              exit 1
+            fi
+          EOF
+      
+      # Step 9: 清理舊映像檔
+      - name: Cleanup old images
+        if: success()
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            docker image prune -f
+          EOF
+      
+      # Step 10: 部署成功通知
+      - name: Discord notification - Deploy success
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{
+                "embeds": [{
+                  "title": "✅ 部署成功",
+                  "description": "Asset Manager 已成功部署到正式環境",
+                  "color": 3066993,
+                  "fields": [
+                    {
+                      "name": "環境",
+                      "value": "Production",
+                      "inline": true
+                    },
+                    {
+                      "name": "網址",
+                      "value": "http://'"${{ secrets.EC2_HOST }}"'",
+                      "inline": true
+                    }
+                  ],
+                  "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
+                }]
+              }' \
+              $DISCORD_WEBHOOK
+          fi
+      
+      # Step 11: 部署失敗通知
+      - name: Discord notification - Deploy failed
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{
+                "embeds": [{
+                  "title": "❌ 部署失敗",
+                  "description": "Asset Manager 部署過程中發生錯誤",
+                  "color": 15158332,
+                  "fields": [
+                    {
+                      "name": "分支",
+                      "value": "'"$GITHUB_REF_NAME"'",
+                      "inline": true
+                    },
+                    {
+                      "name": "提交者",
+                      "value": "'"$GITHUB_ACTOR"'",
+                      "inline": true
+                    },
+                    {
+                      "name": "查看詳情",
+                      "value": "[GitHub Actions]('"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"')",
+                      "inline": false
+                    }
+                  ],
+                  "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
+                }]
+              }' \
+              $DISCORD_WEBHOOK
+          fi
+

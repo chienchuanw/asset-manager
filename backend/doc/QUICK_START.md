@@ -1,267 +1,335 @@
-# 🚀 Quick Start Guide
+# 🚀 快速開始指南
 
-## 前置需求
-
-- Go 1.21 或以上
-- PostgreSQL 12 或以上
-- golang-migrate CLI
+這份指南會帶你在 10 分鐘內完成 Asset Manager 的部署。
 
 ---
 
-## 快速開始（5 分鐘）
+## ✅ 前置檢查清單
 
-### 1. 自動化設定（推薦）
+在開始之前,確認你已經完成:
 
-```bash
-cd backend
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
+- [ ] AWS EC2 Instance 已啟動 (IP: 43.213.77.244)
+- [ ] SSH Key 已下載並設定權限
+- [ ] 可以 SSH 連線到 EC2
+- [ ] Docker 和 Docker Compose 已安裝
 
-這個腳本會自動：
-- ✅ 檢查 Go 和 PostgreSQL 安裝
-- ✅ 安裝 golang-migrate（如果需要）
-- ✅ 安裝所有 Go 依賴套件
-- ✅ 建立 .env 檔案
-- ✅ 建立資料庫（可選）
-- ✅ 執行 migration（可選）
-
-### 2. 手動設定
-
-如果你想手動設定，請按照以下步驟：
-
-#### Step 1: 安裝依賴
-```bash
-cd backend
-make install
-```
-
-#### Step 2: 設定環境變數
-```bash
-cp .env.example .env
-# 編輯 .env 檔案，設定你的資料庫連線資訊
-```
-
-#### Step 3: 建立資料庫
-```bash
-# 使用 psql 連接到 PostgreSQL
-psql -U postgres
-
-# 建立資料庫
-CREATE DATABASE asset_manager;
-CREATE DATABASE asset_manager_test;
-
-# 退出
-\q
-```
-
-#### Step 4: 執行 Migration
-```bash
-# 方法 1: 使用 Makefile（需要先設定環境變數）
-export DB_USER=postgres
-export DB_PASSWORD=your_password
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=asset_manager
-
-make migrate-up
-
-# 方法 2: 直接使用 migrate CLI
-migrate -path migrations \
-  -database "postgresql://postgres:your_password@localhost:5432/asset_manager?sslmode=disable" \
-  up
-```
+如果還沒完成,請先參考 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 ---
 
-## 執行測試
+## 📝 Step 1: 準備環境變數
 
-### 執行所有測試
+### 1.1 產生 JWT Secret
+
+在你的**本機**執行:
+
 ```bash
-make test
+openssl rand -base64 32
 ```
 
-### 只執行單元測試（不需要資料庫）
-```bash
-make test-unit
-```
+複製產生的字串,例如: `XkVdiQpHuvmD8EL/b7izSs/ZD9AadgGEVvi95jsL6ko=`
 
-### 只執行整合測試（需要資料庫）
-```bash
-# 先設定測試資料庫環境變數
-export TEST_DB_HOST=localhost
-export TEST_DB_PORT=5432
-export TEST_DB_USER=postgres
-export TEST_DB_PASSWORD=your_password
-export TEST_DB_NAME=asset_manager_test
+### 1.2 準備 API Keys
 
-# 執行測試
-make test-integration
-```
+確認你已經申請以下 API Keys:
+
+- [ ] FinMind API Key - https://finmind.github.io/
+- [ ] CoinGecko API Key - https://www.coingecko.com/en/api
+- [ ] Alpha Vantage API Key - https://www.alphavantage.co/support/#api-key
 
 ---
 
-## 啟動 API 伺服器
+## 🖥️ Step 2: 在 EC2 上部署
+
+### 2.1 SSH 連線到 EC2
 
 ```bash
-make run
+ssh -i ~/.ssh/asset-manager-key.pem ubuntu@43.213.77.244
 ```
 
-伺服器會在 `http://localhost:8080` 啟動。
-
----
-
-## 測試 API
-
-### 方法 1: 使用測試腳本（推薦）
+### 2.2 Clone 專案程式碼
 
 ```bash
-chmod +x scripts/test-api.sh
-./scripts/test-api.sh
+cd /home/ubuntu
+git clone https://github.com/chienchuanw/asset-manager.git
+cd asset-manager
 ```
 
-### 方法 2: 手動測試
+### 2.3 建立環境變數檔案
 
-#### Health Check
 ```bash
+cp .env.production.example .env.production
+vim .env.production
+```
+
+**填入以下必要的值:**
+
+```bash
+# 資料庫密碼 (自己設定一個強密碼)
+DB_PASSWORD=YOUR_STRONG_PASSWORD_HERE
+
+# 身份驗證
+AUTH_USERNAME=admin
+AUTH_PASSWORD=YOUR_STRONG_PASSWORD_HERE
+JWT_SECRET=YOUR_JWT_SECRET_FROM_STEP_1
+
+# API Keys
+FINMIND_API_KEY=YOUR_FINMIND_KEY
+COINGECKO_API_KEY=YOUR_COINGECKO_KEY
+ALPHA_VANTAGE_API_KEY=YOUR_ALPHA_VANTAGE_KEY
+
+# CORS 和 API URL (使用你的 EC2 IP)
+CORS_ALLOWED_ORIGINS=http://43.213.77.244
+NEXT_PUBLIC_API_URL=http://43.213.77.244/api
+```
+
+**儲存並離開:** 按 `Esc`,輸入 `:wq`,按 `Enter`
+
+### 2.4 啟動服務
+
+```bash
+# 建置並啟動所有容器
+docker-compose --env-file .env.production up -d
+
+# 查看容器狀態
+docker-compose ps
+
+# 查看日誌 (確認沒有錯誤)
+docker-compose logs -f
+```
+
+**按 `Ctrl+C` 停止查看日誌**
+
+### 2.5 驗證部署
+
+```bash
+# 檢查 Backend API
 curl http://localhost:8080/health
-```
 
-#### 建立交易記錄
-```bash
-curl -X POST http://localhost:8080/api/transactions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "date": "2025-10-22T00:00:00Z",
-    "asset_type": "tw-stock",
-    "symbol": "2330",
-    "name": "台積電",
-    "type": "buy",
-    "quantity": 10,
-    "price": 620,
-    "amount": 6200,
-    "fee": 28,
-    "note": "定期定額買入"
-  }'
-```
+# 應該看到: {"status":"OK","message":"Asset Manager API Server is running."}
 
-#### 取得所有交易記錄
-```bash
-curl http://localhost:8080/api/transactions
-```
+# 檢查 Frontend
+curl http://localhost:3000
 
-#### 取得單筆交易記錄
-```bash
-# 將 {id} 替換為實際的 UUID
-curl http://localhost:8080/api/transactions/{id}
-```
+# 應該看到 HTML 內容
 
-#### 更新交易記錄
-```bash
-curl -X PUT http://localhost:8080/api/transactions/{id} \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quantity": 20,
-    "price": 630,
-    "amount": 12600
-  }'
-```
+# 檢查 Nginx
+curl http://localhost/health
 
-#### 刪除交易記錄
-```bash
-curl -X DELETE http://localhost:8080/api/transactions/{id}
-```
-
-#### 使用篩選條件
-```bash
-# 只查詢台股
-curl "http://localhost:8080/api/transactions?asset_type=tw-stock"
-
-# 查詢日期範圍
-curl "http://localhost:8080/api/transactions?start_date=2025-10-01&end_date=2025-10-31"
-
-# 分頁查詢
-curl "http://localhost:8080/api/transactions?limit=10&offset=0"
+# 應該看到: healthy
 ```
 
 ---
 
-## 常用指令
+## 🌐 Step 3: 從瀏覽器訪問
+
+### 3.1 開啟瀏覽器
+
+前往: `http://43.213.77.244`
+
+### 3.2 登入
+
+- 帳號: `admin` (或你在 .env.production 設定的)
+- 密碼: 你在 .env.production 設定的密碼
+
+### 3.3 測試功能
+
+- 查看 Dashboard
+- 新增一筆交易記錄
+- 查看持倉資訊
+
+---
+
+## 🔄 Step 4: 設定自動備份
+
+### 4.1 設定 Cron Job
 
 ```bash
-# 查看所有可用指令
-make help
+# 編輯 crontab
+crontab -e
 
-# 安裝依賴
-make install
+# 如果是第一次使用,選擇編輯器 (建議選 vim)
 
-# 執行測試
-make test
+# 加入以下這行 (每天凌晨 2 點自動備份)
+0 2 * * * /home/ubuntu/asset-manager/scripts/backup-db.sh >> /home/ubuntu/backup.log 2>&1
 
-# 執行單元測試
-make test-unit
+# 儲存並離開
+```
 
-# 執行整合測試
-make test-integration
+### 4.2 測試備份
 
-# 執行 migration
-make migrate-up
+```bash
+# 手動執行備份
+bash scripts/backup-db.sh
 
-# 回滾 migration
-make migrate-down
-
-# 啟動伺服器
-make run
-
-# 編譯應用程式
-make build
-
-# 清理編譯產物
-make clean
+# 查看備份檔案
+ls -lh /home/ubuntu/backups/
 ```
 
 ---
 
-## 故障排除
+## 🤖 Step 5: 設定 GitHub Actions 自動部署
 
-### 問題 1: 找不到 go 指令
-**解決方法：** 安裝 Go 1.21 或以上版本
-- macOS: `brew install go`
-- Ubuntu: `sudo apt-get install golang-go`
-- 或從官網下載：https://golang.org/dl/
+### 5.1 建立 Discord Webhook (可選)
 
-### 問題 2: 找不到 migrate 指令
-**解決方法：** 安裝 golang-migrate
-- macOS: `brew install golang-migrate`
-- Linux: `go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest`
+1. 開啟 Discord,選擇一個頻道
+2. 頻道設定 → 整合 → Webhooks → 新增 Webhook
+3. 複製 Webhook URL
 
-### 問題 3: 資料庫連線失敗
-**解決方法：**
-1. 確認 PostgreSQL 是否正在執行
-2. 檢查 .env 檔案中的資料庫設定是否正確
-3. 確認資料庫是否已建立
+### 5.2 設定 GitHub Secrets
 
-### 問題 4: Migration 執行失敗
-**解決方法：**
-1. 確認資料庫連線設定正確
-2. 確認資料庫已建立
-3. 檢查 migration 檔案是否存在於 `migrations/` 目錄
+前往: `https://github.com/chienchuanw/asset-manager/settings/secrets/actions`
 
-### 問題 5: 測試失敗
-**解決方法：**
-1. 單元測試失敗：檢查程式碼邏輯
-2. 整合測試失敗：
-   - 確認測試資料庫已建立
-   - 確認測試資料庫已執行 migration
-   - 確認測試環境變數已設定
+點擊 **"New repository secret"**,新增以下 Secrets:
+
+**EC2 連線:**
+
+```
+Name: EC2_HOST
+Value: 43.213.77.244
+
+Name: EC2_USERNAME
+Value: ubuntu
+
+Name: EC2_SSH_KEY
+Value: (貼上 ~/.ssh/asset-manager-key.pem 的完整內容)
+```
+
+**資料庫:**
+
+```
+Name: PROD_DB_USER
+Value: postgres
+
+Name: PROD_DB_PASSWORD
+Value: (你在 .env.production 設定的密碼)
+
+Name: PROD_DB_NAME
+Value: asset_manager
+```
+
+**Redis:**
+
+```
+Name: PROD_REDIS_PASSWORD
+Value: (留空或設定密碼)
+```
+
+**身份驗證:**
+
+```
+Name: PROD_AUTH_USERNAME
+Value: admin
+
+Name: PROD_AUTH_PASSWORD
+Value: (你在 .env.production 設定的密碼)
+
+Name: PROD_JWT_SECRET
+Value: (你在 Step 1 產生的 JWT Secret)
+```
+
+**API Keys:**
+
+```
+Name: PROD_FINMIND_API_KEY
+Value: (你的 FinMind API Key)
+
+Name: PROD_COINGECKO_API_KEY
+Value: (你的 CoinGecko API Key)
+
+Name: PROD_ALPHA_VANTAGE_API_KEY
+Value: (你的 Alpha Vantage API Key)
+```
+
+**Discord (可選):**
+
+```
+Name: DISCORD_WEBHOOK_URL
+Value: (你的 Discord Webhook URL)
+```
+
+### 5.3 測試自動部署
+
+```bash
+# 在本機修改程式碼
+git add .
+git commit -m "test: 測試自動部署"
+git push origin main
+
+# 前往 GitHub Actions 查看部署進度
+# https://github.com/chienchuanw/asset-manager/actions
+```
 
 ---
 
-## 下一步
+## ✅ 完成!
 
-✅ Phase 1 完成後，可以進行 Phase 2：前端整合
+恭喜!你已經成功部署 Asset Manager 了! 🎉
 
-詳細資訊請參考：
-- `README_PHASE1.md` - 完整的實作指南
-- `PHASE1_SUMMARY.md` - Phase 1 完成總結
+### 接下來可以做什麼?
 
+1. **設定 HTTPS**
+
+   - 註冊網域名稱
+   - 使用 Let's Encrypt 取得免費 SSL 憑證
+   - 更新 nginx.conf
+
+2. **設定 S3 備份**
+
+   - 建立 S3 Bucket
+   - 設定 AWS CLI
+   - 使用 `backup-to-s3.sh` 腳本
+
+3. **監控和優化**
+   - 設定 CloudWatch 監控
+   - 調整容器資源限制
+   - 優化資料庫查詢
+
+---
+
+## 📚 更多資源
+
+- [完整部署指南](DEPLOYMENT.md)
+- [腳本使用說明](scripts/README.md)
+- [GitHub Issues](https://github.com/chienchuanw/asset-manager/issues)
+
+---
+
+## ⚠️ 常見問題
+
+### Q: 容器無法啟動
+
+**A:** 檢查日誌:
+
+```bash
+docker-compose logs backend
+docker-compose logs frontend
+```
+
+### Q: 無法從瀏覽器訪問
+
+**A:** 檢查 Security Group 是否開放 Port 80:
+
+- 前往 AWS Console → EC2 → Security Groups
+- 確認有 Port 80 的 Inbound Rule
+
+### Q: 登入失敗
+
+**A:** 檢查環境變數:
+
+```bash
+cat .env.production | grep AUTH_
+```
+
+---
+
+## 🆘 需要幫助?
+
+如果遇到問題:
+
+1. 查看日誌: `docker-compose logs -f`
+2. 檢查容器狀態: `docker-compose ps`
+3. 查看 [DEPLOYMENT.md](DEPLOYMENT.md) 的故障排除章節
+4. 在 GitHub 開 Issue
+
+祝你使用愉快! 🚀

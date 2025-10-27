@@ -24,10 +24,19 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# Environment files
 .env
 .env.local
+.env.test
 .env.production
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+backups/
+*.sql
+*.sql.gz
 
 # Editor/IDE
 # .idea/
