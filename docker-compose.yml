@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL 資料庫
   postgres:
@@ -19,7 +17,11 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-asset_manager}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-asset_manager}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,31 +68,31 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-asset_manager}
-      
+
       # Redis 設定
       REDIS_ADDR: redis:6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
       PRICE_CACHE_EXPIRATION: ${PRICE_CACHE_EXPIRATION:-5m}
-      
+
       # 應用程式設定
       APP_PORT: 8080
       GIN_MODE: ${GIN_MODE:-release}
-      
+
       # API Keys
       FINMIND_API_KEY: ${FINMIND_API_KEY}
       COINGECKO_API_KEY: ${COINGECKO_API_KEY}
       ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY}
-      
+
       # 排程器設定
       SNAPSHOT_SCHEDULER_ENABLED: ${SNAPSHOT_SCHEDULER_ENABLED:-true}
       SNAPSHOT_SCHEDULER_TIME: ${SNAPSHOT_SCHEDULER_TIME:-23:59}
-      
+
       # 身份驗證
       AUTH_USERNAME: ${AUTH_USERNAME}
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      
+
       # CORS 設定
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
@@ -101,10 +103,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
 
   # Frontend 服務
@@ -128,10 +130,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
 
   # Nginx 反向代理
@@ -152,7 +154,15 @@ services:
     networks:
       - asset-manager-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -168,4 +178,3 @@ volumes:
 networks:
   asset-manager-network:
     driver: bridge
-
