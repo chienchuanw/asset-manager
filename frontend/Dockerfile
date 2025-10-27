@@ -34,6 +34,8 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # 建置 Next.js 應用程式
 # 使用 standalone 模式減少映像檔大小
+# 限制 Node.js 記憶體使用為 1GB (適用於 t3.small)
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 RUN pnpm build
 
 # Stage 3: 執行階段

@@ -141,16 +141,20 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ubuntu/asset-manager
-            
+
             # 停止現有容器
             docker-compose down || true
-            
-            # 建置新映像檔
-            docker-compose --env-file .env.production build --no-cache
-            
+
+            # 分開建置以減少記憶體壓力
+            echo "建置 Backend..."
+            docker-compose --env-file .env.production build --no-cache backend
+
+            echo "建置 Frontend..."
+            docker-compose --env-file .env.production build --no-cache frontend
+
             # 啟動容器
             docker-compose --env-file .env.production up -d
-            
+
             # 等待服務啟動
             echo "等待服務啟動..."
             sleep 30

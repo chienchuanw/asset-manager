@@ -23,6 +23,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# 從 .env.production 讀取設定 (如果存在)
+if [ -f ".env.production" ]; then
+    export $(grep -v '^#' .env.production | grep -v '^$' | xargs)
+fi
+
 # 設定變數
 BACKUP_DIR="${BACKUP_DIR:-/home/ubuntu/backups}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
