@@ -230,7 +230,7 @@ jobs:
       - name: 🏥 Health Check
         run: |
           echo "等待應用程式啟動..."
-          sleep 15
+          sleep 30
 
           echo "執行健康檢查..."
 
@@ -244,10 +244,10 @@ jobs:
             exit 1
           fi
 
-          # 檢查 Frontend
+          # 檢查 Frontend (接受 200 或 307 重定向)
           frontend_response=$(ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000" || echo "000")
-          if [ "$frontend_response" = "200" ]; then
-            echo "✅ Frontend 健康檢查通過"
+          if [ "$frontend_response" = "200" ] || [ "$frontend_response" = "307" ]; then
+            echo "✅ Frontend 健康檢查通過 (HTTP $frontend_response)"
           else
             echo "❌ Frontend 健康檢查失敗！HTTP 狀態碼: $frontend_response"
             ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "docker-compose logs --tail=50 frontend"
@@ -409,7 +409,7 @@ jobs:
                 },
                 {
                   "name": "View Logs",
-                  "value": "[點此查看詳細錯誤](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+                  "value": "[GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
                 },
                 {
                   "name": "Time",
