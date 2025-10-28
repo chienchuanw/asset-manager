@@ -42,6 +42,7 @@ import {
   Currency,
 } from "@/types/transaction";
 import { Plus, Loader2 } from "lucide-react";
+import { InstrumentCombobox } from "./InstrumentCombobox";
 
 interface AddTransactionDialogProps {
   onSuccess?: () => void;
@@ -176,8 +177,25 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                   <FormItem>
                     <FormLabel>代碼</FormLabel>
                     <FormControl>
-                      <Input placeholder="例如: 2330" {...field} />
+                      <InstrumentCombobox
+                        value={field.value}
+                        assetType={form.watch("asset_type")}
+                        onChange={(symbol) => {
+                          // 手動輸入時更新代碼
+                          form.setValue("symbol", symbol);
+                        }}
+                        onSelect={(instrument) => {
+                          // 從清單選擇時，設定代碼並自動帶入名稱
+                          form.setValue("symbol", instrument.symbol);
+                          form.setValue("name", instrument.name);
+                        }}
+                        placeholder="輸入或選擇代碼..."
+                        searchPlaceholder="搜尋代碼或名稱..."
+                      />
                     </FormControl>
+                    <FormDescription>
+                      可從清單選擇或手動輸入代碼
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -192,6 +210,9 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                     <FormControl>
                       <Input placeholder="例如: 台積電" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      選擇代碼後自動帶入，可手動修改
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
