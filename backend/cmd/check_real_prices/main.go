@@ -28,7 +28,7 @@ func main() {
 	// 初始化真實 Price Service
 	priceService := service.NewRealPriceService(finmindAPIKey, coingeckoAPIKey, alphaVantageAPIKey)
 
-	fmt.Println("=== 測試真實價格 API ===\n")
+	fmt.Println("=== 測試真實價格 API ===")
 
 	// 測試 BTC
 	fmt.Println("【BTC】")

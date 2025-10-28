@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	fmt.Println("=== 最終驗證：預期損益百分比 ===\n")
+	fmt.Println("=== 最終驗證：預期損益百分比 ===")
 
 	// 匯率
 	exchangeRate := 31.5
