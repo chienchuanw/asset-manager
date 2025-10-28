@@ -49,7 +49,7 @@ interface AddTransactionDialogProps {
 
 /**
  * 新增交易對話框
- * 
+ *
  * 使用 react-hook-form + zod 進行表單驗證
  * 使用 useCreateTransaction hook 送出資料
  */
@@ -78,6 +78,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
       price: 0,
       amount: 0,
       fee: null,
+      tax: null,
       currency: Currency.TWD,
       note: null,
     },
@@ -117,9 +118,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>新增交易記錄</DialogTitle>
-          <DialogDescription>
-            填寫交易資訊以建立新的交易記錄
-          </DialogDescription>
+          <DialogDescription>填寫交易資訊以建立新的交易記錄</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -302,8 +301,8 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               />
             </div>
 
-            {/* 手續費和幣別 */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* 手續費、交易稅和幣別 */}
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="fee"
@@ -331,18 +330,48 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
 
               <FormField
                 control={form.control}
+                name="tax"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>交易稅（選填）</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? parseFloat(e.target.value) : null
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>幣別</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="選擇幣別" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value={Currency.TWD}>新台幣 (TWD)</SelectItem>
+                        <SelectItem value={Currency.TWD}>
+                          新台幣 (TWD)
+                        </SelectItem>
                         <SelectItem value={Currency.USD}>美金 (USD)</SelectItem>
                       </SelectContent>
                     </Select>
@@ -364,9 +393,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                       placeholder="輸入備註..."
                       {...field}
                       value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(e.target.value || null)
-                      }
+                      onChange={(e) => field.onChange(e.target.value || null)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -396,4 +423,3 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
     </Dialog>
   );
 }
-

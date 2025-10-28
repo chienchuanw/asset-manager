@@ -302,3 +302,118 @@ func TestDeleteTransaction_Success(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestCreateTransaction_WithTax 測試建立包含交易稅的交易記錄
+func TestCreateTransaction_WithTax(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	handler := NewTransactionHandler(mockService)
+	router := setupTestRouter(handler)
+
+	fee := 28.0
+	tax := 18.6 // 台股賣出交易稅 (6200 * 0.003)
+	input := models.CreateTransactionInput{
+		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        10,
+		Price:           620,
+		Amount:          6200,
+		Fee:             &fee,
+		Tax:             &tax,
+		Currency:        models.CurrencyTWD,
+	}
+
+	expectedTransaction := &models.Transaction{
+		ID:              uuid.New(),
+		Date:            input.Date,
+		AssetType:       input.AssetType,
+		Symbol:          input.Symbol,
+		Name:            input.Name,
+		TransactionType: input.TransactionType,
+		Quantity:        input.Quantity,
+		Price:           input.Price,
+		Amount:          input.Amount,
+		Fee:             input.Fee,
+		Tax:             input.Tax,
+		Currency:        input.Currency,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	mockService.On("CreateTransaction", &input).Return(expectedTransaction, nil)
+
+	// 準備請求
+	body, _ := json.Marshal(input)
+	req, _ := http.NewRequest("POST", "/api/transactions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Nil(t, response.Error)
+	assert.NotNil(t, response.Data)
+
+	mockService.AssertExpectations(t)
+}
+
+// TestUpdateTransaction_WithTax 測試更新交易記錄的交易稅
+func TestUpdateTransaction_WithTax(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	handler := NewTransactionHandler(mockService)
+	router := setupTestRouter(handler)
+
+	transactionID := uuid.New()
+	newTax := 25.0
+	updateInput := models.UpdateTransactionInput{
+		Tax: &newTax,
+	}
+
+	expectedTransaction := &models.Transaction{
+		ID:              transactionID,
+		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        10,
+		Price:           620,
+		Amount:          6200,
+		Tax:             &newTax,
+		Currency:        models.CurrencyTWD,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	mockService.On("UpdateTransaction", transactionID, &updateInput).Return(expectedTransaction, nil)
+
+	// 準備請求
+	body, _ := json.Marshal(updateInput)
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/transactions/%s", transactionID), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Nil(t, response.Error)
+	assert.NotNil(t, response.Data)
+
+	mockService.AssertExpectations(t)
+}
+

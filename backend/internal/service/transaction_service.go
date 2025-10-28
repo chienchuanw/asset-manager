@@ -63,6 +63,11 @@ func (s *transactionService) CreateTransaction(input *models.CreateTransactionIn
 		return nil, fmt.Errorf("fee must be non-negative")
 	}
 
+	// 驗證交易稅
+	if input.Tax != nil && *input.Tax < 0 {
+		return nil, fmt.Errorf("tax must be non-negative")
+	}
+
 	// 呼叫 repository 建立交易記錄
 	transaction, err := s.repo.Create(input)
 	if err != nil {

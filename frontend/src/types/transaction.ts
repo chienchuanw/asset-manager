@@ -53,6 +53,7 @@ export interface Transaction {
   price: number;
   amount: number;
   fee: number | null;
+  tax: number | null;
   currency: Currency;
   note: string | null;
   created_at: string; // ISO 8601 格式
@@ -72,6 +73,7 @@ export interface CreateTransactionInput {
   price: number;
   amount: number;
   fee?: number | null;
+  tax?: number | null;
   currency: Currency;
   note?: string | null;
 }
@@ -89,6 +91,7 @@ export interface UpdateTransactionInput {
   price?: number;
   amount?: number;
   fee?: number | null;
+  tax?: number | null;
   currency?: Currency;
   note?: string | null;
 }
@@ -164,7 +167,16 @@ export const createTransactionSchema = z.object({
   quantity: z.number({ message: "數量必須為數字" }).positive("數量必須大於 0"),
   price: z.number({ message: "價格必須為數字" }).nonnegative("價格不可為負數"),
   amount: z.number({ message: "金額必須為數字" }).nonnegative("金額不可為負數"),
-  fee: z.number({ message: "手續費必須為數字" }).nonnegative("手續費不可為負數").nullable().optional(),
+  fee: z
+    .number({ message: "手續費必須為數字" })
+    .nonnegative("手續費不可為負數")
+    .nullable()
+    .optional(),
+  tax: z
+    .number({ message: "交易稅必須為數字" })
+    .nonnegative("交易稅不可為負數")
+    .nullable()
+    .optional(),
   currency: currencySchema,
   note: z.string().nullable().optional(),
 });
@@ -202,7 +214,9 @@ export function getAssetTypeLabel(assetType: AssetType): string {
 /**
  * 取得交易類型的顯示名稱
  */
-export function getTransactionTypeLabel(transactionType: TransactionType): string {
+export function getTransactionTypeLabel(
+  transactionType: TransactionType
+): string {
   const labels: Record<TransactionType, string> = {
     [TransactionType.BUY]: "買入",
     [TransactionType.SELL]: "賣出",
@@ -231,4 +245,3 @@ export function getTransactionTypeOptions() {
     label: getTransactionTypeLabel(value),
   }));
 }
-

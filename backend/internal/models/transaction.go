@@ -46,6 +46,7 @@ type Transaction struct {
 	Price           float64         `json:"price" db:"price"`
 	Amount          float64         `json:"amount" db:"amount"`
 	Fee             *float64        `json:"fee,omitempty" db:"fee"`
+	Tax             *float64        `json:"tax,omitempty" db:"tax"`
 	Currency        Currency        `json:"currency" db:"currency"`
 	Note            *string         `json:"note,omitempty" db:"note"`
 	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
@@ -63,6 +64,7 @@ type CreateTransactionInput struct {
 	Price           float64         `json:"price" binding:"required,gte=0"`
 	Amount          float64         `json:"amount" binding:"required"`
 	Fee             *float64        `json:"fee,omitempty" binding:"omitempty,gte=0"`
+	Tax             *float64        `json:"tax,omitempty" binding:"omitempty,gte=0"`
 	Currency        Currency        `json:"currency" binding:"required"`
 	Note            *string         `json:"note,omitempty"`
 }
@@ -78,6 +80,7 @@ type UpdateTransactionInput struct {
 	Price           *float64         `json:"price,omitempty" binding:"omitempty,gte=0"`
 	Amount          *float64         `json:"amount,omitempty"`
 	Fee             *float64         `json:"fee,omitempty" binding:"omitempty,gte=0"`
+	Tax             *float64         `json:"tax,omitempty" binding:"omitempty,gte=0"`
 	Currency        *Currency        `json:"currency,omitempty"`
 	Note            *string          `json:"note,omitempty"`
 }

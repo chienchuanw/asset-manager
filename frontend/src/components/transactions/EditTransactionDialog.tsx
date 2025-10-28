@@ -81,6 +81,7 @@ export function EditTransactionDialog({
       price: transaction.price,
       amount: transaction.amount,
       fee: transaction.fee,
+      tax: transaction.tax,
       currency: transaction.currency,
       note: transaction.note,
     },
@@ -98,6 +99,7 @@ export function EditTransactionDialog({
       price: transaction.price,
       amount: transaction.amount,
       fee: transaction.fee,
+      tax: transaction.tax,
       currency: transaction.currency,
       note: transaction.note,
     });
@@ -324,14 +326,39 @@ export function EditTransactionDialog({
               />
             </div>
 
-            {/* 手續費和幣別 */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* 手續費、交易稅和幣別 */}
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="fee"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>手續費（選填）</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? parseFloat(e.target.value) : null
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tax"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>交易稅（選填）</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

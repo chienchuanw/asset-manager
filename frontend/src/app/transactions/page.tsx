@@ -389,6 +389,9 @@ export default function TransactionsPage() {
                       <TableHead className="text-right hidden md:table-cell">
                         手續費
                       </TableHead>
+                      <TableHead className="text-right hidden md:table-cell">
+                        交易稅
+                      </TableHead>
                       <TableHead className="hidden lg:table-cell">
                         備註
                       </TableHead>
@@ -427,6 +430,9 @@ export default function TransactionsPage() {
                           <TableCell className="hidden md:table-cell">
                             <Skeleton className="h-4 w-16" />
                           </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Skeleton className="h-4 w-16" />
+                          </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             <Skeleton className="h-4 w-24" />
                           </TableCell>
@@ -438,7 +444,7 @@ export default function TransactionsPage() {
                     ) : filteredTransactions.length === 0 ? (
                       // 無資料
                       <TableRow>
-                        <TableCell colSpan={11} className="h-24 text-center">
+                        <TableCell colSpan={12} className="h-24 text-center">
                           <p className="text-muted-foreground">
                             {searchQuery ||
                             filterType !== "all" ||
@@ -507,6 +513,11 @@ export default function TransactionsPage() {
                           <TableCell className="text-right hidden md:table-cell">
                             {transaction.fee
                               ? transaction.fee.toLocaleString()
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="text-right hidden md:table-cell">
+                            {transaction.tax
+                              ? transaction.tax.toLocaleString()
                               : "-"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
