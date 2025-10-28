@@ -64,6 +64,26 @@ function HoldingCard({
   showInTWD,
   onToggleSort,
 }: HoldingCardProps) {
+  // 計算原幣別的市值和損益（從 TWD 反推）
+  const getOriginalCurrencyValue = (holding: Holding) => {
+    // 後端的 market_value 和 unrealized_pl 都是 TWD
+    // 需要根據 current_price 和 current_price_twd 的比例反推原幣別的值
+    if (holding.currency === "TWD" || holding.current_price_twd === 0) {
+      return {
+        marketValue: holding.market_value,
+        unrealizedPL: holding.unrealized_pl,
+      };
+    }
+
+    // 計算匯率（TWD / 原幣別）
+    const exchangeRate = holding.current_price_twd / holding.current_price;
+
+    return {
+      marketValue: holding.market_value / exchangeRate,
+      unrealizedPL: holding.unrealized_pl / exchangeRate,
+    };
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -113,66 +133,70 @@ function HoldingCard({
                   </TableCell>
                 </TableRow>
               ) : (
-                holdings.map((holding) => (
-                  <TableRow key={holding.symbol}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {holding.symbol}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {holding.name}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="tabular-nums text-sm">
-                      {holding.quantity.toLocaleString("zh-TW", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 4,
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-sm">
-                      <span className={getConvertedStyle(showInTWD)}>
-                        {showInTWD
-                          ? formatCurrency(holding.market_value, "TWD")
-                          : formatCurrency(
-                              holding.market_value,
-                              holding.currency
-                            )}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span
-                          className={`font-medium tabular-nums text-sm ${
-                            showInTWD
-                              ? getConvertedStyle(true, holding.unrealized_pl)
-                              : getProfitLossColor(holding.unrealized_pl)
-                          }`}
-                        >
+                holdings.map((holding) => {
+                  const originalValues = getOriginalCurrencyValue(holding);
+
+                  return (
+                    <TableRow key={holding.symbol}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">
+                            {holding.symbol}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {holding.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="tabular-nums text-sm">
+                        {holding.quantity.toLocaleString("zh-TW", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 4,
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        <span className={getConvertedStyle(showInTWD)}>
                           {showInTWD
-                            ? formatCurrency(holding.unrealized_pl, "TWD")
+                            ? formatCurrency(holding.market_value, "TWD")
                             : formatCurrency(
-                                holding.unrealized_pl,
+                                originalValues.marketValue,
                                 holding.currency
                               )}
                         </span>
-                        <span
-                          className={`text-xs tabular-nums ${
-                            showInTWD
-                              ? getConvertedStyle(
-                                  true,
-                                  holding.unrealized_pl_pct
-                                )
-                              : getProfitLossColor(holding.unrealized_pl_pct)
-                          }`}
-                        >
-                          {formatPercentage(holding.unrealized_pl_pct)}
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span
+                            className={`font-medium tabular-nums text-sm ${
+                              showInTWD
+                                ? getConvertedStyle(true, holding.unrealized_pl)
+                                : getProfitLossColor(holding.unrealized_pl)
+                            }`}
+                          >
+                            {showInTWD
+                              ? formatCurrency(holding.unrealized_pl, "TWD")
+                              : formatCurrency(
+                                  originalValues.unrealizedPL,
+                                  holding.currency
+                                )}
+                          </span>
+                          <span
+                            className={`text-xs tabular-nums ${
+                              showInTWD
+                                ? getConvertedStyle(
+                                    true,
+                                    holding.unrealized_pl_pct
+                                  )
+                                : getProfitLossColor(holding.unrealized_pl_pct)
+                            }`}
+                          >
+                            {formatPercentage(holding.unrealized_pl_pct)}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
