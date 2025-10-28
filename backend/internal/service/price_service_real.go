@@ -48,12 +48,12 @@ func (s *realPriceService) GetPrice(symbol string, assetType models.AssetType) (
 		currency = "USD"
 
 	case models.AssetTypeCrypto:
-		// 加密貨幣：使用 CoinGecko API（預設 TWD）
-		price, err = s.coingeckoClient.GetCryptoPrice(symbol, "twd")
+		// 加密貨幣：使用 CoinGecko API（使用 USD 作為基準貨幣）
+		price, err = s.coingeckoClient.GetCryptoPrice(symbol, "usd")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get crypto price: %w", err)
 		}
-		currency = "TWD"
+		currency = "USD"
 
 	default:
 		return nil, fmt.Errorf("unsupported asset type: %s", assetType)
@@ -135,7 +135,7 @@ func (s *realPriceService) GetPrices(symbols []string, assetTypes map[string]mod
 
 	// 批次取得加密貨幣價格
 	if len(cryptos) > 0 {
-		cryptoPrices, err := s.coingeckoClient.GetMultipleCryptoPrices(cryptos, "twd")
+		cryptoPrices, err := s.coingeckoClient.GetMultipleCryptoPrices(cryptos, "usd")
 		if err != nil {
 			fmt.Printf("Warning: failed to get crypto prices: %v\n", err)
 		} else {
@@ -144,7 +144,7 @@ func (s *realPriceService) GetPrices(symbols []string, assetTypes map[string]mod
 					Symbol:    symbol,
 					AssetType: models.AssetTypeCrypto,
 					Price:     price,
-					Currency:  "TWD",
+					Currency:  "USD",
 					Source:    "api",
 					UpdatedAt: time.Now(),
 				}
