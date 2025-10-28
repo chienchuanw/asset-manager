@@ -21,11 +21,15 @@ type FIFOCalculator interface {
 }
 
 // fifoCalculator FIFO 計算器實作
-type fifoCalculator struct{}
+type fifoCalculator struct {
+	exchangeRateService ExchangeRateService
+}
 
 // NewFIFOCalculator 建立新的 FIFO 計算器
-func NewFIFOCalculator() FIFOCalculator {
-	return &fifoCalculator{}
+func NewFIFOCalculator(exchangeRateService ExchangeRateService) FIFOCalculator {
+	return &fifoCalculator{
+		exchangeRateService: exchangeRateService,
+	}
 }
 
 // CalculateHoldingForSymbol 計算單一標的的持倉
@@ -117,11 +121,22 @@ func (c *fifoCalculator) CalculateAllHoldings(transactions []*models.Transaction
 
 // processBuy 處理買入交易，建立新的成本批次
 func (c *fifoCalculator) processBuy(tx *models.Transaction) (*models.CostBatch, error) {
-	// 計算含手續費的單位成本
+	// 計算含手續費的總成本（原幣別）
 	totalCost := tx.Amount
 	if tx.Fee != nil {
 		totalCost += *tx.Fee
 	}
+
+	// 如果是 USD，需要轉換為 TWD
+	if tx.Currency == models.CurrencyUSD {
+		// 使用交易當天的匯率轉換
+		totalCostTWD, err := c.exchangeRateService.ConvertToTWD(totalCost, tx.Currency, tx.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert cost to TWD for %s on %s: %w", tx.Symbol, tx.Date.Format("2006-01-02"), err)
+		}
+		totalCost = totalCostTWD
+	}
+	// 如果是 TWD，直接使用原值
 
 	unitCost := totalCost / tx.Quantity
 

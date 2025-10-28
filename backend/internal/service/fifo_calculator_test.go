@@ -6,7 +6,38 @@ import (
 
 	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+// MockExchangeRateServiceForFIFO 是 ExchangeRateService 的 mock
+type MockExchangeRateServiceForFIFO struct {
+	mock.Mock
+}
+
+func (m *MockExchangeRateServiceForFIFO) GetRate(fromCurrency, toCurrency models.Currency, date time.Time) (float64, error) {
+	args := m.Called(fromCurrency, toCurrency, date)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateServiceForFIFO) GetTodayRate(fromCurrency, toCurrency models.Currency) (float64, error) {
+	args := m.Called(fromCurrency, toCurrency)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateServiceForFIFO) RefreshTodayRate() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockExchangeRateServiceForFIFO) ConvertToTWD(amount float64, fromCurrency models.Currency, date time.Time) (float64, error) {
+	args := m.Called(amount, fromCurrency, date)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+// newMockExchangeRateForTWD 建立一個用於 TWD 交易的 mock（不需要匯率轉換）
+func newMockExchangeRateForTWD() *MockExchangeRateServiceForFIFO {
+	return new(MockExchangeRateServiceForFIFO)
+}
 
 // ==================== 基本 FIFO 測試 ====================
 
@@ -27,7 +58,7 @@ func TestFIFO_SingleBuy(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act: 執行計算
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -73,7 +104,7 @@ func TestFIFO_MultipleBuys(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -116,7 +147,7 @@ func TestFIFO_BuyThenPartialSell(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -159,7 +190,7 @@ func TestFIFO_BuyThenFullSell(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -218,7 +249,7 @@ func TestFIFO_MultipleBuysAndSells(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -252,7 +283,7 @@ func TestFIFO_BuyFeeIncludedInCost(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -291,7 +322,7 @@ func TestFIFO_SellFeeNotAffectRemainingCost(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -333,7 +364,7 @@ func TestFIFO_DividendNotAffectCost(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -352,7 +383,7 @@ func TestFIFO_DividendNotAffectCost(t *testing.T) {
 func TestFIFO_EmptyTransactions(t *testing.T) {
 	// Arrange
 	transactions := []*models.Transaction{}
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -390,7 +421,7 @@ func TestFIFO_SellMoreThanHolding(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -430,7 +461,7 @@ func TestFIFO_SameDayMultipleTransactions(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
@@ -487,7 +518,7 @@ func TestFIFO_CalculateAllHoldings(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holdings, err := calculator.CalculateAllHoldings(transactions)
@@ -556,7 +587,7 @@ func TestFIFO_CalculateAllHoldings_WithSoldOut(t *testing.T) {
 		},
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	holdings, err := calculator.CalculateAllHoldings(transactions)
@@ -606,7 +637,7 @@ func TestCalculateCostBasis_SingleBatch(t *testing.T) {
 		Fee:             ptrFloat64(10),
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
@@ -657,7 +688,7 @@ func TestCalculateCostBasis_MultipleBatches(t *testing.T) {
 		Fee:             ptrFloat64(30),
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
@@ -720,7 +751,7 @@ func TestCalculateCostBasis_WithPreviousSell(t *testing.T) {
 		Fee:             ptrFloat64(20),
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
@@ -764,7 +795,7 @@ func TestCalculateCostBasis_InsufficientQuantity(t *testing.T) {
 		Fee:             ptrFloat64(30),
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	costBasis, err := calculator.CalculateCostBasis("2330", sellTransaction, transactions)
@@ -804,7 +835,7 @@ func TestCalculateCostBasis_NotSellTransaction(t *testing.T) {
 		Fee:             ptrFloat64(15),
 	}
 
-	calculator := NewFIFOCalculator()
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
 	costBasis, err := calculator.CalculateCostBasis("2330", buyTransaction, transactions)

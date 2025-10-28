@@ -117,7 +117,7 @@ func TestGetAllHoldings_Success(t *testing.T) {
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
 	mockExchangeRateService := new(MockExchangeRateService)
-	fifoCalculator := NewFIFOCalculator()
+	fifoCalculator := NewFIFOCalculator(mockExchangeRateService)
 	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	// 準備交易記錄
@@ -207,7 +207,7 @@ func TestGetAllHoldings_EmptyTransactions(t *testing.T) {
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
 	mockExchangeRateService := new(MockExchangeRateService)
-	fifoCalculator := NewFIFOCalculator()
+	fifoCalculator := NewFIFOCalculator(mockExchangeRateService)
 	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	// Mock 設定
@@ -229,7 +229,7 @@ func TestGetAllHoldings_WithAssetTypeFilter(t *testing.T) {
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
 	mockExchangeRateService := new(MockExchangeRateService)
-	fifoCalculator := NewFIFOCalculator()
+	fifoCalculator := NewFIFOCalculator(mockExchangeRateService)
 	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	assetType := models.AssetTypeTWStock
@@ -289,7 +289,7 @@ func TestGetHoldingBySymbol_Success(t *testing.T) {
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
 	mockExchangeRateService := new(MockExchangeRateService)
-	fifoCalculator := NewFIFOCalculator()
+	fifoCalculator := NewFIFOCalculator(mockExchangeRateService)
 	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	symbol := "2330"
@@ -344,7 +344,7 @@ func TestGetHoldingBySymbol_NotFound(t *testing.T) {
 	mockRepo := new(MockTransactionRepositoryForHolding)
 	mockPriceService := new(MockPriceService)
 	mockExchangeRateService := new(MockExchangeRateService)
-	fifoCalculator := NewFIFOCalculator()
+	fifoCalculator := NewFIFOCalculator(mockExchangeRateService)
 	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
 
 	symbol := "9999"

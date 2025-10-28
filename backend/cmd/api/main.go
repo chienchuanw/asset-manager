@@ -49,11 +49,6 @@ func main() {
 	dbx := sqlx.NewDb(database, "postgres")
 	performanceSnapshotRepo := repository.NewPerformanceSnapshotRepository(dbx)
 
-	// 初始化 FIFO Calculator（需要在 TransactionService 之前初始化）
-	fifoCalculator := service.NewFIFOCalculator()
-
-	// 初始化 Service
-	transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
 	authService := service.NewAuthService()
 
 	// 初始化 Redis Cache
@@ -86,6 +81,12 @@ func main() {
 		// 初始化匯率服務（不帶 Redis 快取）
 		bankClient := client.NewTaiwanBankClient()
 		exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, nil)
+
+		// 初始化 FIFO Calculator（需要 exchangeRateService）
+		fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
+
+		// 初始化 TransactionService
+		transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
 
 		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
 
@@ -181,6 +182,12 @@ func main() {
 	// 初始化匯率服務（帶 Redis 快取）
 	bankClient := client.NewTaiwanBankClient()
 	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, redisCache.GetClient())
+
+	// 初始化 FIFO Calculator（需要 exchangeRateService）
+	fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
+
+	// 初始化 TransactionService
+	transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
 
 	// 初始化 Holding Service
 	holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
