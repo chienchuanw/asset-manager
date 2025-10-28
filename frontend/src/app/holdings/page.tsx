@@ -105,13 +105,9 @@ function HoldingCard({
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
                 </TableHead>
-                <TableHead
-                  className="cursor-pointer text-right"
-                  onClick={() => onToggleSort("market_value")}
-                >
+                <TableHead className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    市值
-                    <ArrowUpDown className="h-3 w-3" />
+                    成交均價
                   </div>
                 </TableHead>
                 <TableHead
@@ -155,14 +151,11 @@ function HoldingCard({
                         })}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm">
-                        <span className={getConvertedStyle(showInTWD)}>
-                          {showInTWD
-                            ? formatCurrency(holding.market_value, "TWD")
-                            : formatCurrency(
-                                originalValues.marketValue,
-                                holding.currency
-                              )}
-                        </span>
+                        {holding.avg_cost_original.toLocaleString("zh-TW", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        {holding.currency}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col items-end gap-0.5">

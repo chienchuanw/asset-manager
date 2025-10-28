@@ -846,6 +846,164 @@ func TestCalculateCostBasis_NotSellTransaction(t *testing.T) {
 	assert.Contains(t, err.Error(), "not a sell transaction")
 }
 
+// ==================== 原幣別平均成本測試 ====================
+
+// TestFIFO_AvgCostOriginal_TWStock 測試台股的原幣別平均成本（應等於 TWD 平均成本）
+func TestFIFO_AvgCostOriginal_TWStock(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
+
+	// Act
+	holding, err := calculator.CalculateHoldingForSymbol("2330", transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, holding)
+	// 台股的原幣別平均成本應等於 TWD 平均成本
+	assert.InDelta(t, 500.28, holding.AvgCost, 0.01)
+	assert.InDelta(t, 500.28, holding.AvgCostOriginal, 0.01)
+}
+
+// TestFIFO_AvgCostOriginal_USStock 測試美股的原幣別平均成本（應為 USD）
+func TestFIFO_AvgCostOriginal_USStock(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeUSStock,
+			Symbol:          "AAPL",
+			Name:            "Apple Inc.",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        10,
+			Price:           150,
+			Amount:          1500, // USD
+			Fee:             ptrFloat64(5), // USD
+			Currency:        models.CurrencyUSD,
+		},
+	}
+
+	// Mock 匯率服務：USD 轉 TWD（匯率 31.5）
+	mockExchangeRate := new(MockExchangeRateServiceForFIFO)
+	mockExchangeRate.On("ConvertToTWD", 1505.0, models.CurrencyUSD, mock.Anything).Return(47407.5, nil)
+
+	calculator := NewFIFOCalculator(mockExchangeRate)
+
+	// Act
+	holding, err := calculator.CalculateHoldingForSymbol("AAPL", transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, holding)
+	// TWD 平均成本 = 47407.5 / 10 = 4740.75
+	assert.InDelta(t, 4740.75, holding.AvgCost, 0.01)
+	// USD 平均成本 = 1505 / 10 = 150.5
+	assert.InDelta(t, 150.5, holding.AvgCostOriginal, 0.01)
+}
+
+// TestFIFO_AvgCostOriginal_Crypto 測試加密貨幣的原幣別平均成本（應為 USD）
+func TestFIFO_AvgCostOriginal_Crypto(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeCrypto,
+			Symbol:          "BTC",
+			Name:            "Bitcoin",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        0.5,
+			Price:           30000,
+			Amount:          15000, // USD
+			Fee:             ptrFloat64(10), // USD
+			Currency:        models.CurrencyUSD,
+		},
+	}
+
+	// Mock 匯率服務：USD 轉 TWD（匯率 31.5）
+	mockExchangeRate := new(MockExchangeRateServiceForFIFO)
+	mockExchangeRate.On("ConvertToTWD", 15010.0, models.CurrencyUSD, mock.Anything).Return(472815.0, nil)
+
+	calculator := NewFIFOCalculator(mockExchangeRate)
+
+	// Act
+	holding, err := calculator.CalculateHoldingForSymbol("BTC", transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, holding)
+	// TWD 平均成本 = 472815 / 0.5 = 945630
+	assert.InDelta(t, 945630.0, holding.AvgCost, 0.01)
+	// USD 平均成本 = 15010 / 0.5 = 30020
+	assert.InDelta(t, 30020.0, holding.AvgCostOriginal, 0.01)
+}
+
+// TestFIFO_AvgCostOriginal_MultipleBuys 測試多次買入的原幣別平均成本
+func TestFIFO_AvgCostOriginal_MultipleBuys(t *testing.T) {
+	// Arrange
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeUSStock,
+			Symbol:          "AAPL",
+			Name:            "Apple Inc.",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        10,
+			Price:           150,
+			Amount:          1500,
+			Fee:             ptrFloat64(5),
+			Currency:        models.CurrencyUSD,
+		},
+		{
+			Date:            time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeUSStock,
+			Symbol:          "AAPL",
+			Name:            "Apple Inc.",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        5,
+			Price:           160,
+			Amount:          800,
+			Fee:             ptrFloat64(3),
+			Currency:        models.CurrencyUSD,
+		},
+	}
+
+	// Mock 匯率服務
+	mockExchangeRate := new(MockExchangeRateServiceForFIFO)
+	// 第一筆：1505 USD -> 47407.5 TWD（匯率 31.5）
+	mockExchangeRate.On("ConvertToTWD", 1505.0, models.CurrencyUSD, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)).Return(47407.5, nil)
+	// 第二筆：803 USD -> 25294.5 TWD（匯率 31.5）
+	mockExchangeRate.On("ConvertToTWD", 803.0, models.CurrencyUSD, time.Date(2025, 1, 5, 0, 0, 0, 0, time.UTC)).Return(25294.5, nil)
+
+	calculator := NewFIFOCalculator(mockExchangeRate)
+
+	// Act
+	holding, err := calculator.CalculateHoldingForSymbol("AAPL", transactions)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, holding)
+	// TWD 總成本 = 47407.5 + 25294.5 = 72702
+	// TWD 平均成本 = 72702 / 15 = 4846.8
+	assert.InDelta(t, 4846.8, holding.AvgCost, 0.01)
+	// USD 總成本 = 1505 + 803 = 2308
+	// USD 平均成本 = 2308 / 15 = 153.87
+	assert.InDelta(t, 153.87, holding.AvgCostOriginal, 0.01)
+}
+
 // ==================== 輔助函式 ====================
 
 // ptrFloat64 建立 float64 指標（方便測試）

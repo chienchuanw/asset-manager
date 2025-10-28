@@ -122,29 +122,43 @@ func (c *fifoCalculator) CalculateAllHoldings(transactions []*models.Transaction
 // processBuy 處理買入交易，建立新的成本批次
 func (c *fifoCalculator) processBuy(tx *models.Transaction) (*models.CostBatch, error) {
 	// 計算含手續費的總成本（原幣別）
-	totalCost := tx.Amount
+	totalCostOriginal := tx.Amount
 	if tx.Fee != nil {
-		totalCost += *tx.Fee
+		totalCostOriginal += *tx.Fee
 	}
 
-	// 如果是 USD，需要轉換為 TWD
+	// 計算原幣別的單位成本
+	unitCostOriginal := totalCostOriginal / tx.Quantity
+
+	// 計算 TWD 的總成本和單位成本
+	var totalCostTWD float64
+	var exchangeRate float64
+
 	if tx.Currency == models.CurrencyUSD {
 		// 使用交易當天的匯率轉換
-		totalCostTWD, err := c.exchangeRateService.ConvertToTWD(totalCost, tx.Currency, tx.Date)
+		var err error
+		totalCostTWD, err = c.exchangeRateService.ConvertToTWD(totalCostOriginal, tx.Currency, tx.Date)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert cost to TWD for %s on %s: %w", tx.Symbol, tx.Date.Format("2006-01-02"), err)
 		}
-		totalCost = totalCostTWD
+		// 計算匯率（TWD / 原幣別）
+		exchangeRate = totalCostTWD / totalCostOriginal
+	} else {
+		// TWD 交易，直接使用原值
+		totalCostTWD = totalCostOriginal
+		exchangeRate = 1.0
 	}
-	// 如果是 TWD，直接使用原值
 
-	unitCost := totalCost / tx.Quantity
+	unitCostTWD := totalCostTWD / tx.Quantity
 
 	batch := &models.CostBatch{
-		Date:        tx.Date,
-		Quantity:    tx.Quantity,
-		UnitCost:    unitCost,
-		OriginalQty: tx.Quantity,
+		Date:             tx.Date,
+		Quantity:         tx.Quantity,
+		UnitCost:         unitCostTWD,
+		UnitCostOriginal: unitCostOriginal,
+		OriginalQty:      tx.Quantity,
+		Currency:         tx.Currency,
+		ExchangeRate:     exchangeRate,
 	}
 
 	return batch, nil
@@ -186,23 +200,27 @@ func (c *fifoCalculator) processSell(tx *models.Transaction, batches []*models.C
 // calculateHoldingFromBatches 從成本批次計算持倉資訊
 func (c *fifoCalculator) calculateHoldingFromBatches(symbol, name string, assetType models.AssetType, batches []*models.CostBatch) *models.Holding {
 	var totalQuantity float64
-	var totalCost float64
+	var totalCostTWD float64
+	var totalCostOriginal float64
 
 	for _, batch := range batches {
 		totalQuantity += batch.Quantity
-		totalCost += batch.Quantity * batch.UnitCost
+		totalCostTWD += batch.Quantity * batch.UnitCost
+		totalCostOriginal += batch.Quantity * batch.UnitCostOriginal
 	}
 
-	avgCost := totalCost / totalQuantity
+	avgCostTWD := totalCostTWD / totalQuantity
+	avgCostOriginal := totalCostOriginal / totalQuantity
 
 	return &models.Holding{
-		Symbol:      symbol,
-		Name:        name,
-		AssetType:   assetType,
-		Quantity:    totalQuantity,
-		AvgCost:     avgCost,
-		TotalCost:   totalCost,
-		LastUpdated: time.Now(),
+		Symbol:          symbol,
+		Name:            name,
+		AssetType:       assetType,
+		Quantity:        totalQuantity,
+		AvgCost:         avgCostTWD,
+		AvgCostOriginal: avgCostOriginal,
+		TotalCost:       totalCostTWD,
+		LastUpdated:     time.Now(),
 	}
 }
 

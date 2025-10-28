@@ -13,6 +13,7 @@ type Holding struct {
 	AssetType        AssetType `json:"asset_type"`                   // 資產類型
 	Quantity         float64   `json:"quantity"`                     // 當前持有數量
 	AvgCost          float64   `json:"avg_cost"`                     // FIFO 計算的平均成本（含手續費，TWD）
+	AvgCostOriginal  float64   `json:"avg_cost_original"`            // FIFO 計算的平均成本（含手續費，原幣別）
 	TotalCost        float64   `json:"total_cost"`                   // 總成本 = AvgCost * Quantity（TWD）
 	CurrentPrice     float64   `json:"current_price"`                // 當前市場價格（原始幣別）
 	Currency         Currency  `json:"currency"`                     // 價格幣別
@@ -30,11 +31,13 @@ type Holding struct {
 // 用於追蹤每一批買入的成本，實作 FIFO 計算
 // 成本統一以 TWD 計價
 type CostBatch struct {
-	Date         time.Time `json:"date"`          // 買入日期
-	Quantity     float64   `json:"quantity"`      // 該批次剩餘數量
-	UnitCost     float64   `json:"unit_cost"`     // 單位成本（含手續費，TWD）
-	OriginalQty  float64   `json:"original_qty"`  // 原始買入數量
-	Currency     Currency  `json:"currency"`      // 原始交易幣別
+	Date             time.Time `json:"date"`               // 買入日期
+	Quantity         float64   `json:"quantity"`           // 該批次剩餘數量
+	UnitCost         float64   `json:"unit_cost"`          // 單位成本（含手續費，TWD）
+	UnitCostOriginal float64   `json:"unit_cost_original"` // 單位成本（含手續費，原幣別）
+	OriginalQty      float64   `json:"original_qty"`       // 原始買入數量
+	Currency         Currency  `json:"currency"`           // 原始交易幣別
+	ExchangeRate     float64   `json:"exchange_rate"`      // 交易時的匯率（TWD/原幣別）
 }
 
 // HoldingFilters 持倉篩選條件

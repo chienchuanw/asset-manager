@@ -13,6 +13,7 @@ export interface Holding {
   asset_type: AssetType;
   quantity: number;
   avg_cost: number;
+  avg_cost_original: number; // 原幣別的平均成本
   total_cost: number;
   current_price: number;
   currency: string;
@@ -44,6 +45,7 @@ export const holdingSchema = z.object({
   asset_type: assetTypeSchema,
   quantity: z.number(),
   avg_cost: z.number(),
+  avg_cost_original: z.number(),
   total_cost: z.number(),
   current_price: z.number(),
   currency: z.string(),
