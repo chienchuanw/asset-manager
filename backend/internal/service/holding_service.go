@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/chienchuanw/asset-manager/internal/repository"
@@ -100,8 +101,11 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 			// 將價格轉換為 TWD
 			priceTWD, err := s.exchangeRateService.ConvertToTWD(price.Price, currency, price.UpdatedAt)
 			if err != nil {
-				// 如果匯率轉換失敗，使用原始價格（假設為 TWD）
-				priceTWD = price.Price
+				// ConvertToTWD 內部已有完整的 fallback 機制（最新匯率 → 預設匯率）
+				// 理論上不應該會失敗，但為了安全起見還是處理錯誤
+				log.Printf("Error converting %s to TWD for %s: %v", currency, symbol, err)
+				// 如果真的失敗，跳過這個持倉
+				continue
 			}
 			holding.CurrentPriceTWD = priceTWD
 
@@ -181,8 +185,9 @@ func (s *holdingService) GetHoldingBySymbol(symbol string) (*models.Holding, err
 	// 將價格轉換為 TWD
 	priceTWD, err := s.exchangeRateService.ConvertToTWD(price.Price, currency, price.UpdatedAt)
 	if err != nil {
-		// 如果匯率轉換失敗，使用原始價格（假設為 TWD）
-		priceTWD = price.Price
+		// ConvertToTWD 內部已有完整的 fallback 機制（最新匯率 → 預設匯率）
+		// 理論上不應該會失敗
+		return nil, fmt.Errorf("failed to convert price to TWD for %s: %w", symbol, err)
 	}
 	holding.CurrentPriceTWD = priceTWD
 

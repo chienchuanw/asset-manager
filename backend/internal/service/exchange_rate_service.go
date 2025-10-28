@@ -12,6 +12,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// 預設匯率常數（當資料庫完全沒有資料時使用）
+const (
+	DefaultUSDToTWDRate = 30.0 // 預設 USD 到 TWD 的匯率
+)
+
 // ExchangeRateService 匯率服務介面
 type ExchangeRateService interface {
 	// GetRate 取得指定日期的匯率（優先從快取取得）
@@ -95,33 +100,39 @@ func (s *exchangeRateService) GetRate(fromCurrency, toCurrency models.Currency, 
 		return s.adjustRateForPair(dbRate.Rate, fromCurrency, toCurrency), nil
 	}
 
-	// 3. 如果是今日，從 API 取得
+	// 3. 如果是今日，嘗試從 API 取得
 	today := time.Now().Truncate(24 * time.Hour)
 	if date.Truncate(24*time.Hour).Equal(today) {
 		if err := s.RefreshTodayRate(); err != nil {
-			return 0, fmt.Errorf("failed to refresh today's rate: %w", err)
-		}
-		// 重新從資料庫取得
-		dbRate, err = s.repo.GetByDate(normalizedFrom, normalizedTo, date)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get exchange rate after refresh: %w", err)
-		}
-		if dbRate != nil {
-			return s.adjustRateForPair(dbRate.Rate, fromCurrency, toCurrency), nil
+			// API 失敗不是致命錯誤，記錄警告後繼續使用 fallback
+			log.Printf("⚠️  Failed to refresh today's rate from API: %v", err)
+			log.Printf("   Will try to use latest available rate or default rate")
+		} else {
+			// API 成功，重新從資料庫取得
+			dbRate, err = s.repo.GetByDate(normalizedFrom, normalizedTo, date)
+			if err != nil {
+				log.Printf("Warning: failed to get exchange rate after refresh: %v", err)
+			}
+			if dbRate != nil {
+				return s.adjustRateForPair(dbRate.Rate, fromCurrency, toCurrency), nil
+			}
 		}
 	}
 
 	// 4. 如果都沒有，使用最新的匯率
 	latestRate, err := s.repo.GetLatest(normalizedFrom, normalizedTo)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get latest exchange rate: %w", err)
+		log.Printf("Warning: failed to get latest exchange rate: %v", err)
 	}
 	if latestRate != nil {
-		log.Printf("Using latest exchange rate for %s: %.4f (from %s)", date.Format("2006-01-02"), latestRate.Rate, latestRate.Date.Format("2006-01-02"))
+		log.Printf("⚠️  Using latest exchange rate for %s: %.4f (from %s)",
+			date.Format("2006-01-02"), latestRate.Rate, latestRate.Date.Format("2006-01-02"))
 		return s.adjustRateForPair(latestRate.Rate, fromCurrency, toCurrency), nil
 	}
 
-	return 0, fmt.Errorf("no exchange rate found for %s -> %s", fromCurrency, toCurrency)
+	// 5. 最終 fallback：使用預設匯率常數
+	log.Printf("⚠️  No exchange rate found in database, using default rate: USD/TWD = %.2f", DefaultUSDToTWDRate)
+	return s.adjustRateForPair(DefaultUSDToTWDRate, fromCurrency, toCurrency), nil
 }
 
 // GetTodayRate 取得今日匯率
