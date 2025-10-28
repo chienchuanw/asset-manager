@@ -68,3 +68,5 @@ export {
   useProcessSubscriptionBilling,
   useProcessInstallmentBilling,
 } from "./useBilling";
+
+export { useInstruments } from "./use-instruments";
