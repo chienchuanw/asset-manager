@@ -55,6 +55,7 @@ export interface Transaction {
   fee: number | null;
   tax: number | null;
   currency: Currency;
+  exchange_rate_id: number | null; // 關聯的匯率記錄 ID（僅用於非 TWD 交易）
   note: string | null;
   created_at: string; // ISO 8601 格式
   updated_at: string; // ISO 8601 格式
@@ -157,29 +158,56 @@ export const currencySchema = z.enum([Currency.TWD, Currency.USD]);
 
 /**
  * 建立交易的表單 Schema
+ *
+ * 數量驗證規則：
+ * - 台股/美股：必須為正整數（股數）
+ * - 加密貨幣：可以是小數（數量）
  */
-export const createTransactionSchema = z.object({
-  date: z.string().min(1, "日期為必填"),
-  asset_type: assetTypeSchema,
-  symbol: z.string().min(1, "代碼為必填"),
-  name: z.string().min(1, "名稱為必填"),
-  type: transactionTypeSchema,
-  quantity: z.number({ message: "數量必須為數字" }).positive("數量必須大於 0"),
-  price: z.number({ message: "價格必須為數字" }).nonnegative("價格不可為負數"),
-  amount: z.number({ message: "金額必須為數字" }).nonnegative("金額不可為負數"),
-  fee: z
-    .number({ message: "手續費必須為數字" })
-    .nonnegative("手續費不可為負數")
-    .nullable()
-    .optional(),
-  tax: z
-    .number({ message: "交易稅必須為數字" })
-    .nonnegative("交易稅不可為負數")
-    .nullable()
-    .optional(),
-  currency: currencySchema,
-  note: z.string().nullable().optional(),
-});
+export const createTransactionSchema = z
+  .object({
+    date: z.string().min(1, "日期為必填"),
+    asset_type: assetTypeSchema,
+    symbol: z.string().min(1, "代碼為必填"),
+    name: z.string().min(1, "名稱為必填"),
+    type: transactionTypeSchema,
+    quantity: z
+      .number({ message: "數量必須為數字" })
+      .positive("數量必須大於 0"),
+    price: z
+      .number({ message: "價格必須為數字" })
+      .nonnegative("價格不可為負數"),
+    amount: z
+      .number({ message: "金額必須為數字" })
+      .nonnegative("金額不可為負數"),
+    fee: z
+      .number({ message: "手續費必須為數字" })
+      .nonnegative("手續費不可為負數")
+      .nullable()
+      .optional(),
+    tax: z
+      .number({ message: "交易稅必須為數字" })
+      .nonnegative("交易稅不可為負數")
+      .nullable()
+      .optional(),
+    currency: currencySchema,
+    note: z.string().nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      // 台股和美股的數量必須為整數
+      if (
+        data.asset_type === AssetType.TW_STOCK ||
+        data.asset_type === AssetType.US_STOCK
+      ) {
+        return Number.isInteger(data.quantity);
+      }
+      return true;
+    },
+    {
+      message: "股票數量必須為整數",
+      path: ["quantity"],
+    }
+  );
 
 /**
  * 建立交易的表單資料型別

@@ -232,24 +232,34 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               <FormField
                 control={form.control}
                 name="quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>數量</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(parseFloat(e.target.value) || 0);
-                          handleQuantityOrPriceChange();
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // 根據資產類型決定 step：台股/美股為整數，加密貨幣為小數
+                  const assetType = form.watch("asset_type");
+                  const step =
+                    assetType === AssetType.TW_STOCK ||
+                    assetType === AssetType.US_STOCK
+                      ? "1"
+                      : "0.01";
+
+                  return (
+                    <FormItem>
+                      <FormLabel>數量</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step={step}
+                          placeholder="0"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(parseFloat(e.target.value) || 0);
+                            handleQuantityOrPriceChange();
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField

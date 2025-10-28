@@ -260,6 +260,7 @@ export function useCreateTransactionOptimistic(
             ...newTransaction,
             fee: newTransaction.fee ?? null, // 確保 fee 是 number | null
             tax: newTransaction.tax ?? null, // 確保 tax 是 number | null
+            exchange_rate_id: null, // 樂觀更新時先設為 null，實際值由後端決定
             note: newTransaction.note ?? null, // 確保 note 是 string | null
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
