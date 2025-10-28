@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/loading";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Search, ArrowUpDown, Download, RefreshCw } from "lucide-react";
 import { useHoldings } from "@/hooks";
 import { AssetType } from "@/types/transaction";
@@ -47,6 +49,7 @@ import {
   formatCurrency,
   formatPercentage,
   getProfitLossColor,
+  getConvertedStyle,
 } from "@/types/holding";
 
 export default function HoldingsPage() {
@@ -56,6 +59,7 @@ export default function HoldingsPage() {
     "market_value" | "unrealized_pl" | "quantity"
   >("market_value");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showInTWD, setShowInTWD] = useState(false);
 
   // 從 API 取得持倉資料
   const {
@@ -336,6 +340,21 @@ export default function HoldingsPage() {
                     <Download className="mr-2 h-4 w-4" />
                     匯出
                   </Button>
+
+                  {/* 幣別切換開關 */}
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="currency-toggle"
+                      checked={showInTWD}
+                      onCheckedChange={setShowInTWD}
+                    />
+                    <Label
+                      htmlFor="currency-toggle"
+                      className="text-sm cursor-pointer"
+                    >
+                      TWD
+                    </Label>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -422,27 +441,45 @@ export default function HoldingsPage() {
                             })}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {formatCurrency(
-                              holding.market_value,
-                              holding.currency
-                            )}
+                            <span className={getConvertedStyle(showInTWD)}>
+                              {showInTWD
+                                ? formatCurrency(holding.market_value, "TWD")
+                                : formatCurrency(
+                                    holding.market_value,
+                                    holding.currency
+                                  )}
+                            </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex flex-col items-end">
+                            <div className="flex flex-col items-end gap-1">
                               <span
-                                className={`font-medium tabular-nums ${getProfitLossColor(
-                                  holding.unrealized_pl
-                                )}`}
+                                className={`font-medium tabular-nums ${
+                                  showInTWD
+                                    ? getConvertedStyle(
+                                        true,
+                                        holding.unrealized_pl
+                                      )
+                                    : getProfitLossColor(holding.unrealized_pl)
+                                }`}
                               >
-                                {formatCurrency(
-                                  holding.unrealized_pl,
-                                  holding.currency
-                                )}
+                                {showInTWD
+                                  ? formatCurrency(holding.unrealized_pl, "TWD")
+                                  : formatCurrency(
+                                      holding.unrealized_pl,
+                                      holding.currency
+                                    )}
                               </span>
                               <span
-                                className={`text-sm tabular-nums ${getProfitLossColor(
-                                  holding.unrealized_pl_pct
-                                )}`}
+                                className={`text-sm tabular-nums ${
+                                  showInTWD
+                                    ? getConvertedStyle(
+                                        true,
+                                        holding.unrealized_pl_pct
+                                      )
+                                    : getProfitLossColor(
+                                        holding.unrealized_pl_pct
+                                      )
+                                }`}
                               >
                                 {formatPercentage(holding.unrealized_pl_pct)}
                               </span>

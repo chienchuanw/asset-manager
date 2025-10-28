@@ -100,6 +100,33 @@ export function getProfitLossColor(value: number): string {
 }
 
 /**
+ * 取得反白樣式（當統一顯示為 TWD 時）
+ * @param isConverted 是否為轉換後的數值
+ * @param profitLoss 損益數值（用於判斷顏色）
+ * @returns Tailwind CSS 類別名稱
+ */
+export function getConvertedStyle(
+  isConverted: boolean,
+  profitLoss?: number
+): string {
+  if (!isConverted) return "";
+
+  if (profitLoss === undefined) {
+    // 市值欄位（黑字 -> 黑底白字）
+    return "bg-black text-white";
+  }
+
+  // 損益欄位
+  if (profitLoss >= 0) {
+    // 紅字 -> 紅底白字
+    return "bg-red-600 text-white";
+  } else {
+    // 綠字 -> 綠底白字
+    return "bg-green-600 text-white";
+  }
+}
+
+/**
  * 計算總市值
  * @param holdings 持倉陣列
  * @returns 總市值
