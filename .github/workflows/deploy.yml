@@ -198,13 +198,7 @@ jobs:
           scp -i ~/.ssh/id_rsa backend-image.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/
           scp -i ~/.ssh/id_rsa frontend-image.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/
 
-      - name: 📤 Upload deployment files to EC2
-        run: |
-          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/
-          scp -i ~/.ssh/id_rsa nginx.conf ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/
-          scp -i ~/.ssh/id_rsa scripts/renew-ssl.sh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/scripts/
-
-      - name: 🚀 Deploy on EC2
+      - name: Deploy on EC2
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
@@ -242,7 +236,18 @@ jobs:
               exit 1
             fi
 
-            echo "🗄️ 備份資料庫..."
+            echo "� 檢查必要檔案..."
+            if [ ! -f docker-compose.yml ]; then
+              echo "❌ 錯誤：找不到 docker-compose.yml"
+              exit 1
+            fi
+            if [ ! -f nginx.conf ]; then
+              echo "❌ 錯誤：找不到 nginx.conf"
+              exit 1
+            fi
+            echo "✅ 所有必要檔案都存在"
+
+            echo "�🗄️ 備份資料庫..."
             if docker ps | grep -q "asset-manager-postgres"; then
               bash ./scripts/backup-db.sh || echo "⚠️  備份失敗，但繼續部署"
             else
