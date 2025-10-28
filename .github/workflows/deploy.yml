@@ -255,7 +255,10 @@ jobs:
             fi
 
             echo "🛑 停止舊容器..."
-            docker-compose down || true
+            docker-compose --env-file .env.production down || true
+
+            echo "🔨 強制重新建置 Frontend（確保環境變數正確嵌入）..."
+            docker-compose --env-file .env.production build --no-cache frontend
 
             echo "🚀 啟動新容器..."
             docker-compose --env-file .env.production up -d
