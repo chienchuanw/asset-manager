@@ -202,6 +202,7 @@ jobs:
         run: |
           scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/
           scp -i ~/.ssh/id_rsa nginx.conf ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/
+          scp -i ~/.ssh/id_rsa scripts/renew-ssl.sh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/scripts/
 
       - name: 🚀 Deploy on EC2
         run: |
@@ -363,7 +364,7 @@ jobs:
                 },
                 {
                   "name": "URL",
-                  "value": "http://${{ secrets.EC2_HOST }}"
+                  "value": "https://asset.chienchuanw.com"
                 },
                 {
                   "name": "Time",
