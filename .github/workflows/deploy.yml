@@ -1,268 +1,418 @@
-name: Deploy to EC2
+name: Deploy to Production (AWS EC2)
 
+# 觸發條件：當 push 到 main 分支時
 on:
-  # 當 push 到 main 分支時自動部署
   push:
     branches:
       - main
-
-  # 允許手動觸發部署
+  # 允許手動觸發
   workflow_dispatch:
 
+# 環境變數
+env:
+  GO_VERSION: "1.24"
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+
 jobs:
-  deploy:
-    name: Deploy to Production
+  # Job 1: 測試
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
 
+    # PostgreSQL service container for integration tests
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: asset_manager_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
-      # Step 1: Checkout 程式碼
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: 設定 SSH
-      - name: Setup SSH
+      - name: 🐹 Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
+
+      - name: 📦 Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: 🗄️ Run database migrations
+        working-directory: backend
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+          TEST_DB_NAME: asset_manager_test
+        run: |
+          # Install golang-migrate
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/migrate
+
+          # Run migrations
+          migrate -path migrations -database "postgresql://${TEST_DB_USER}:${TEST_DB_PASSWORD}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}?sslmode=disable" up
+
+      - name: 🧪 Run backend tests
+        working-directory: backend
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+          TEST_DB_NAME: asset_manager_test
+        run: |
+          gotestsum --format testname -- -cover ./...
+
+      - name: ✅ Tests passed
+        run: echo "All tests passed successfully!"
+
+  # Job 2: 建置 Docker Images
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build Backend Docker image
+        working-directory: backend
+        run: |
+          docker build -t asset-manager-backend:${{ github.sha }} .
+          docker tag asset-manager-backend:${{ github.sha }} asset-manager-backend:latest
+
+      - name: 🏗️ Build Frontend Docker image
+        working-directory: frontend
+        run: |
+          docker build -t asset-manager-frontend:${{ github.sha }} .
+          docker tag asset-manager-frontend:${{ github.sha }} asset-manager-frontend:latest
+
+      - name: 💾 Save Docker images
+        run: |
+          docker save asset-manager-backend:latest | gzip > backend-image.tar.gz
+          docker save asset-manager-frontend:latest | gzip > frontend-image.tar.gz
+
+      - name: 📤 Upload Backend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: backend-image.tar.gz
+          retention-days: 1
+
+      - name: 📤 Upload Frontend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend-image.tar.gz
+          retention-days: 1
+
+  # Job 3: 部署到 EC2
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download Backend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+
+      - name: 📥 Download Frontend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+
+      - name: 🔑 Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # Step 3: 部署前通知 Discord
-      - name: Discord notification - Deploy started
-        if: always()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: 📤 Upload Docker images to EC2
         run: |
-          if [ -n "$DISCORD_WEBHOOK" ]; then
-            curl -H "Content-Type: application/json" \
-              -d '{
-                "embeds": [{
-                  "title": "🚀 部署開始",
-                  "description": "Asset Manager 正在部署到正式環境",
-                  "color": 3447003,
-                  "fields": [
-                    {
-                      "name": "分支",
-                      "value": "'"$GITHUB_REF_NAME"'",
-                      "inline": true
-                    },
-                    {
-                      "name": "提交者",
-                      "value": "'"$GITHUB_ACTOR"'",
-                      "inline": true
-                    },
-                    {
-                      "name": "提交訊息",
-                      "value": "'"$(git log -1 --pretty=%B | head -n 1)"'",
-                      "inline": false
-                    }
-                  ],
-                  "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
-                }]
-              }' \
-              $DISCORD_WEBHOOK
-          fi
+          scp -i ~/.ssh/id_rsa backend-image.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/
+          scp -i ~/.ssh/id_rsa frontend-image.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/
 
-      # Step 4: 備份資料庫
-      - name: Backup database
+      - name: 📤 Upload deployment files to EC2
+        run: |
+          scp -i ~/.ssh/id_rsa docker-compose.yml ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/
+          scp -i ~/.ssh/id_rsa nginx.conf ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/asset-manager/
+
+      - name: 🚀 Deploy on EC2
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/asset-manager
-            
-            # 如果容器正在運行,執行備份
-            if docker ps | grep -q "asset-manager-postgres"; then
-              echo "正在備份資料庫..."
-              bash ./scripts/backup-db.sh || echo "備份失敗,但繼續部署"
-            else
-              echo "資料庫容器未運行,跳過備份"
-            fi
-          EOF
+            set -e
 
-      # Step 5: 拉取最新程式碼
-      - name: Pull latest code
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            echo "💾 檢查磁碟空間..."
+            df -h / | grep -v Filesystem
+
+            echo "🧹 清理舊 Docker 資源（部署前）..."
+            docker image prune -a -f || true
+            docker container prune -f || true
+            docker volume prune -f || true
+
+            echo "📦 載入 Backend Docker image..."
+            docker load < /tmp/backend-image.tar.gz
+
+            echo "📦 載入 Frontend Docker image..."
+            docker load < /tmp/frontend-image.tar.gz
+
+            echo "🔄 切換到應用程式目錄..."
             cd /home/ubuntu/asset-manager
+
+            echo "🔄 重置本地修改..."
             git fetch origin
             git reset --hard origin/main
-            git clean -fd
-          EOF
 
-      # Step 6: 建立環境變數檔案
-      - name: Create .env.production file
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/asset-manager
-            
-            cat > .env.production << 'ENVEOF'
-          # Database
-          DB_HOST=postgres
-          DB_PORT=5432
-          DB_USER=${{ secrets.PROD_DB_USER }}
-          DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
-          DB_NAME=${{ secrets.PROD_DB_NAME }}
+            echo "⬇️  拉取最新程式碼..."
+            git pull origin main
 
-          # Redis
-          REDIS_ADDR=redis:6379
-          REDIS_PASSWORD=${{ secrets.PROD_REDIS_PASSWORD }}
-          REDIS_DB=0
-          PRICE_CACHE_EXPIRATION=5m
+            echo "🔐 檢查環境變數檔案..."
+            if [ -f .env.production ]; then
+              echo "✅ 環境變數檔案存在"
+            else
+              echo "❌ 錯誤：找不到 .env.production 檔案"
+              echo "請參考文件設定環境變數"
+              exit 1
+            fi
 
-          # Application
-          APP_PORT=8080
-          GIN_MODE=release
+            echo "🗄️ 備份資料庫..."
+            if docker ps | grep -q "asset-manager-postgres"; then
+              bash ./scripts/backup-db.sh || echo "⚠️  備份失敗，但繼續部署"
+            else
+              echo "⚠️  資料庫容器未運行，跳過備份"
+            fi
 
-          # API Keys
-          FINMIND_API_KEY=${{ secrets.PROD_FINMIND_API_KEY }}
-          COINGECKO_API_KEY=${{ secrets.PROD_COINGECKO_API_KEY }}
-          ALPHA_VANTAGE_API_KEY=${{ secrets.PROD_ALPHA_VANTAGE_API_KEY }}
-
-          # Scheduler
-          SNAPSHOT_SCHEDULER_ENABLED=true
-          SNAPSHOT_SCHEDULER_TIME=23:59
-
-          # Auth
-          AUTH_USERNAME=${{ secrets.PROD_AUTH_USERNAME }}
-          AUTH_PASSWORD=${{ secrets.PROD_AUTH_PASSWORD }}
-          JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
-
-          # CORS
-          CORS_ALLOWED_ORIGINS=http://${{ secrets.EC2_HOST }}
-
-          # Frontend
-          NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api
-          ENVEOF
-          EOF
-
-      # Step 7: 部署應用程式
-      - name: Deploy application
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/asset-manager
-
-            # 停止現有容器
+            echo "🛑 停止舊容器..."
             docker-compose down || true
 
-            # 分開建置以減少記憶體壓力
-            echo "建置 Backend..."
-            docker-compose --env-file .env.production build --no-cache backend
-
-            echo "建置 Frontend..."
-            docker-compose --env-file .env.production build --no-cache frontend
-
-            # 啟動容器
+            echo "🚀 啟動新容器..."
             docker-compose --env-file .env.production up -d
 
-            # 等待服務啟動
-            echo "等待服務啟動..."
-            sleep 30
+            echo "⏳ 等待容器啟動..."
+            sleep 15
+
+            echo "🧹 清理舊 Docker images（部署後）..."
+            docker image prune -a -f || true
+
+            echo "🗑️  清理暫存檔案..."
+            rm -f /tmp/backend-image.tar.gz
+            rm -f /tmp/frontend-image.tar.gz
+
+            echo "💾 檢查磁碟空間（部署後）..."
+            df -h / | grep -v Filesystem
+
+            echo "✅ 部署完成！"
           EOF
 
-      # Step 8: 健康檢查
-      - name: Health check
+      - name: 🏥 Health Check
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # 檢查 Backend API
-            if curl -f http://localhost:8080/health > /dev/null 2>&1; then
-              echo "✓ Backend API 健康檢查通過"
-            else
-              echo "✗ Backend API 健康檢查失敗"
-              docker-compose logs --tail=50 backend
-              exit 1
-            fi
-            
-            # 檢查 Frontend
-            if curl -f http://localhost:3000 > /dev/null 2>&1; then
-              echo "✓ Frontend 健康檢查通過"
-            else
-              echo "✗ Frontend 健康檢查失敗"
-              docker-compose logs --tail=50 frontend
-              exit 1
-            fi
-            
-            # 檢查 Nginx
-            if curl -f http://localhost/health > /dev/null 2>&1; then
-              echo "✓ Nginx 健康檢查通過"
-            else
-              echo "✗ Nginx 健康檢查失敗"
-              docker-compose logs --tail=50 nginx
-              exit 1
-            fi
-          EOF
+          echo "等待應用程式啟動..."
+          sleep 15
 
-      # Step 9: 清理舊映像檔
-      - name: Cleanup old images
-        if: success()
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
-            docker image prune -f
-          EOF
+          echo "執行健康檢查..."
 
-      # Step 10: 部署成功通知
-      - name: Discord notification - Deploy success
-        if: success()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ -n "$DISCORD_WEBHOOK" ]; then
-            curl -H "Content-Type: application/json" \
-              -d '{
-                "embeds": [{
-                  "title": "✅ 部署成功",
-                  "description": "Asset Manager 已成功部署到正式環境",
-                  "color": 3066993,
-                  "fields": [
-                    {
-                      "name": "環境",
-                      "value": "Production",
-                      "inline": true
-                    },
-                    {
-                      "name": "網址",
-                      "value": "http://'"${{ secrets.EC2_HOST }}"'",
-                      "inline": true
-                    }
-                  ],
-                  "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
-                }]
-              }' \
-              $DISCORD_WEBHOOK
+          # 檢查 Backend API
+          backend_response=$(ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health" || echo "000")
+          if [ "$backend_response" = "200" ]; then
+            echo "✅ Backend API 健康檢查通過"
+          else
+            echo "❌ Backend API 健康檢查失敗！HTTP 狀態碼: $backend_response"
+            ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "docker-compose logs --tail=50 backend"
+            exit 1
           fi
 
-      # Step 11: 部署失敗通知
-      - name: Discord notification - Deploy failed
-        if: failure()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ -n "$DISCORD_WEBHOOK" ]; then
-            curl -H "Content-Type: application/json" \
-              -d '{
-                "embeds": [{
-                  "title": "❌ 部署失敗",
-                  "description": "Asset Manager 部署過程中發生錯誤",
-                  "color": 15158332,
-                  "fields": [
-                    {
-                      "name": "分支",
-                      "value": "'"$GITHUB_REF_NAME"'",
-                      "inline": true
-                    },
-                    {
-                      "name": "提交者",
-                      "value": "'"$GITHUB_ACTOR"'",
-                      "inline": true
-                    },
-                    {
-                      "name": "查看詳情",
-                      "value": "[GitHub Actions]('"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"')",
-                      "inline": false
-                    }
-                  ],
-                  "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
-                }]
-              }' \
-              $DISCORD_WEBHOOK
+          # 檢查 Frontend
+          frontend_response=$(ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000" || echo "000")
+          if [ "$frontend_response" = "200" ]; then
+            echo "✅ Frontend 健康檢查通過"
+          else
+            echo "❌ Frontend 健康檢查失敗！HTTP 狀態碼: $frontend_response"
+            ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "docker-compose logs --tail=50 frontend"
+            exit 1
           fi
+
+          # 檢查 Nginx
+          nginx_response=$(ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "curl -s -o /dev/null -w '%{http_code}' http://localhost/health" || echo "000")
+          if [ "$nginx_response" = "200" ]; then
+            echo "✅ Nginx 健康檢查通過"
+          else
+            echo "❌ Nginx 健康檢查失敗！HTTP 狀態碼: $nginx_response"
+            ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "docker-compose logs --tail=50 nginx"
+            exit 1
+          fi
+
+          echo "✅ 所有服務健康檢查通過！"
+
+      - name: 📊 Deployment Summary
+        if: always()
+        run: |
+          echo "## 🚀 部署摘要" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **分支**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: [\`${GITHUB_SHA:0:7}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **觸發者**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **時間**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **狀態**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: \`asset-manager-backend:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: \`asset-manager-frontend:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # Job 4: 通知
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [test, build, deploy]
+    if: always()
+
+    steps:
+      - name: 📢 Send Discord Notification - Started
+        if: needs.test.result == 'success' && needs.build.result == 'success'
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "content": "**(deploying) asset-manager deploy**",
+            "embeds": [{
+              "title": "Deploy details",
+              "color": 3447003,
+              "fields": [
+                {
+                  "name": "Branch",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "User",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Commit",
+                  "value": "[`'"${GITHUB_SHA:0:7}"'`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
+                },
+                {
+                  "name": "Time",
+                  "value": "'"$(date -u +'%Y-%m-%d %H:%M:%S UTC')"'"
+                }
+              ],
+              "footer": {
+                "text": "GitHub Actions"
+              },
+              "timestamp": "'"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"'"
+            }]
+          }'
+
+      - name: 📢 Send Discord Notification - Success
+        if: needs.deploy.result == 'success'
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "content": "**(success) asset-manager deploy**",
+            "embeds": [{
+              "title": "Deploy details",
+              "color": 3066993,
+              "fields": [
+                {
+                  "name": "Branch",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "User",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Commit",
+                  "value": "[`'"${GITHUB_SHA:0:7}"'`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
+                },
+                {
+                  "name": "Environment",
+                  "value": "Production"
+                },
+                {
+                  "name": "URL",
+                  "value": "http://${{ secrets.EC2_HOST }}"
+                },
+                {
+                  "name": "Time",
+                  "value": "'"$(date -u +'%Y-%m-%d %H:%M:%S UTC')"'"
+                }
+              ],
+              "footer": {
+                "text": "GitHub Actions"
+              },
+              "timestamp": "'"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"'"
+            }]
+          }'
+
+      - name: 📢 Send Discord Notification - Failure
+        if: needs.test.result == 'failure' || needs.build.result == 'failure' || needs.deploy.result == 'failure'
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "content": "**(failed) asset-manager deploy** @here",
+            "embeds": [{
+              "title": "Deploy details",
+              "color": 15158332,
+              "fields": [
+                {
+                  "name": "Branch",
+                  "value": "`${{ github.ref_name }}`",
+                  "inline": true
+                },
+                {
+                  "name": "User",
+                  "value": "`${{ github.actor }}`",
+                  "inline": true
+                },
+                {
+                  "name": "Commit",
+                  "value": "[`'"${GITHUB_SHA:0:7}"'`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
+                },
+                {
+                  "name": "Failed Stage",
+                  "value": "${{ needs.test.result == '\''failure'\'' && '\''Test'\'' || needs.build.result == '\''failure'\'' && '\''Build'\'' || '\''Deploy'\'' }}"
+                },
+                {
+                  "name": "View Logs",
+                  "value": "[點此查看詳細錯誤](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+                },
+                {
+                  "name": "Time",
+                  "value": "'"$(date -u +'%Y-%m-%d %H:%M:%S UTC')"'"
+                }
+              ],
+              "footer": {
+                "text": "GitHub Actions"
+              },
+              "timestamp": "'"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"'"
+            }]
+          }'
