@@ -510,33 +510,39 @@ export default function HoldingsPage() {
             </div>
           </div>
           {/* 三張持倉卡片 */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
             {/* 台股持倉卡片 */}
-            <HoldingCard
-              title="台股持倉"
-              holdings={holdingsByType.twStock}
-              showInTWD={showInTWD}
-              sortConfig={twStockSort}
-              onToggleSort={toggleTwStockSort}
-            />
+            <div className="flex-1">
+              <HoldingCard
+                title="台股持倉"
+                holdings={holdingsByType.twStock}
+                showInTWD={showInTWD}
+                sortConfig={twStockSort}
+                onToggleSort={toggleTwStockSort}
+              />
+            </div>
 
             {/* 美股持倉卡片 */}
-            <HoldingCard
-              title="美股持倉"
-              holdings={holdingsByType.usStock}
-              showInTWD={showInTWD}
-              sortConfig={usStockSort}
-              onToggleSort={toggleUsStockSort}
-            />
+            <div className="flex-1">
+              <HoldingCard
+                title="美股持倉"
+                holdings={holdingsByType.usStock}
+                showInTWD={showInTWD}
+                sortConfig={usStockSort}
+                onToggleSort={toggleUsStockSort}
+              />
+            </div>
 
             {/* 加密貨幣持倉卡片 */}
-            <HoldingCard
-              title="加密貨幣持倉"
-              holdings={holdingsByType.crypto}
-              showInTWD={showInTWD}
-              sortConfig={cryptoSort}
-              onToggleSort={toggleCryptoSort}
-            />
+            <div className="flex-1">
+              <HoldingCard
+                title="加密貨幣持倉"
+                holdings={holdingsByType.crypto}
+                showInTWD={showInTWD}
+                sortConfig={cryptoSort}
+                onToggleSort={toggleCryptoSort}
+              />
+            </div>
           </div>
         </div>
       </div>
