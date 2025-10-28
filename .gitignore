@@ -35,7 +35,6 @@ go.work.sum
 *.bak
 *.backup
 backups/
-*.sql
 *.sql.gz
 
 # Editor/IDE

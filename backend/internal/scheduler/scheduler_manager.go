@@ -21,6 +21,7 @@ type SchedulerManager struct {
 	holdingService      service.HoldingService
 	rebalanceService    service.RebalanceService
 	billingService      service.BillingService
+	exchangeRateService service.ExchangeRateService
 	enabled             bool
 	dailySnapshotTime   string // 格式: "HH:MM" (例如: "23:59")
 	discordReportTime   string // 格式: "HH:MM" (例如: "09:00")
@@ -46,19 +47,21 @@ func NewSchedulerManager(
 	holdingService service.HoldingService,
 	rebalanceService service.RebalanceService,
 	billingService service.BillingService,
+	exchangeRateService service.ExchangeRateService,
 	config SchedulerManagerConfig,
 ) *SchedulerManager {
 	return &SchedulerManager{
-		cron:              cron.New(),
-		snapshotService:   snapshotService,
-		discordService:    discordService,
-		settingsService:   settingsService,
-		holdingService:    holdingService,
-		rebalanceService:  rebalanceService,
-		billingService:    billingService,
-		enabled:           config.Enabled,
-		dailySnapshotTime: config.DailySnapshotTime,
-		dailyBillingTime:  "00:01", // 預設在每天 00:01 執行扣款
+		cron:                cron.New(),
+		snapshotService:     snapshotService,
+		discordService:      discordService,
+		settingsService:     settingsService,
+		holdingService:      holdingService,
+		rebalanceService:    rebalanceService,
+		billingService:      billingService,
+		exchangeRateService: exchangeRateService,
+		enabled:             config.Enabled,
+		dailySnapshotTime:   config.DailySnapshotTime,
+		dailyBillingTime:    "00:01", // 預設在每天 00:01 執行扣款
 	}
 }
 
@@ -107,6 +110,18 @@ func (m *SchedulerManager) startSnapshotSchedule() error {
 	// 註冊每日快照任務
 	jobID, err := m.cron.AddFunc(cronExpr, func() {
 		log.Println("Running daily snapshot task...")
+
+		// 先更新今日匯率
+		if m.exchangeRateService != nil {
+			if err := m.exchangeRateService.RefreshTodayRate(); err != nil {
+				log.Printf("Warning: Failed to refresh exchange rate: %v", err)
+				// 不中斷流程，繼續建立快照
+			} else {
+				log.Println("Exchange rate refreshed successfully")
+			}
+		}
+
+		// 建立每日快照
 		if err := m.snapshotService.CreateDailySnapshots(); err != nil {
 			log.Printf("Error creating daily snapshots: %v", err)
 		} else {
@@ -354,6 +369,18 @@ func (m *SchedulerManager) Stop() {
 // RunSnapshotNow 立即執行快照任務（用於測試或手動觸發）
 func (m *SchedulerManager) RunSnapshotNow() error {
 	log.Println("Manually triggering snapshot task...")
+
+	// 先更新今日匯率
+	if m.exchangeRateService != nil {
+		if err := m.exchangeRateService.RefreshTodayRate(); err != nil {
+			log.Printf("Warning: Failed to refresh exchange rate: %v", err)
+			// 不中斷流程，繼續建立快照
+		} else {
+			log.Println("Exchange rate refreshed successfully")
+		}
+	}
+
+	// 建立每日快照
 	if err := m.snapshotService.CreateDailySnapshots(); err != nil {
 		return fmt.Errorf("failed to create snapshots: %w", err)
 	}

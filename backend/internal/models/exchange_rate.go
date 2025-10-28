@@ -10,6 +10,7 @@ type ExchangeRate struct {
 	Rate         float64   `json:"rate" db:"rate"`
 	Date         time.Time `json:"date" db:"date"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // ExchangeRateInput 建立匯率的輸入

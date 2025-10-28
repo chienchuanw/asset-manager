@@ -136,6 +136,7 @@ func main() {
 			holdingService,
 			rebalanceService,
 			billingService,
+			exchangeRateService,
 			schedulerManagerConfig,
 		)
 		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
@@ -231,6 +232,7 @@ func main() {
 		holdingService,
 		rebalanceService,
 		billingService,
+		exchangeRateService,
 		schedulerManagerConfig,
 	)
 	if err := schedulerManager.Start(); err != nil {

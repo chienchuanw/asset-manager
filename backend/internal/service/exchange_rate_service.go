@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/chienchuanw/asset-manager/internal/client"
 	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/redis/go-redis/v9"
@@ -25,10 +24,16 @@ type ExchangeRateService interface {
 	ConvertToTWD(amount float64, currency models.Currency, date time.Time) (float64, error)
 }
 
+// TaiwanBankClient 台灣銀行 API 客戶端介面
+type TaiwanBankClient interface {
+	// GetUSDToTWDRate 取得 USD 到 TWD 的匯率
+	GetUSDToTWDRate() (float64, error)
+}
+
 // exchangeRateService 匯率服務實作
 type exchangeRateService struct {
 	repo        repository.ExchangeRateRepository
-	bankClient  *client.TaiwanBankClient
+	bankClient  TaiwanBankClient
 	redisClient *redis.Client
 	ctx         context.Context
 }
@@ -36,7 +41,7 @@ type exchangeRateService struct {
 // NewExchangeRateService 建立新的匯率服務
 func NewExchangeRateService(
 	repo repository.ExchangeRateRepository,
-	bankClient *client.TaiwanBankClient,
+	bankClient TaiwanBankClient,
 	redisClient *redis.Client,
 ) ExchangeRateService {
 	return &exchangeRateService{

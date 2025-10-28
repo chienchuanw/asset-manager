@@ -35,7 +35,7 @@ func (r *exchangeRateRepository) Create(input *models.ExchangeRateInput) (*model
 	query := `
 		INSERT INTO exchange_rates (from_currency, to_currency, rate, date)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, from_currency, to_currency, rate, date, created_at
+		RETURNING id, from_currency, to_currency, rate, date, created_at, updated_at
 	`
 
 	var rate models.ExchangeRate
@@ -45,7 +45,7 @@ func (r *exchangeRateRepository) Create(input *models.ExchangeRateInput) (*model
 		input.ToCurrency,
 		input.Rate,
 		input.Date,
-	).Scan(&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt)
+	).Scan(&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt, &rate.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exchange rate: %w", err)
@@ -57,7 +57,7 @@ func (r *exchangeRateRepository) Create(input *models.ExchangeRateInput) (*model
 // GetByDate 取得指定日期的匯率
 func (r *exchangeRateRepository) GetByDate(fromCurrency, toCurrency models.Currency, date time.Time) (*models.ExchangeRate, error) {
 	query := `
-		SELECT id, from_currency, to_currency, rate, date, created_at
+		SELECT id, from_currency, to_currency, rate, date, created_at, updated_at
 		FROM exchange_rates
 		WHERE from_currency = $1 AND to_currency = $2 AND date = $3
 		LIMIT 1
@@ -65,7 +65,7 @@ func (r *exchangeRateRepository) GetByDate(fromCurrency, toCurrency models.Curre
 
 	var rate models.ExchangeRate
 	err := r.db.QueryRow(query, fromCurrency, toCurrency, date).Scan(
-		&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt,
+		&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt, &rate.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -80,7 +80,7 @@ func (r *exchangeRateRepository) GetByDate(fromCurrency, toCurrency models.Curre
 // GetLatest 取得最新的匯率
 func (r *exchangeRateRepository) GetLatest(fromCurrency, toCurrency models.Currency) (*models.ExchangeRate, error) {
 	query := `
-		SELECT id, from_currency, to_currency, rate, date, created_at
+		SELECT id, from_currency, to_currency, rate, date, created_at, updated_at
 		FROM exchange_rates
 		WHERE from_currency = $1 AND to_currency = $2
 		ORDER BY date DESC
@@ -89,7 +89,7 @@ func (r *exchangeRateRepository) GetLatest(fromCurrency, toCurrency models.Curre
 
 	var rate models.ExchangeRate
 	err := r.db.QueryRow(query, fromCurrency, toCurrency).Scan(
-		&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt,
+		&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt, &rate.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -107,8 +107,8 @@ func (r *exchangeRateRepository) Upsert(input *models.ExchangeRateInput) (*model
 		INSERT INTO exchange_rates (from_currency, to_currency, rate, date)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (from_currency, to_currency, date)
-		DO UPDATE SET rate = EXCLUDED.rate, created_at = CURRENT_TIMESTAMP
-		RETURNING id, from_currency, to_currency, rate, date, created_at
+		DO UPDATE SET rate = EXCLUDED.rate, updated_at = CURRENT_TIMESTAMP
+		RETURNING id, from_currency, to_currency, rate, date, created_at, updated_at
 	`
 
 	var rate models.ExchangeRate
@@ -118,7 +118,7 @@ func (r *exchangeRateRepository) Upsert(input *models.ExchangeRateInput) (*model
 		input.ToCurrency,
 		input.Rate,
 		input.Date,
-	).Scan(&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt)
+	).Scan(&rate.ID, &rate.FromCurrency, &rate.ToCurrency, &rate.Rate, &rate.Date, &rate.CreatedAt, &rate.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to upsert exchange rate: %w", err)

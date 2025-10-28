@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
+	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -199,5 +200,236 @@ func TestParseTime(t *testing.T) {
 			}
 		})
 	}
+}
+
+// MockExchangeRateService 模擬 ExchangeRateService
+type MockExchangeRateService struct {
+	mock.Mock
+}
+
+func (m *MockExchangeRateService) GetRate(fromCurrency, toCurrency models.Currency, date time.Time) (float64, error) {
+	args := m.Called(fromCurrency, toCurrency, date)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateService) GetTodayRate(fromCurrency, toCurrency models.Currency) (float64, error) {
+	args := m.Called(fromCurrency, toCurrency)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateService) RefreshTodayRate() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockExchangeRateService) ConvertToTWD(amount float64, currency models.Currency, date time.Time) (float64, error) {
+	args := m.Called(amount, currency, date)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+// MockDiscordService 模擬 DiscordService
+type MockDiscordService struct {
+	mock.Mock
+}
+
+func (m *MockDiscordService) SendMessage(webhookURL string, message *models.DiscordMessage) error {
+	args := m.Called(webhookURL, message)
+	return args.Error(0)
+}
+
+func (m *MockDiscordService) FormatDailyReport(data *models.DailyReportData) *models.DiscordMessage {
+	args := m.Called(data)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*models.DiscordMessage)
+}
+
+func (m *MockDiscordService) SendDailyBillingNotification(webhookURL string, result *service.DailyBillingResult) error {
+	args := m.Called(webhookURL, result)
+	return args.Error(0)
+}
+
+func (m *MockDiscordService) SendSubscriptionExpiryNotification(webhookURL string, subscriptions []*models.Subscription, days int) error {
+	args := m.Called(webhookURL, subscriptions, days)
+	return args.Error(0)
+}
+
+func (m *MockDiscordService) SendInstallmentCompletionNotification(webhookURL string, installments []*models.Installment, remainingCount int) error {
+	args := m.Called(webhookURL, installments, remainingCount)
+	return args.Error(0)
+}
+
+// MockSettingsService 模擬 SettingsService
+type MockSettingsService struct {
+	mock.Mock
+}
+
+func (m *MockSettingsService) GetSettings() (*models.SettingsGroup, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.SettingsGroup), args.Error(1)
+}
+
+func (m *MockSettingsService) UpdateSettings(input *models.UpdateSettingsGroupInput) (*models.SettingsGroup, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.SettingsGroup), args.Error(1)
+}
+
+// MockHoldingService 模擬 HoldingService
+type MockHoldingService struct {
+	mock.Mock
+}
+
+func (m *MockHoldingService) GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error) {
+	args := m.Called(filters)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.Holding), args.Error(1)
+}
+
+func (m *MockHoldingService) GetHoldingBySymbol(symbol string) (*models.Holding, error) {
+	args := m.Called(symbol)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Holding), args.Error(1)
+}
+
+// MockRebalanceService 模擬 RebalanceService
+type MockRebalanceService struct {
+	mock.Mock
+}
+
+func (m *MockRebalanceService) CheckRebalance() (*models.RebalanceCheck, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RebalanceCheck), args.Error(1)
+}
+
+// MockBillingService 模擬 BillingService
+type MockBillingService struct {
+	mock.Mock
+}
+
+func (m *MockBillingService) ProcessSubscriptionBilling(date time.Time) (*service.BillingResult, error) {
+	args := m.Called(date)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*service.BillingResult), args.Error(1)
+}
+
+func (m *MockBillingService) ProcessInstallmentBilling(date time.Time) (*service.BillingResult, error) {
+	args := m.Called(date)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*service.BillingResult), args.Error(1)
+}
+
+func (m *MockBillingService) ProcessDailyBilling(date time.Time) (*service.DailyBillingResult, error) {
+	args := m.Called(date)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*service.DailyBillingResult), args.Error(1)
+}
+
+// TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate 測試手動觸發快照時會更新匯率
+func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
+	// Arrange
+	mockSnapshotService := new(MockAssetSnapshotService)
+	mockDiscordService := new(MockDiscordService)
+	mockSettingsService := new(MockSettingsService)
+	mockHoldingService := new(MockHoldingService)
+	mockRebalanceService := new(MockRebalanceService)
+	mockBillingService := new(MockBillingService)
+	mockExchangeRateService := new(MockExchangeRateService)
+
+	config := SchedulerManagerConfig{
+		Enabled:           true,
+		DailySnapshotTime: "23:59",
+	}
+
+	manager := NewSchedulerManager(
+		mockSnapshotService,
+		mockDiscordService,
+		mockSettingsService,
+		mockHoldingService,
+		mockRebalanceService,
+		mockBillingService,
+		mockExchangeRateService,
+		config,
+	)
+
+	// Mock 匯率更新成功
+	mockExchangeRateService.On("RefreshTodayRate").Return(nil)
+
+	// Mock 快照建立成功
+	mockSnapshotService.On("CreateDailySnapshots").Return(nil)
+
+	// Act
+	err := manager.RunSnapshotNow()
+
+	// Assert
+	assert.NoError(t, err)
+	mockExchangeRateService.AssertExpectations(t)
+	mockSnapshotService.AssertExpectations(t)
+	// 確保匯率更新在快照建立之前被呼叫
+	mockExchangeRateService.AssertCalled(t, "RefreshTodayRate")
+	mockSnapshotService.AssertCalled(t, "CreateDailySnapshots")
+}
+
+// TestSchedulerManager_RunSnapshotNow_ExchangeRateError 測試匯率更新失敗時仍會建立快照
+func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
+	// Arrange
+	mockSnapshotService := new(MockAssetSnapshotService)
+	mockDiscordService := new(MockDiscordService)
+	mockSettingsService := new(MockSettingsService)
+	mockHoldingService := new(MockHoldingService)
+	mockRebalanceService := new(MockRebalanceService)
+	mockBillingService := new(MockBillingService)
+	mockExchangeRateService := new(MockExchangeRateService)
+
+	config := SchedulerManagerConfig{
+		Enabled:           true,
+		DailySnapshotTime: "23:59",
+	}
+
+	manager := NewSchedulerManager(
+		mockSnapshotService,
+		mockDiscordService,
+		mockSettingsService,
+		mockHoldingService,
+		mockRebalanceService,
+		mockBillingService,
+		mockExchangeRateService,
+		config,
+	)
+
+	// Mock 匯率更新失敗
+	mockExchangeRateService.On("RefreshTodayRate").Return(errors.New("API error"))
+
+	// Mock 快照建立成功（即使匯率更新失敗，快照仍應建立）
+	mockSnapshotService.On("CreateDailySnapshots").Return(nil)
+
+	// Act
+	err := manager.RunSnapshotNow()
+
+	// Assert
+	assert.NoError(t, err) // 整體應該成功
+	mockExchangeRateService.AssertExpectations(t)
+	mockSnapshotService.AssertExpectations(t)
+	// 確保即使匯率更新失敗，快照仍會建立
+	mockSnapshotService.AssertCalled(t, "CreateDailySnapshots")
 }
 
