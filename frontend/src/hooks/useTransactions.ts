@@ -29,11 +29,11 @@ export const transactionKeys = {
 
 /**
  * 取得交易列表
- * 
+ *
  * @param filters 篩選條件
  * @param options React Query 選項
  * @returns 交易列表查詢結果
- * 
+ *
  * @example
  * ```tsx
  * const { data, isLoading, error } = useTransactions({
@@ -58,11 +58,11 @@ export function useTransactions(
 
 /**
  * 取得單筆交易
- * 
+ *
  * @param id 交易 ID
  * @param options React Query 選項
  * @returns 單筆交易查詢結果
- * 
+ *
  * @example
  * ```tsx
  * const { data, isLoading, error } = useTransaction("transaction-id");
@@ -128,10 +128,10 @@ export function useCreateTransaction(
 
 /**
  * 更新交易
- * 
+ *
  * @param options React Query mutation 選項
  * @returns 更新交易的 mutation
- * 
+ *
  * @example
  * ```tsx
  * const updateMutation = useUpdateTransaction({
@@ -139,7 +139,7 @@ export function useCreateTransaction(
  *     toast.success("交易更新成功");
  *   },
  * });
- * 
+ *
  * updateMutation.mutate({
  *   id: "transaction-id",
  *   data: { quantity: 20 },
@@ -178,10 +178,10 @@ export function useUpdateTransaction(
 
 /**
  * 刪除交易
- * 
+ *
  * @param options React Query mutation 選項
  * @returns 刪除交易的 mutation
- * 
+ *
  * @example
  * ```tsx
  * const deleteMutation = useDeleteTransaction({
@@ -189,7 +189,7 @@ export function useUpdateTransaction(
  *     toast.success("交易刪除成功");
  *   },
  * });
- * 
+ *
  * deleteMutation.mutate("transaction-id");
  * ```
  */
@@ -259,11 +259,14 @@ export function useCreateTransactionOptimistic(
             id: `temp-${Date.now()}`, // 暫時 ID
             ...newTransaction,
             fee: newTransaction.fee ?? null, // 確保 fee 是 number | null
+            tax: newTransaction.tax ?? null, // 確保 tax 是 number | null
             note: newTransaction.note ?? null, // 確保 note 是 string | null
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
-          return old ? [optimisticTransaction, ...old] : [optimisticTransaction];
+          return old
+            ? [optimisticTransaction, ...old]
+            : [optimisticTransaction];
         }
       );
 
@@ -288,4 +291,3 @@ export function useCreateTransactionOptimistic(
     ...options,
   });
 }
-
