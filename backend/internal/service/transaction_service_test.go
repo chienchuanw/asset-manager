@@ -35,6 +35,14 @@ func (m *MockTransactionRepository) Create(input *models.CreateTransactionInput)
 	return args.Get(0).(*models.Transaction), args.Error(1)
 }
 
+func (m *MockTransactionRepository) CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
+	args := m.Called(input, exchangeRateID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
 func (m *MockTransactionRepository) GetByID(id uuid.UUID) (*models.Transaction, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
@@ -122,7 +130,8 @@ func TestCreateTransaction_Success(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	fee := 28.0
 	input := &models.CreateTransactionInput{
@@ -176,7 +185,8 @@ func TestCreateTransaction_InvalidAssetType(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	input := &models.CreateTransactionInput{
 		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -205,7 +215,8 @@ func TestCreateTransaction_InvalidTransactionType(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	input := &models.CreateTransactionInput{
 		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -234,7 +245,8 @@ func TestCreateTransaction_NegativeQuantity(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	input := &models.CreateTransactionInput{
 		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -263,7 +275,8 @@ func TestGetTransaction_Success(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	transactionID := uuid.New()
 	expectedTransaction := &models.Transaction{
@@ -296,7 +309,8 @@ func TestGetTransaction_NotFound(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	transactionID := uuid.New()
 	mockRepo.On("GetByID", transactionID).Return(nil, fmt.Errorf("transaction not found"))
@@ -316,7 +330,8 @@ func TestListTransactions_Success(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	filters := repository.TransactionFilters{}
 	expectedTransactions := []*models.Transaction{
@@ -352,7 +367,8 @@ func TestDeleteTransaction_Success(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	transactionID := uuid.New()
 	mockRepo.On("Delete", transactionID).Return(nil)
@@ -371,7 +387,8 @@ func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
-	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
 
 	fee := 28.0
 	sellInput := &models.CreateTransactionInput{
@@ -447,5 +464,114 @@ func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 	mockFIFOCalc.AssertExpectations(t)
 	mockRealizedProfitRepo.AssertExpectations(t)
+}
+
+// TestCreateTransaction_USD_Success 測試成功建立 USD 交易並自動建立匯率記錄
+func TestCreateTransaction_USD_Success(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockTransactionRepository)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
+
+	fee := 5.0
+	transactionDate := time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC)
+	input := &models.CreateTransactionInput{
+		Date:            transactionDate,
+		AssetType:       models.AssetTypeUSStock,
+		Symbol:          "AAPL",
+		Name:            "Apple Inc.",
+		TransactionType: models.TransactionTypeBuy,
+		Quantity:        10,
+		Price:           150.0,
+		Amount:          1500.0,
+		Fee:             &fee,
+		Currency:        models.CurrencyUSD,
+	}
+
+	// Mock 匯率服務回傳匯率值
+	mockExchangeRateService.On("GetRate", models.CurrencyUSD, models.CurrencyTWD, transactionDate).Return(30.5, nil)
+
+	// Mock 匯率服務回傳匯率記錄（包含 ID）
+	exchangeRateID := 123
+	mockExchangeRate := &models.ExchangeRate{
+		ID:           exchangeRateID,
+		FromCurrency: models.CurrencyUSD,
+		ToCurrency:   models.CurrencyTWD,
+		Rate:         30.5,
+		Date:         transactionDate,
+	}
+	mockExchangeRateService.On("GetRateRecord", models.CurrencyUSD, models.CurrencyTWD, transactionDate).Return(mockExchangeRate, nil)
+
+	// Mock repository 建立交易（帶匯率 ID）
+	expectedTransaction := &models.Transaction{
+		ID:              uuid.New(),
+		Date:            input.Date,
+		AssetType:       input.AssetType,
+		Symbol:          input.Symbol,
+		Name:            input.Name,
+		TransactionType: input.TransactionType,
+		Quantity:        input.Quantity,
+		Price:           input.Price,
+		Amount:          input.Amount,
+		Fee:             input.Fee,
+		Currency:        input.Currency,
+		ExchangeRateID:  &exchangeRateID,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+	mockRepo.On("CreateWithExchangeRate", input, exchangeRateID).Return(expectedTransaction, nil)
+
+	// Act
+	result, err := service.CreateTransaction(input)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, expectedTransaction.ID, result.ID)
+	assert.Equal(t, expectedTransaction.Symbol, result.Symbol)
+	assert.Equal(t, &exchangeRateID, result.ExchangeRateID)
+	mockExchangeRateService.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
+	mockRealizedProfitRepo.AssertNotCalled(t, "Create")
+	mockFIFOCalc.AssertNotCalled(t, "CalculateCostBasis")
+}
+
+// TestCreateTransaction_USD_ExchangeRateError 測試 USD 交易但匯率服務失敗
+func TestCreateTransaction_USD_ExchangeRateError(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockTransactionRepository)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
+
+	transactionDate := time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC)
+	input := &models.CreateTransactionInput{
+		Date:            transactionDate,
+		AssetType:       models.AssetTypeUSStock,
+		Symbol:          "AAPL",
+		Name:            "Apple Inc.",
+		TransactionType: models.TransactionTypeBuy,
+		Quantity:        10,
+		Price:           150.0,
+		Amount:          1500.0,
+		Currency:        models.CurrencyUSD,
+	}
+
+	// Mock 匯率服務回傳錯誤
+	mockExchangeRateService.On("GetRate", models.CurrencyUSD, models.CurrencyTWD, transactionDate).Return(0.0, fmt.Errorf("exchange rate API error"))
+
+	// Act
+	result, err := service.CreateTransaction(input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to get exchange rate for USD transaction")
+	mockExchangeRateService.AssertExpectations(t)
+	mockRepo.AssertNotCalled(t, "Create")
+	mockRepo.AssertNotCalled(t, "CreateWithExchangeRate")
 }
 

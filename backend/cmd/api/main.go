@@ -86,7 +86,7 @@ func main() {
 		fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
 
 		// 初始化 TransactionService
-		transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
+		transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator, exchangeRateService)
 
 		holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)
 
@@ -187,7 +187,7 @@ func main() {
 	fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
 
 	// 初始化 TransactionService
-	transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator)
+	transactionService := service.NewTransactionService(transactionRepo, realizedProfitRepo, fifoCalculator, exchangeRateService)
 
 	// 初始化 Holding Service
 	holdingService := service.NewHoldingService(transactionRepo, fifoCalculator, priceService, exchangeRateService)

@@ -21,6 +21,8 @@ const (
 type ExchangeRateService interface {
 	// GetRate 取得指定日期的匯率（優先從快取取得）
 	GetRate(fromCurrency, toCurrency models.Currency, date time.Time) (float64, error)
+	// GetRateRecord 取得指定日期的匯率記錄（包含 ID）
+	GetRateRecord(fromCurrency, toCurrency models.Currency, date time.Time) (*models.ExchangeRate, error)
 	// GetTodayRate 取得今日匯率（優先從快取取得）
 	GetTodayRate(fromCurrency, toCurrency models.Currency) (float64, error)
 	// RefreshTodayRate 從 API 更新今日匯率
@@ -133,6 +135,58 @@ func (s *exchangeRateService) GetRate(fromCurrency, toCurrency models.Currency, 
 	// 5. 最終 fallback：使用預設匯率常數
 	log.Printf("⚠️  No exchange rate found in database, using default rate: USD/TWD = %.2f", DefaultUSDToTWDRate)
 	return s.adjustRateForPair(DefaultUSDToTWDRate, fromCurrency, toCurrency), nil
+}
+
+// GetRateRecord 取得指定日期的匯率記錄（包含 ID）
+// 此方法會確保資料庫中有該日期的匯率記錄，如果沒有則建立
+func (s *exchangeRateService) GetRateRecord(fromCurrency, toCurrency models.Currency, date time.Time) (*models.ExchangeRate, error) {
+	// 如果是相同幣別，回傳錯誤（不需要匯率記錄）
+	if fromCurrency == toCurrency {
+		return nil, fmt.Errorf("same currency pair does not need exchange rate record")
+	}
+
+	// 只支援 USD <-> TWD 轉換
+	if !isValidCurrencyPair(fromCurrency, toCurrency) {
+		return nil, fmt.Errorf("unsupported currency pair: %s -> %s", fromCurrency, toCurrency)
+	}
+
+	// 標準化為 USD -> TWD
+	normalizedFrom, normalizedTo := normalizeCurrencyPair(fromCurrency, toCurrency)
+
+	// 1. 先嘗試從資料庫取得
+	dbRate, err := s.repo.GetByDate(normalizedFrom, normalizedTo, date)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get exchange rate from database: %w", err)
+	}
+
+	// 如果資料庫中有資料，直接回傳
+	if dbRate != nil {
+		return dbRate, nil
+	}
+
+	// 2. 如果沒有，取得匯率值（會使用 fallback 機制）
+	rate, err := s.GetRate(fromCurrency, toCurrency, date)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get exchange rate: %w", err)
+	}
+
+	// 3. 建立新的匯率記錄
+	input := &models.ExchangeRateInput{
+		FromCurrency: normalizedFrom,
+		ToCurrency:   normalizedTo,
+		Rate:         rate,
+		Date:         date.Truncate(24 * time.Hour),
+	}
+
+	newRate, err := s.repo.Upsert(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create exchange rate record: %w", err)
+	}
+
+	log.Printf("Created new exchange rate record: %s -> %s on %s = %.4f (ID: %d)",
+		normalizedFrom, normalizedTo, date.Format("2006-01-02"), rate, newRate.ID)
+
+	return newRate, nil
 }
 
 // GetTodayRate 取得今日匯率

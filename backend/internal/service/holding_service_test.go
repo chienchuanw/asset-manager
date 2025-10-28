@@ -26,6 +26,14 @@ func (m *MockTransactionRepositoryForHolding) Create(input *models.CreateTransac
 	return args.Get(0).(*models.Transaction), args.Error(1)
 }
 
+func (m *MockTransactionRepositoryForHolding) CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
+	args := m.Called(input, exchangeRateID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
 func (m *MockTransactionRepositoryForHolding) GetByID(id uuid.UUID) (*models.Transaction, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
@@ -92,6 +100,14 @@ type MockExchangeRateService struct {
 func (m *MockExchangeRateService) GetRate(fromCurrency, toCurrency models.Currency, date time.Time) (float64, error) {
 	args := m.Called(fromCurrency, toCurrency, date)
 	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockExchangeRateService) GetRateRecord(fromCurrency, toCurrency models.Currency, date time.Time) (*models.ExchangeRate, error) {
+	args := m.Called(fromCurrency, toCurrency, date)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ExchangeRate), args.Error(1)
 }
 
 func (m *MockExchangeRateService) GetTodayRate(fromCurrency, toCurrency models.Currency) (float64, error) {

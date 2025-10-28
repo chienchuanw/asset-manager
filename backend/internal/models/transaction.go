@@ -48,6 +48,7 @@ type Transaction struct {
 	Fee             *float64        `json:"fee,omitempty" db:"fee"`
 	Tax             *float64        `json:"tax,omitempty" db:"tax"`
 	Currency        Currency        `json:"currency" db:"currency"`
+	ExchangeRateID  *int            `json:"exchange_rate_id,omitempty" db:"exchange_rate_id"`
 	Note            *string         `json:"note,omitempty" db:"note"`
 	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at" db:"updated_at"`

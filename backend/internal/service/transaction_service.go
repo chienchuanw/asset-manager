@@ -22,6 +22,7 @@ type transactionService struct {
 	repo               repository.TransactionRepository
 	realizedProfitRepo repository.RealizedProfitRepository
 	fifoCalculator     FIFOCalculator
+	exchangeRateService ExchangeRateService
 }
 
 // NewTransactionService 建立新的交易記錄 service
@@ -29,11 +30,13 @@ func NewTransactionService(
 	repo repository.TransactionRepository,
 	realizedProfitRepo repository.RealizedProfitRepository,
 	fifoCalculator FIFOCalculator,
+	exchangeRateService ExchangeRateService,
 ) TransactionService {
 	return &transactionService{
 		repo:               repo,
 		realizedProfitRepo: realizedProfitRepo,
 		fifoCalculator:     fifoCalculator,
+		exchangeRateService: exchangeRateService,
 	}
 }
 
@@ -68,10 +71,41 @@ func (s *transactionService) CreateTransaction(input *models.CreateTransactionIn
 		return nil, fmt.Errorf("tax must be non-negative")
 	}
 
-	// 呼叫 repository 建立交易記錄
-	transaction, err := s.repo.Create(input)
-	if err != nil {
-		return nil, err
+	// 驗證幣別
+	if !input.Currency.Validate() {
+		return nil, fmt.Errorf("invalid currency: %s", input.Currency)
+	}
+
+	var transaction *models.Transaction
+	var err error
+
+	// 如果是 USD 交易，需要取得或建立匯率記錄
+	if input.Currency == models.CurrencyUSD {
+		// 取得交易日期的匯率（會自動處理 fallback）
+		rate, err := s.exchangeRateService.GetRate(models.CurrencyUSD, models.CurrencyTWD, input.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate for USD transaction: %w", err)
+		}
+
+		// 從資料庫取得匯率記錄的 ID
+		exchangeRate, err := s.exchangeRateService.GetRateRecord(models.CurrencyUSD, models.CurrencyTWD, input.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate record: %w", err)
+		}
+
+		// 使用帶匯率 ID 的方法建立交易
+		transaction, err = s.repo.CreateWithExchangeRate(input, exchangeRate.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("Created USD transaction with exchange rate %.4f (ID: %d)\n", rate, exchangeRate.ID)
+	} else {
+		// TWD 交易，直接建立
+		transaction, err = s.repo.Create(input)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 如果是賣出交易，自動計算並記錄已實現損益

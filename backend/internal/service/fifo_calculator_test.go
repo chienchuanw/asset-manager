@@ -19,6 +19,14 @@ func (m *MockExchangeRateServiceForFIFO) GetRate(fromCurrency, toCurrency models
 	return args.Get(0).(float64), args.Error(1)
 }
 
+func (m *MockExchangeRateServiceForFIFO) GetRateRecord(fromCurrency, toCurrency models.Currency, date time.Time) (*models.ExchangeRate, error) {
+	args := m.Called(fromCurrency, toCurrency, date)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ExchangeRate), args.Error(1)
+}
+
 func (m *MockExchangeRateServiceForFIFO) GetTodayRate(fromCurrency, toCurrency models.Currency) (float64, error) {
 	args := m.Called(fromCurrency, toCurrency)
 	return args.Get(0).(float64), args.Error(1)

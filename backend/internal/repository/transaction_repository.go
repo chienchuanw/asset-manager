@@ -13,6 +13,7 @@ import (
 // TransactionRepository 交易記錄資料存取介面
 type TransactionRepository interface {
 	Create(input *models.CreateTransactionInput) (*models.Transaction, error)
+	CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error)
 	GetByID(id uuid.UUID) (*models.Transaction, error)
 	GetAll(filters TransactionFilters) ([]*models.Transaction, error)
 	Update(id uuid.UUID, input *models.UpdateTransactionInput) (*models.Transaction, error)
@@ -43,9 +44,9 @@ func NewTransactionRepository(db *sql.DB) TransactionRepository {
 // Create 建立新的交易記錄
 func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*models.Transaction, error) {
 	query := `
-		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
+		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
 	`
 
 	transaction := &models.Transaction{}
@@ -60,6 +61,7 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 		input.Price,
 		input.Amount,
 		input.Fee,
+		input.Tax,
 		input.Currency,
 		input.Note,
 	).Scan(
@@ -73,7 +75,9 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 		&transaction.Price,
 		&transaction.Amount,
 		&transaction.Fee,
+		&transaction.Tax,
 		&transaction.Currency,
+		&transaction.ExchangeRateID,
 		&transaction.Note,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
@@ -86,10 +90,60 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 	return transaction, nil
 }
 
+// CreateWithExchangeRate 建立新的交易記錄（帶匯率 ID）
+func (r *transactionRepository) CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
+	query := `
+		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+	`
+
+	transaction := &models.Transaction{}
+	err := r.db.QueryRow(
+		query,
+		input.Date,
+		input.AssetType,
+		input.Symbol,
+		input.Name,
+		input.TransactionType,
+		input.Quantity,
+		input.Price,
+		input.Amount,
+		input.Fee,
+		input.Tax,
+		input.Currency,
+		exchangeRateID,
+		input.Note,
+	).Scan(
+		&transaction.ID,
+		&transaction.Date,
+		&transaction.AssetType,
+		&transaction.Symbol,
+		&transaction.Name,
+		&transaction.TransactionType,
+		&transaction.Quantity,
+		&transaction.Price,
+		&transaction.Amount,
+		&transaction.Fee,
+		&transaction.Tax,
+		&transaction.Currency,
+		&transaction.ExchangeRateID,
+		&transaction.Note,
+		&transaction.CreatedAt,
+		&transaction.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction with exchange rate: %w", err)
+	}
+
+	return transaction, nil
+}
+
 // GetByID 根據 ID 取得交易記錄
 func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, error) {
 	query := `
-		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
+		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
 		FROM transactions
 		WHERE id = $1
 	`
@@ -106,7 +160,9 @@ func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 		&transaction.Price,
 		&transaction.Amount,
 		&transaction.Fee,
+		&transaction.Tax,
 		&transaction.Currency,
+		&transaction.ExchangeRateID,
 		&transaction.Note,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
@@ -125,7 +181,7 @@ func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 // GetAll 取得所有交易記錄（支援篩選）
 func (r *transactionRepository) GetAll(filters TransactionFilters) ([]*models.Transaction, error) {
 	query := `
-		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
+		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
 		FROM transactions
 		WHERE 1=1
 	`
@@ -200,7 +256,9 @@ func (r *transactionRepository) GetAll(filters TransactionFilters) ([]*models.Tr
 			&transaction.Price,
 			&transaction.Amount,
 			&transaction.Fee,
+			&transaction.Tax,
 			&transaction.Currency,
+			&transaction.ExchangeRateID,
 			&transaction.Note,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
@@ -279,6 +337,12 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		argCount++
 	}
 
+	if input.Tax != nil {
+		setClauses = append(setClauses, fmt.Sprintf("tax = $%d", argCount))
+		args = append(args, *input.Tax)
+		argCount++
+	}
+
 	if input.Currency != nil {
 		setClauses = append(setClauses, fmt.Sprintf("currency = $%d", argCount))
 		args = append(args, *input.Currency)
@@ -302,7 +366,7 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		UPDATE transactions
 		SET %s
 		WHERE id = $%d
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, currency, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
 	`, strings.Join(setClauses, ", "), argCount)
 
 	transaction := &models.Transaction{}
@@ -317,7 +381,9 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		&transaction.Price,
 		&transaction.Amount,
 		&transaction.Fee,
+		&transaction.Tax,
 		&transaction.Currency,
+		&transaction.ExchangeRateID,
 		&transaction.Note,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
