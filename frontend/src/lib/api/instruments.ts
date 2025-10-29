@@ -1,14 +1,13 @@
-import { Instrument, InstrumentSearchResult } from "@/types/instrument";
+import { InstrumentSearchResult } from "@/types/instrument";
 import { AssetType, Transaction } from "@/types/transaction";
 import { transactionsAPI } from "./transactions";
-import { getCommonInstrumentsByType } from "@/lib/data/common-instruments";
 
 /**
  * 從交易記錄中提取唯一的標的清單
- * 
+ *
  * @param assetType 資產類型（可選）
  * @returns 標的清單（包含使用次數）
- * 
+ *
  * @example
  * ```typescript
  * const instruments = await getInstrumentsFromTransactions(AssetType.TW_STOCK);
@@ -58,97 +57,19 @@ export async function getInstrumentsFromTransactions(
 }
 
 /**
- * 合併歷史交易標的與常用標的清單
- * 
+ * 取得標的清單（僅從交易記錄提取）
+ *
  * @param assetType 資產類型
- * @returns 合併後的標的清單（去重，歷史記錄優先）
- * 
+ * @returns 標的清單（按使用次數排序）
+ *
  * @example
  * ```typescript
- * const instruments = await getMergedInstruments(AssetType.TW_STOCK);
- * // 回傳合併後的台股標的清單
+ * const instruments = await getInstruments(AssetType.TW_STOCK);
+ * // 回傳台股的所有歷史交易標的
  * ```
  */
-export async function getMergedInstruments(
+export async function getInstruments(
   assetType: AssetType
 ): Promise<InstrumentSearchResult[]> {
-  // 取得歷史交易標的
-  const fromHistory = await getInstrumentsFromTransactions(assetType);
-
-  // 取得常用標的
-  const fromCommon = getCommonInstrumentsByType(assetType);
-
-  // 使用 Map 去重（歷史記錄優先）
-  const mergedMap = new Map<string, InstrumentSearchResult>();
-
-  // 先加入歷史記錄
-  fromHistory.forEach((instrument) => {
-    mergedMap.set(instrument.symbol, instrument);
-  });
-
-  // 再加入常用標的（如果不存在）
-  fromCommon.forEach((instrument) => {
-    if (!mergedMap.has(instrument.symbol)) {
-      mergedMap.set(instrument.symbol, {
-        ...instrument,
-        from_history: false,
-        usage_count: 0,
-      });
-    }
-  });
-
-  // 轉換為陣列
-  // 排序規則：
-  // 1. 歷史記錄優先（from_history = true）
-  // 2. 使用次數多的優先
-  // 3. symbol 字母順序
-  return Array.from(mergedMap.values()).sort((a, b) => {
-    // 歷史記錄優先
-    if (a.from_history && !b.from_history) return -1;
-    if (!a.from_history && b.from_history) return 1;
-
-    // 使用次數排序
-    const usageA = a.usage_count || 0;
-    const usageB = b.usage_count || 0;
-    if (usageA !== usageB) return usageB - usageA;
-
-    // symbol 字母順序
-    return a.symbol.localeCompare(b.symbol);
-  });
+  return getInstrumentsFromTransactions(assetType);
 }
-
-/**
- * 搜尋標的（包含歷史記錄與常用標的）
- * 
- * @param query 搜尋關鍵字
- * @param assetType 資產類型
- * @returns 符合條件的標的清單
- * 
- * @example
- * ```typescript
- * const results = await searchInstruments("台積", AssetType.TW_STOCK);
- * // 回傳包含「台積」的標的
- * ```
- */
-export async function searchInstruments(
-  query: string,
-  assetType: AssetType
-): Promise<InstrumentSearchResult[]> {
-  // 取得合併後的標的清單
-  const instruments = await getMergedInstruments(assetType);
-
-  // 如果沒有搜尋關鍵字，回傳全部
-  if (!query || query.trim() === "") {
-    return instruments;
-  }
-
-  const normalizedQuery = query.toLowerCase().trim();
-
-  // 模糊搜尋 symbol 或 name
-  return instruments.filter(
-    (instrument) =>
-      instrument.symbol.toLowerCase().includes(normalizedQuery) ||
-      instrument.name.toLowerCase().includes(normalizedQuery)
-  );
-}
-

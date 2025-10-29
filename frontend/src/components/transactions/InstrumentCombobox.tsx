@@ -137,7 +137,17 @@ export function InstrumentCombobox({
             />
             <CommandList>
               <CommandEmpty>
-                {isLoading ? "載入中..." : "查無結果"}
+                {isLoading ? (
+                  "載入中..."
+                ) : instruments.length === 0 ? (
+                  <div className="py-6 text-center text-sm">
+                    <p className="text-muted-foreground">
+                      尚無交易記錄，請手動輸入代碼
+                    </p>
+                  </div>
+                ) : (
+                  "查無結果"
+                )}
               </CommandEmpty>
               <CommandGroup>
                 {filteredInstruments.map((instrument) => (
