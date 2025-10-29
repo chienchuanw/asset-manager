@@ -3,14 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Plus,
-  Copy,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-} from "lucide-react";
+import { Plus, Copy, Trash2, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -75,14 +67,12 @@ export function BatchAddTransactionDialog({
   onSuccess,
 }: BatchAddTransactionDialogProps) {
   const [open, setOpen] = useState(false);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   // 建立批次交易 mutation
   const createBatchMutation = useCreateTransactionsBatch({
     onSuccess: () => {
       setOpen(false);
       form.reset();
-      setExpandedRows(new Set());
       onSuccess?.();
     },
   });
@@ -153,26 +143,7 @@ export function BatchAddTransactionDialog({
   const handleDeleteRow = (index: number) => {
     if (fields.length > 1) {
       remove(index);
-      // 如果刪除的列是展開的，從展開集合中移除
-      setExpandedRows((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(index);
-        return newSet;
-      });
     }
-  };
-
-  // 切換列的展開狀態
-  const toggleRow = (index: number) => {
-    setExpandedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
-      } else {
-        newSet.add(index);
-      }
-      return newSet;
-    });
   };
 
   // 送出表單
@@ -321,7 +292,9 @@ export function BatchAddTransactionDialog({
                       <TableHead className="min-w-[100px]">價格</TableHead>
                       <TableHead className="min-w-[120px]">金額</TableHead>
                       <TableHead className="min-w-[100px]">手續費</TableHead>
-                      <TableHead className="w-32">操作</TableHead>
+                      <TableHead className="min-w-[100px]">交易稅</TableHead>
+                      <TableHead className="min-w-[150px]">備註</TableHead>
+                      <TableHead className="w-24">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -330,8 +303,6 @@ export function BatchAddTransactionDialog({
                         key={field.id}
                         index={index}
                         form={form}
-                        isExpanded={expandedRows.has(index)}
-                        onToggleExpand={() => toggleRow(index)}
                         onCopy={() => handleCopyRow(index)}
                         onDelete={() => handleDeleteRow(index)}
                         canDelete={fields.length > 1}
@@ -385,8 +356,6 @@ export function BatchAddTransactionDialog({
 interface TransactionRowProps {
   index: number;
   form: any;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
   onCopy: () => void;
   onDelete: () => void;
   canDelete: boolean;
@@ -396,8 +365,6 @@ interface TransactionRowProps {
 function TransactionRow({
   index,
   form,
-  isExpanded,
-  onToggleExpand,
   onCopy,
   onDelete,
   canDelete,
@@ -610,22 +577,59 @@ function TransactionRow({
           />
         </TableCell>
 
+        {/* 交易稅 */}
+        <TableCell>
+          <FormField
+            control={form.control}
+            name={`transactions.${index}.tax`}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="0"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ""
+                          ? null
+                          : parseFloat(e.target.value)
+                      )
+                    }
+                    className="h-9"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </TableCell>
+
+        {/* 備註 */}
+        <TableCell>
+          <FormField
+            control={form.control}
+            name={`transactions.${index}.note`}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input
+                    placeholder="輸入備註..."
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    className="h-9"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </TableCell>
+
         {/* 操作按鈕 */}
         <TableCell>
           <div className="flex gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onToggleExpand}
-              title={isExpanded ? "收合" : "展開更多欄位"}
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -648,74 +652,6 @@ function TransactionRow({
           </div>
         </TableCell>
       </TableRow>
-
-      {/* 展開的選填欄位 */}
-      {isExpanded && (
-        <TableRow className="bg-muted/30">
-          <TableCell colSpan={10} className="p-0">
-            <div className="px-6 py-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 交易稅 */}
-                <FormField
-                  control={form.control}
-                  name={`transactions.${index}.tax`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">
-                        交易稅（選填）
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          placeholder="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value === ""
-                                ? null
-                                : parseFloat(e.target.value)
-                            )
-                          }
-                          className="h-9"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 備註 */}
-                <FormField
-                  control={form.control}
-                  name={`transactions.${index}.note`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">
-                        備註（選填）
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="輸入備註..."
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(e.target.value || null)
-                          }
-                          rows={2}
-                          className="resize-none"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </TableCell>
-        </TableRow>
-      )}
     </>
   );
 }
