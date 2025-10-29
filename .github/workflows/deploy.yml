@@ -102,8 +102,10 @@ jobs:
           TEST_DB_NAME: asset_manager_test
         run: |
           # Install golang-migrate
-          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
+          curl -L -o migrate.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.18.1/migrate.linux-amd64.tar.gz
+          tar xvzf migrate.tar.gz
           sudo mv migrate /usr/local/bin/migrate
+          rm migrate.tar.gz
 
           # Run migrations
           migrate -path migrations -database "postgresql://${TEST_DB_USER}:${TEST_DB_PASSWORD}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}?sslmode=disable" up
