@@ -11,6 +11,7 @@ import type {
   CreateTransactionInput,
   UpdateTransactionInput,
   TransactionFilters,
+  BatchCreateTransactionsInput,
 } from "@/types/transaction";
 import { APIError } from "@/lib/api/client";
 
@@ -170,6 +171,62 @@ export function useUpdateTransaction(
       // 使該筆交易的快取失效
       await queryClient.invalidateQueries({
         queryKey: transactionKeys.detail(variables.id),
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 批次建立交易
+ *
+ * @param options React Query mutation 選項
+ * @returns 批次建立交易的 mutation
+ *
+ * @example
+ * ```tsx
+ * const createBatchMutation = useCreateTransactionsBatch({
+ *   onSuccess: () => {
+ *     toast.success("批次交易建立成功");
+ *   },
+ *   onError: (error) => {
+ *     toast.error(error.message);
+ *   },
+ * });
+ *
+ * createBatchMutation.mutate({
+ *   transactions: [
+ *     {
+ *       date: "2025-10-23T00:00:00Z",
+ *       asset_type: "tw-stock",
+ *       symbol: "2330",
+ *       name: "台積電",
+ *       type: "buy",
+ *       quantity: 10,
+ *       price: 620,
+ *       amount: 6200,
+ *       currency: "TWD",
+ *     },
+ *     // ... 更多交易
+ *   ],
+ * });
+ * ```
+ */
+export function useCreateTransactionsBatch(
+  options?: UseMutationOptions<
+    Transaction[],
+    APIError,
+    BatchCreateTransactionsInput
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<Transaction[], APIError, BatchCreateTransactionsInput>({
+    mutationFn: transactionsAPI.createBatch,
+    onSuccess: async () => {
+      // 使所有交易列表的快取失效，強制重新獲取
+      await queryClient.invalidateQueries({
+        queryKey: transactionKeys.lists(),
       });
     },
     ...options,

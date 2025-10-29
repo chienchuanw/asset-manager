@@ -11,6 +11,7 @@ import (
 // TransactionService 交易記錄業務邏輯介面
 type TransactionService interface {
 	CreateTransaction(input *models.CreateTransactionInput) (*models.Transaction, error)
+	CreateTransactionsBatch(inputs []*models.CreateTransactionInput) ([]*models.Transaction, error)
 	GetTransaction(id uuid.UUID) (*models.Transaction, error)
 	ListTransactions(filters repository.TransactionFilters) ([]*models.Transaction, error)
 	UpdateTransaction(id uuid.UUID, input *models.UpdateTransactionInput) (*models.Transaction, error)
@@ -118,6 +119,51 @@ func (s *transactionService) CreateTransaction(input *models.CreateTransactionIn
 	}
 
 	return transaction, nil
+}
+
+// CreateTransactionsBatch 批次建立交易記錄（全有或全無）
+func (s *transactionService) CreateTransactionsBatch(inputs []*models.CreateTransactionInput) ([]*models.Transaction, error) {
+	// 驗證輸入
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("no transactions to create")
+	}
+
+	// 驗證每筆交易的資料
+	for i, input := range inputs {
+		if !input.AssetType.Validate() {
+			return nil, fmt.Errorf("transaction %d: invalid asset type: %s", i, input.AssetType)
+		}
+		if !input.TransactionType.Validate() {
+			return nil, fmt.Errorf("transaction %d: invalid transaction type: %s", i, input.TransactionType)
+		}
+		if input.Quantity < 0 {
+			return nil, fmt.Errorf("transaction %d: quantity must be non-negative", i)
+		}
+		if input.Price < 0 {
+			return nil, fmt.Errorf("transaction %d: price must be non-negative", i)
+		}
+		if input.Fee != nil && *input.Fee < 0 {
+			return nil, fmt.Errorf("transaction %d: fee must be non-negative", i)
+		}
+		if input.Tax != nil && *input.Tax < 0 {
+			return nil, fmt.Errorf("transaction %d: tax must be non-negative", i)
+		}
+	}
+
+	// 建立交易記錄陣列
+	transactions := make([]*models.Transaction, 0, len(inputs))
+
+	// 逐筆建立交易（使用現有的 CreateTransaction 方法）
+	// 如果任一筆失敗，返回錯誤（呼叫方需要處理回滾）
+	for i, input := range inputs {
+		transaction, err := s.CreateTransaction(input)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create transaction %d: %w", i, err)
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	return transactions, nil
 }
 
 // GetTransaction 取得單筆交易記錄

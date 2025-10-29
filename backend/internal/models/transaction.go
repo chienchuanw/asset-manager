@@ -70,6 +70,11 @@ type CreateTransactionInput struct {
 	Note            *string         `json:"note,omitempty"`
 }
 
+// BatchCreateTransactionsInput 批次建立交易的輸入資料
+type BatchCreateTransactionsInput struct {
+	Transactions []*CreateTransactionInput `json:"transactions" binding:"required,dive"`
+}
+
 // UpdateTransactionInput 更新交易的輸入資料
 type UpdateTransactionInput struct {
 	Date            *time.Time       `json:"date,omitempty"`

@@ -59,6 +59,14 @@ func (m *MockTransactionService) DeleteTransaction(id uuid.UUID) error {
 	return args.Error(0)
 }
 
+func (m *MockTransactionService) CreateTransactionsBatch(inputs []*models.CreateTransactionInput) ([]*models.Transaction, error) {
+	args := m.Called(inputs)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.Transaction), args.Error(1)
+}
+
 // setupTestRouter 設定測試用的 router
 func setupTestRouter(handler *TransactionHandler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -69,6 +77,7 @@ func setupTestRouter(handler *TransactionHandler) *gin.Engine {
 		transactions := api.Group("/transactions")
 		{
 			transactions.POST("", handler.CreateTransaction)
+			transactions.POST("/batch", handler.CreateTransactionsBatch)
 			transactions.GET("", handler.ListTransactions)
 			transactions.GET("/:id", handler.GetTransaction)
 			transactions.PUT("/:id", handler.UpdateTransaction)
@@ -417,3 +426,181 @@ func TestUpdateTransaction_WithTax(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
+// TestCreateTransactionsBatch_Success 測試成功批次建立交易記錄
+func TestCreateTransactionsBatch_Success(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	handler := NewTransactionHandler(mockService)
+	router := setupTestRouter(handler)
+
+	fee1 := 28.0
+	fee2 := 14.0
+	inputs := []*models.CreateTransactionInput{
+		{
+			Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        10,
+			Price:           620,
+			Amount:          6200,
+			Fee:             &fee1,
+			Currency:        models.CurrencyTWD,
+		},
+		{
+			Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2317",
+			Name:            "鴻海",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        20,
+			Price:           105,
+			Amount:          2100,
+			Fee:             &fee2,
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	expectedTransactions := []*models.Transaction{
+		{
+			ID:              uuid.New(),
+			Date:            inputs[0].Date,
+			AssetType:       inputs[0].AssetType,
+			Symbol:          inputs[0].Symbol,
+			Name:            inputs[0].Name,
+			TransactionType: inputs[0].TransactionType,
+			Quantity:        inputs[0].Quantity,
+			Price:           inputs[0].Price,
+			Amount:          inputs[0].Amount,
+			Fee:             inputs[0].Fee,
+			Currency:        inputs[0].Currency,
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		},
+		{
+			ID:              uuid.New(),
+			Date:            inputs[1].Date,
+			AssetType:       inputs[1].AssetType,
+			Symbol:          inputs[1].Symbol,
+			Name:            inputs[1].Name,
+			TransactionType: inputs[1].TransactionType,
+			Quantity:        inputs[1].Quantity,
+			Price:           inputs[1].Price,
+			Amount:          inputs[1].Amount,
+			Fee:             inputs[1].Fee,
+			Currency:        inputs[1].Currency,
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		},
+	}
+
+	mockService.On("CreateTransactionsBatch", inputs).Return(expectedTransactions, nil)
+
+	// 準備請求
+	requestBody := map[string]interface{}{
+		"transactions": inputs,
+	}
+	body, _ := json.Marshal(requestBody)
+	req, _ := http.NewRequest("POST", "/api/transactions/batch", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Nil(t, response.Error)
+	assert.NotNil(t, response.Data)
+
+	mockService.AssertExpectations(t)
+}
+
+// TestCreateTransactionsBatch_InvalidInput 測試批次建立時輸入資料無效
+func TestCreateTransactionsBatch_InvalidInput(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	handler := NewTransactionHandler(mockService)
+	router := setupTestRouter(handler)
+
+	// 準備無效的請求（缺少必填欄位）
+	requestBody := map[string]interface{}{
+		"transactions": []map[string]interface{}{
+			{
+				"date":       "2025-10-22T00:00:00Z",
+				"asset_type": "tw-stock",
+				// 缺少 symbol, name 等必填欄位
+			},
+		},
+	}
+	body, _ := json.Marshal(requestBody)
+	req, _ := http.NewRequest("POST", "/api/transactions/batch", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.NotNil(t, response.Error)
+	assert.Equal(t, "INVALID_INPUT", response.Error.Code)
+}
+
+// TestCreateTransactionsBatch_ServiceError 測試批次建立時 service 層錯誤
+func TestCreateTransactionsBatch_ServiceError(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	handler := NewTransactionHandler(mockService)
+	router := setupTestRouter(handler)
+
+	fee := 28.0
+	inputs := []*models.CreateTransactionInput{
+		{
+			Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        10,
+			Price:           620,
+			Amount:          6200,
+			Fee:             &fee,
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	mockService.On("CreateTransactionsBatch", inputs).Return(nil, fmt.Errorf("database error"))
+
+	// 準備請求
+	requestBody := map[string]interface{}{
+		"transactions": inputs,
+	}
+	body, _ := json.Marshal(requestBody)
+	req, _ := http.NewRequest("POST", "/api/transactions/batch", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.NotNil(t, response.Error)
+	assert.Equal(t, "BATCH_CREATE_FAILED", response.Error.Code)
+
+	mockService.AssertExpectations(t)
+}

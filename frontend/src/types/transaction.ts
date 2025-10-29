@@ -80,6 +80,13 @@ export interface CreateTransactionInput {
 }
 
 /**
+ * 批次建立交易的輸入資料
+ */
+export interface BatchCreateTransactionsInput {
+  transactions: CreateTransactionInput[];
+}
+
+/**
  * 更新交易的輸入資料
  */
 export interface UpdateTransactionInput {
@@ -223,6 +230,70 @@ export const updateTransactionSchema = createTransactionSchema.partial();
  * 更新交易的表單資料型別
  */
 export type UpdateTransactionFormData = z.infer<typeof updateTransactionSchema>;
+
+/**
+ * 批次建立交易的單列表單 Schema
+ * 用於表格中的每一列
+ */
+export const batchTransactionRowSchema = z
+  .object({
+    date: z.string().min(1, "日期為必填"),
+    symbol: z.string().min(1, "代碼為必填"),
+    name: z.string().min(1, "名稱為必填"),
+    type: transactionTypeSchema,
+    quantity: z
+      .number({ message: "數量必須為數字" })
+      .positive("數量必須大於 0"),
+    price: z
+      .number({ message: "價格必須為數字" })
+      .nonnegative("價格不可為負數"),
+    amount: z
+      .number({ message: "金額必須為數字" })
+      .nonnegative("金額不可為負數"),
+    fee: z
+      .number({ message: "手續費必須為數字" })
+      .nonnegative("手續費不可為負數")
+      .nullable()
+      .optional(),
+    tax: z
+      .number({ message: "交易稅必須為數字" })
+      .nonnegative("交易稅不可為負數")
+      .nullable()
+      .optional(),
+    note: z.string().nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      // 數量驗證會在提交時根據資產類型進行
+      return true;
+    },
+    {
+      message: "資料驗證失敗",
+    }
+  );
+
+/**
+ * 批次建立交易的單列表單資料型別
+ */
+export type BatchTransactionRowFormData = z.infer<
+  typeof batchTransactionRowSchema
+>;
+
+/**
+ * 批次建立交易的完整表單 Schema
+ */
+export const batchCreateTransactionsSchema = z.object({
+  asset_type: assetTypeSchema,
+  currency: currencySchema,
+  transactions: z.array(batchTransactionRowSchema).min(1, "至少需要一筆交易"),
+});
+
+/**
+ * 批次建立交易的完整表單資料型別
+ */
+export type BatchCreateTransactionsFormData = z.infer<
+  typeof batchCreateTransactionsSchema
+>;
 
 // ==================== 輔助函式 ====================
 

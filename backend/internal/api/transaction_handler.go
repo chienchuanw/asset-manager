@@ -76,6 +76,48 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	})
 }
 
+// CreateTransactionsBatch 批次建立交易記錄
+// @Summary 批次建立交易記錄
+// @Description 批次建立多筆交易記錄（全有或全無）
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Param batch body models.BatchCreateTransactionsInput true "批次交易記錄資料"
+// @Success 201 {object} APIResponse{data=[]models.Transaction}
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 500 {object} APIResponse{error=APIError}
+// @Router /api/transactions/batch [post]
+func (h *TransactionHandler) CreateTransactionsBatch(c *gin.Context) {
+	var input models.BatchCreateTransactionsInput
+
+	// 綁定並驗證請求資料
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_INPUT",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	// 呼叫 service 批次建立交易記錄
+	transactions, err := h.service.CreateTransactionsBatch(input.Transactions)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "BATCH_CREATE_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, APIResponse{
+		Data: transactions,
+	})
+}
+
 // GetTransaction 取得單筆交易記錄
 // @Summary 取得交易記錄
 // @Description 根據 ID 取得單筆交易記錄

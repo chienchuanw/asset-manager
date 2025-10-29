@@ -308,6 +308,7 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		transactions := apiGroup.Group("/transactions")
 		{
 			transactions.POST("", transactionHandler.CreateTransaction)
+			transactions.POST("/batch", transactionHandler.CreateTransactionsBatch)
 			transactions.GET("", transactionHandler.ListTransactions)
 			transactions.GET("/:id", transactionHandler.GetTransaction)
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)

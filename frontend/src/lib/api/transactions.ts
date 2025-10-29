@@ -4,6 +4,7 @@ import type {
   CreateTransactionInput,
   UpdateTransactionInput,
   TransactionFilters,
+  BatchCreateTransactionsInput,
 } from "@/types/transaction";
 
 /**
@@ -11,6 +12,7 @@ import type {
  */
 const ENDPOINTS = {
   TRANSACTIONS: "/api/transactions",
+  TRANSACTIONS_BATCH: "/api/transactions/batch",
   TRANSACTION_BY_ID: (id: string) => `/api/transactions/${id}`,
 } as const;
 
@@ -61,6 +63,17 @@ export const transactionsAPI = {
   },
 
   /**
+   * 批次建立交易記錄
+   * @param data 批次交易資料
+   * @returns 建立的交易記錄陣列
+   */
+  createBatch: async (
+    data: BatchCreateTransactionsInput
+  ): Promise<Transaction[]> => {
+    return apiClient.post<Transaction[]>(ENDPOINTS.TRANSACTIONS_BATCH, data);
+  },
+
+  /**
    * 刪除交易記錄
    * @param id 交易 ID
    * @returns void
@@ -69,4 +82,3 @@ export const transactionsAPI = {
     return apiClient.delete<void>(ENDPOINTS.TRANSACTION_BY_ID(id));
   },
 };
-
