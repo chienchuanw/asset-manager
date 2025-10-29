@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
+import { BatchAddTransactionDialog } from "@/components/transactions/BatchAddTransactionDialog";
 import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog";
 import { useTransactions, useDeleteTransaction } from "@/hooks";
 import {
@@ -310,6 +311,7 @@ export default function TransactionsPage() {
                 </div>
                 <div className="flex gap-2">
                   <AddTransactionDialog onSuccess={() => refetch()} />
+                  <BatchAddTransactionDialog onSuccess={() => refetch()} />
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
                     匯出
