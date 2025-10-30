@@ -24,7 +24,7 @@ export function CashFlowSummaryCard({
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3">
+      <>
         {[1, 2, 3].map((i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -37,7 +37,7 @@ export function CashFlowSummaryCard({
             </CardContent>
           </Card>
         ))}
-      </div>
+      </>
     );
   }
 
@@ -48,20 +48,18 @@ export function CashFlowSummaryCard({
   const netCashFlowIsPositive = summary.net_cash_flow >= 0;
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <>
       {/* 總收入 */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">總收入</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
+          <TrendingUp className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-red-600">
             ${formatAmount(summary.total_income)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            期間內的所有收入
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">期間內的所有收入</p>
         </CardContent>
       </Card>
 
@@ -69,15 +67,13 @@ export function CashFlowSummaryCard({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">總支出</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-600" />
+          <TrendingDown className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">
+          <div className="text-2xl font-bold text-green-600">
             ${formatAmount(summary.total_expense)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            期間內的所有支出
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">期間內的所有支出</p>
         </CardContent>
       </Card>
 
@@ -85,26 +81,19 @@ export function CashFlowSummaryCard({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">淨現金流</CardTitle>
-          <Wallet
-            className={`h-4 w-4 ${
-              netCashFlowIsPositive ? "text-green-600" : "text-red-600"
-            }`}
-          />
         </CardHeader>
         <CardContent>
           <div
             className={`text-2xl font-bold ${
-              netCashFlowIsPositive ? "text-green-600" : "text-red-600"
+              netCashFlowIsPositive ? "text-red-600" : "text-green-600"
             }`}
           >
-            {netCashFlowIsPositive ? "+" : ""}${formatAmount(summary.net_cash_flow)}
+            {netCashFlowIsPositive ? "+" : ""}$
+            {formatAmount(summary.net_cash_flow)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            收入減去支出
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">收入減去支出</p>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }
-

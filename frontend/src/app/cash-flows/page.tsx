@@ -128,11 +128,12 @@ export default function CashFlowsPage() {
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
-          {/* 摘要統計卡片 */}
-          <CashFlowSummaryCard startDate={startDate} endDate={endDate} />
+          {/* 統計卡片區域 - 六張卡片排列在同一排 */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {/* 摘要統計卡片 - 使用內嵌方式避免額外的 wrapper */}
+            <CashFlowSummaryCard startDate={startDate} endDate={endDate} />
 
-          {/* 記錄統計 */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* 記錄統計卡片 */}
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>總記錄數</CardDescription>
