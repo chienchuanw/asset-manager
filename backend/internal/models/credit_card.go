@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,32 +50,32 @@ type UpdateCreditCardInput struct {
 func (input *CreateCreditCardInput) Validate() error {
 	// 驗證卡號後四碼格式（必須是 4 位數字）
 	if len(input.CardNumberLast4) != 4 {
-		return ErrInvalidInput
+		return fmt.Errorf("card_number_last4 must be exactly 4 characters")
 	}
 
 	// 驗證帳單日範圍
 	if input.BillingDay < 1 || input.BillingDay > 31 {
-		return ErrInvalidInput
+		return fmt.Errorf("billing_day must be between 1 and 31")
 	}
 
 	// 驗證繳款截止日範圍
 	if input.PaymentDueDay < 1 || input.PaymentDueDay > 31 {
-		return ErrInvalidInput
+		return fmt.Errorf("payment_due_day must be between 1 and 31")
 	}
 
 	// 驗證信用額度必須大於 0
 	if input.CreditLimit <= 0 {
-		return ErrInvalidInput
+		return fmt.Errorf("credit_limit must be greater than 0")
 	}
 
 	// 驗證已使用額度不能為負數
 	if input.UsedCredit < 0 {
-		return ErrInvalidInput
+		return fmt.Errorf("used_credit cannot be negative")
 	}
 
 	// 驗證已使用額度不能超過信用額度
 	if input.UsedCredit > input.CreditLimit {
-		return ErrInvalidInput
+		return fmt.Errorf("used_credit cannot exceed credit_limit")
 	}
 
 	return nil
@@ -84,27 +85,27 @@ func (input *CreateCreditCardInput) Validate() error {
 func (input *UpdateCreditCardInput) Validate() error {
 	// 如果有提供卡號後四碼，驗證格式
 	if input.CardNumberLast4 != nil && len(*input.CardNumberLast4) != 4 {
-		return ErrInvalidInput
+		return fmt.Errorf("card_number_last4 must be exactly 4 characters")
 	}
 
 	// 如果有提供帳單日，驗證範圍
 	if input.BillingDay != nil && (*input.BillingDay < 1 || *input.BillingDay > 31) {
-		return ErrInvalidInput
+		return fmt.Errorf("billing_day must be between 1 and 31")
 	}
 
 	// 如果有提供繳款截止日，驗證範圍
 	if input.PaymentDueDay != nil && (*input.PaymentDueDay < 1 || *input.PaymentDueDay > 31) {
-		return ErrInvalidInput
+		return fmt.Errorf("payment_due_day must be between 1 and 31")
 	}
 
 	// 如果有提供信用額度，驗證必須大於 0
 	if input.CreditLimit != nil && *input.CreditLimit <= 0 {
-		return ErrInvalidInput
+		return fmt.Errorf("credit_limit must be greater than 0")
 	}
 
 	// 如果有提供已使用額度，驗證不能為負數
 	if input.UsedCredit != nil && *input.UsedCredit < 0 {
-		return ErrInvalidInput
+		return fmt.Errorf("used_credit cannot be negative")
 	}
 
 	return nil

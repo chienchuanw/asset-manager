@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,12 +44,12 @@ type UpdateBankAccountInput struct {
 func (input *CreateBankAccountInput) Validate() error {
 	// 驗證帳號後四碼格式（必須是 4 位數字）
 	if len(input.AccountNumberLast4) != 4 {
-		return ErrInvalidInput
+		return fmt.Errorf("account_number_last4 must be exactly 4 characters")
 	}
 
 	// 驗證餘額不能為負數
 	if input.Balance < 0 {
-		return ErrInvalidInput
+		return fmt.Errorf("balance cannot be negative")
 	}
 
 	return nil
@@ -58,12 +59,12 @@ func (input *CreateBankAccountInput) Validate() error {
 func (input *UpdateBankAccountInput) Validate() error {
 	// 如果有提供帳號後四碼，驗證格式
 	if input.AccountNumberLast4 != nil && len(*input.AccountNumberLast4) != 4 {
-		return ErrInvalidInput
+		return fmt.Errorf("account_number_last4 must be exactly 4 characters")
 	}
 
 	// 如果有提供餘額，驗證不能為負數
 	if input.Balance != nil && *input.Balance < 0 {
-		return ErrInvalidInput
+		return fmt.Errorf("balance cannot be negative")
 	}
 
 	return nil
