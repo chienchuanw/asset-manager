@@ -47,15 +47,15 @@ func (m *MockExchangeRateRepository) Upsert(input *models.ExchangeRateInput) (*m
 	return args.Get(0).(*models.ExchangeRate), args.Error(1)
 }
 
-// MockTaiwanBankClient 台灣銀行 API 客戶端的 mock
-type MockTaiwanBankClient struct {
+// MockExchangeRateAPIClient ExchangeRate-API 客戶端的 mock
+type MockExchangeRateAPIClient struct {
 	mock.Mock
 }
 
-// 確保 MockTaiwanBankClient 實作 TaiwanBankClient 介面
-var _ TaiwanBankClient = (*MockTaiwanBankClient)(nil)
+// 確保 MockExchangeRateAPIClient 實作 ExchangeRateAPIClient 介面
+var _ ExchangeRateAPIClient = (*MockExchangeRateAPIClient)(nil)
 
-func (m *MockTaiwanBankClient) GetUSDToTWDRate() (float64, error) {
+func (m *MockExchangeRateAPIClient) GetUSDToTWDRate() (float64, error) {
 	args := m.Called()
 	return args.Get(0).(float64), args.Error(1)
 }
@@ -64,10 +64,10 @@ func (m *MockTaiwanBankClient) GetUSDToTWDRate() (float64, error) {
 func TestRefreshTodayRate_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockExchangeRateRepository)
-	mockBankClient := new(MockTaiwanBankClient)
+	mockBankClient := new(MockExchangeRateAPIClient)
 
-	// Mock 台灣銀行 API 回傳匯率
-	expectedRate := 31.5
+	// Mock ExchangeRate-API 回傳匯率
+	expectedRate := 30.6
 	mockBankClient.On("GetUSDToTWDRate").Return(expectedRate, nil)
 
 	// Mock Repository Upsert 成功
@@ -106,13 +106,13 @@ func TestRefreshTodayRate_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// TestRefreshTodayRate_BankAPIError 測試台灣銀行 API 錯誤
+// TestRefreshTodayRate_BankAPIError 測試 ExchangeRate-API 錯誤
 func TestRefreshTodayRate_BankAPIError(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockExchangeRateRepository)
-	mockBankClient := new(MockTaiwanBankClient)
+	mockBankClient := new(MockExchangeRateAPIClient)
 
-	// Mock 台灣銀行 API 回傳錯誤
+	// Mock ExchangeRate-API 回傳錯誤
 	mockBankClient.On("GetUSDToTWDRate").Return(0.0, errors.New("API error"))
 
 	// 建立 service
@@ -133,10 +133,10 @@ func TestRefreshTodayRate_BankAPIError(t *testing.T) {
 func TestRefreshTodayRate_RepositoryError(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockExchangeRateRepository)
-	mockBankClient := new(MockTaiwanBankClient)
+	mockBankClient := new(MockExchangeRateAPIClient)
 
-	// Mock 台灣銀行 API 成功
-	mockBankClient.On("GetUSDToTWDRate").Return(31.5, nil)
+	// Mock ExchangeRate-API 成功
+	mockBankClient.On("GetUSDToTWDRate").Return(30.6, nil)
 
 	// Mock Repository Upsert 失敗
 	mockRepo.On("Upsert", mock.Anything).Return(nil, errors.New("database error"))
@@ -158,7 +158,7 @@ func TestRefreshTodayRate_RepositoryError(t *testing.T) {
 func TestGetTodayRate_FromDatabase(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockExchangeRateRepository)
-	mockBankClient := new(MockTaiwanBankClient)
+	mockBankClient := new(MockExchangeRateAPIClient)
 
 	today := time.Now().Truncate(24 * time.Hour)
 	expectedRate := &models.ExchangeRate{
@@ -194,7 +194,7 @@ func TestGetTodayRate_FromDatabase(t *testing.T) {
 func TestGetTodayRate_RefreshWhenNotFound(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockExchangeRateRepository)
-	mockBankClient := new(MockTaiwanBankClient)
+	mockBankClient := new(MockExchangeRateAPIClient)
 
 	today := time.Now().Truncate(24 * time.Hour)
 
@@ -203,8 +203,8 @@ func TestGetTodayRate_RefreshWhenNotFound(t *testing.T) {
 		return date.Format("2006-01-02") == today.Format("2006-01-02")
 	})).Return(nil, nil).Once()
 
-	// Mock 台灣銀行 API 回傳匯率
-	expectedRate := 31.5
+	// Mock ExchangeRate-API 回傳匯率
+	expectedRate := 30.6
 	mockBankClient.On("GetUSDToTWDRate").Return(expectedRate, nil)
 
 	// Mock Repository Upsert 成功

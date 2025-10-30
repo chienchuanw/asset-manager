@@ -46,8 +46,8 @@ func main() {
 
 	// 建立 services
 	exchangeRateRepo := repository.NewExchangeRateRepository(db)
-	bankClient := client.NewTaiwanBankClient()
-	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, nil)
+	exchangeRateAPIClient := client.NewExchangeRateAPIClient()
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, nil)
 
 	// 測試 1: 查看資料庫中的匯率
 	log.Println("\n=== 測試 1: 查看資料庫中的匯率 ===")

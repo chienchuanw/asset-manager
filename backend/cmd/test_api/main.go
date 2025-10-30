@@ -47,8 +47,8 @@ func main() {
 	exchangeRateRepo := repository.NewExchangeRateRepository(db)
 
 	// 初始化 services
-	bankClient := client.NewTaiwanBankClient()
-	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, nil)
+	exchangeRateAPIClient := client.NewExchangeRateAPIClient()
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, nil)
 	fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
 
 	// 測試 BTC

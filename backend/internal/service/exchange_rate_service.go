@@ -31,8 +31,8 @@ type ExchangeRateService interface {
 	ConvertToTWD(amount float64, currency models.Currency, date time.Time) (float64, error)
 }
 
-// TaiwanBankClient 台灣銀行 API 客戶端介面
-type TaiwanBankClient interface {
+// ExchangeRateAPIClient 匯率 API 客戶端介面
+type ExchangeRateAPIClient interface {
 	// GetUSDToTWDRate 取得 USD 到 TWD 的匯率
 	GetUSDToTWDRate() (float64, error)
 }
@@ -40,7 +40,7 @@ type TaiwanBankClient interface {
 // exchangeRateService 匯率服務實作
 type exchangeRateService struct {
 	repo        repository.ExchangeRateRepository
-	bankClient  TaiwanBankClient
+	bankClient  ExchangeRateAPIClient
 	redisClient *redis.Client
 	ctx         context.Context
 }
@@ -48,7 +48,7 @@ type exchangeRateService struct {
 // NewExchangeRateService 建立新的匯率服務
 func NewExchangeRateService(
 	repo repository.ExchangeRateRepository,
-	bankClient TaiwanBankClient,
+	bankClient ExchangeRateAPIClient,
 	redisClient *redis.Client,
 ) ExchangeRateService {
 	return &exchangeRateService{
@@ -197,10 +197,10 @@ func (s *exchangeRateService) GetTodayRate(fromCurrency, toCurrency models.Curre
 
 // RefreshTodayRate 從 API 更新今日匯率
 func (s *exchangeRateService) RefreshTodayRate() error {
-	// 從台灣銀行 API 取得匯率
+	// 從 ExchangeRate-API 取得匯率
 	rate, err := s.bankClient.GetUSDToTWDRate()
 	if err != nil {
-		return fmt.Errorf("failed to fetch USD/TWD rate from Taiwan Bank: %w", err)
+		return fmt.Errorf("failed to fetch USD/TWD rate from ExchangeRate-API: %w", err)
 	}
 
 	// 儲存到資料庫

@@ -45,8 +45,8 @@ func main() {
 
 	// 建立 services
 	exchangeRateRepo := repository.NewExchangeRateRepository(db)
-	bankClient := client.NewTaiwanBankClient()
-	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, nil)
+	exchangeRateAPIClient := client.NewExchangeRateAPIClient()
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, nil)
 
 	// 測試場景 1: 有今天的匯率
 	log.Println("\n=== 場景 1: 資料庫有今天的匯率 ===")

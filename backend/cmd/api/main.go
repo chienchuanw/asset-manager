@@ -79,8 +79,8 @@ func main() {
 		}
 
 		// 初始化匯率服務（不帶 Redis 快取）
-		bankClient := client.NewTaiwanBankClient()
-		exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, nil)
+		exchangeRateAPIClient := client.NewExchangeRateAPIClient()
+		exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, nil)
 
 		// 初始化 FIFO Calculator（需要 exchangeRateService）
 		fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
@@ -180,8 +180,8 @@ func main() {
 	log.Printf("Redis cache enabled: default=%v, US stocks=1h (to avoid Alpha Vantage API limits)", cacheExpiration)
 
 	// 初始化匯率服務（帶 Redis 快取）
-	bankClient := client.NewTaiwanBankClient()
-	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, bankClient, redisCache.GetClient())
+	exchangeRateAPIClient := client.NewExchangeRateAPIClient()
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, redisCache.GetClient())
 
 	// 初始化 FIFO Calculator（需要 exchangeRateService）
 	fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
