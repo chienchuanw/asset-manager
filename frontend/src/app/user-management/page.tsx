@@ -7,8 +7,8 @@
 
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,6 @@ import type {
 
 export default function UserManagementPage() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("bank-accounts");
 
   // 銀行帳戶相關狀態
   const [bankAccountDialogOpen, setBankAccountDialogOpen] = useState(false);
@@ -210,49 +209,43 @@ export default function UserManagementPage() {
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between">
-              <TabsList>
-                <TabsTrigger value="bank-accounts">銀行帳戶</TabsTrigger>
-                <TabsTrigger value="credit-cards">信用卡</TabsTrigger>
-              </TabsList>
-
-              {activeTab === "bank-accounts" && (
+          {/* 銀行帳戶區塊 */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>銀行帳戶</CardTitle>
                 <Button onClick={handleCreateBankAccount}>
                   <PlusIcon className="mr-2 h-4 w-4" />
                   新增銀行帳戶
                 </Button>
-              )}
+              </div>
+            </CardHeader>
+            <BankAccountList
+              bankAccounts={bankAccounts}
+              isLoading={bankAccountsLoading}
+              onEdit={handleEditBankAccount}
+              onDelete={setDeletingBankAccountId}
+            />
+          </Card>
 
-              {activeTab === "credit-cards" && (
+          {/* 信用卡區塊 */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>信用卡</CardTitle>
                 <Button onClick={handleCreateCreditCard}>
                   <PlusIcon className="mr-2 h-4 w-4" />
                   新增信用卡
                 </Button>
-              )}
-            </div>
-
-            {/* 銀行帳戶 Tab */}
-            <TabsContent value="bank-accounts" className="space-y-4">
-              <BankAccountList
-                bankAccounts={bankAccounts}
-                isLoading={bankAccountsLoading}
-                onEdit={handleEditBankAccount}
-                onDelete={setDeletingBankAccountId}
-              />
-            </TabsContent>
-
-            {/* 信用卡 Tab */}
-            <TabsContent value="credit-cards" className="space-y-4">
-              <CreditCardList
-                creditCards={creditCards}
-                isLoading={creditCardsLoading}
-                onEdit={handleEditCreditCard}
-                onDelete={setDeletingCreditCardId}
-              />
-            </TabsContent>
-          </Tabs>
+              </div>
+            </CardHeader>
+            <CreditCardList
+              creditCards={creditCards}
+              isLoading={creditCardsLoading}
+              onEdit={handleEditCreditCard}
+              onDelete={setDeletingCreditCardId}
+            />
+          </Card>
         </div>
       </div>
 

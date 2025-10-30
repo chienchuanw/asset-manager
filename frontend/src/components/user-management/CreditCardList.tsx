@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -63,26 +62,8 @@ export function CreditCardList({
   onEdit,
   onDelete,
 }: CreditCardListProps) {
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    );
-  }
-
-  if (creditCards.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>尚無信用卡記錄</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border mx-4">
       <Table>
         <TableHeader>
           <TableRow>
@@ -98,85 +79,109 @@ export function CreditCardList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {creditCards.map((card) => {
-            const utilization = calculateUtilization(card);
-            const availableCredit = getAvailableCredit(card);
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={9} className="h-24 text-center">
+                <div className="flex justify-center">
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-[1000px]" />
+                    ))}
+                  </div>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : creditCards.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={9}
+                className="h-24 text-center text-muted-foreground"
+              >
+                尚無信用卡記錄
+              </TableCell>
+            </TableRow>
+          ) : (
+            creditCards.map((card) => {
+              const utilization = calculateUtilization(card);
+              const availableCredit = getAvailableCredit(card);
 
-            return (
-              <TableRow key={card.id}>
-                <TableCell className="font-medium">
-                  {card.issuing_bank}
-                </TableCell>
-                <TableCell>{card.card_name}</TableCell>
-                <TableCell className="font-mono">
-                  ****{card.card_number_last4}
-                </TableCell>
-                <TableCell>每月 {card.billing_day} 日</TableCell>
-                <TableCell>每月 {card.payment_due_day} 日</TableCell>
-                <TableCell className="text-right">
-                  <div className="space-y-1">
-                    <div className="tabular-nums">
-                      {card.credit_limit.toLocaleString("zh-TW", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
+              return (
+                <TableRow key={card.id}>
+                  <TableCell className="font-medium">
+                    {card.issuing_bank}
+                  </TableCell>
+                  <TableCell>{card.card_name}</TableCell>
+                  <TableCell className="font-mono">
+                    ****{card.card_number_last4}
+                  </TableCell>
+                  <TableCell>每月 {card.billing_day} 日</TableCell>
+                  <TableCell>每月 {card.payment_due_day} 日</TableCell>
+                  <TableCell className="text-right">
+                    <div className="space-y-1">
+                      <div className="tabular-nums">
+                        {card.credit_limit.toLocaleString("zh-TW", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        可用:{" "}
+                        {availableCredit.toLocaleString("zh-TW", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      可用:{" "}
-                      {availableCredit.toLocaleString("zh-TW", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-2 min-w-[120px]">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-sm font-medium ${getUtilizationColor(utilization)}`}
-                      >
-                        {utilization.toFixed(1)}%
-                      </span>
-                    </div>
-                    <Progress value={utilization} className="h-2" />
-                  </div>
-                </TableCell>
-                <TableCell className="max-w-[150px] truncate text-muted-foreground">
-                  {card.note || "-"}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontalIcon className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {onEdit && (
-                        <DropdownMenuItem onClick={() => onEdit(card)}>
-                          <PencilIcon className="mr-2 h-4 w-4" />
-                          編輯
-                        </DropdownMenuItem>
-                      )}
-                      {onDelete && (
-                        <DropdownMenuItem
-                          onClick={() => onDelete(card.id)}
-                          className="text-destructive"
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-2 min-w-[120px]">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-sm font-medium ${getUtilizationColor(
+                            utilization
+                          )}`}
                         >
-                          <TrashIcon className="mr-2 h-4 w-4" />
-                          刪除
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                          {utilization.toFixed(1)}%
+                        </span>
+                      </div>
+                      <Progress value={utilization} className="h-2" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[150px] truncate text-muted-foreground">
+                    {card.note || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontalIcon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onEdit && (
+                          <DropdownMenuItem onClick={() => onEdit(card)}>
+                            <PencilIcon className="mr-2 h-4 w-4" />
+                            編輯
+                          </DropdownMenuItem>
+                        )}
+                        {onDelete && (
+                          <DropdownMenuItem
+                            onClick={() => onDelete(card.id)}
+                            className="text-destructive"
+                          >
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            刪除
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
         </TableBody>
       </Table>
     </div>
   );
 }
-
