@@ -44,6 +44,8 @@ func main() {
 	categoryRepo := repository.NewCategoryRepository(database)
 	subscriptionRepo := repository.NewSubscriptionRepository(database)
 	installmentRepo := repository.NewInstallmentRepository(database)
+	bankAccountRepo := repository.NewBankAccountRepository(database)
+	creditCardRepo := repository.NewCreditCardRepository(database)
 
 	// PerformanceSnapshotRepository 需要 sqlx.DB
 	dbx := sqlx.NewDb(database, "postgres")
@@ -79,8 +81,8 @@ func main() {
 		}
 
 		// 初始化匯率服務（不帶 Redis 快取）
-		exchangeRateAPIClient := client.NewExchangeRateAPIClient()
-		exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, nil)
+		exchangeRateClient := client.NewExchangeRateAPIClient()
+		exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateClient, nil)
 
 		// 初始化 FIFO Calculator（需要 exchangeRateService）
 		fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
@@ -103,6 +105,8 @@ func main() {
 		subscriptionService := service.NewSubscriptionService(subscriptionRepo, categoryRepo)
 		installmentService := service.NewInstallmentService(installmentRepo, categoryRepo)
 		billingService := service.NewBillingService(subscriptionRepo, installmentRepo, cashFlowRepo)
+		bankAccountService := service.NewBankAccountService(bankAccountRepo)
+		creditCardService := service.NewCreditCardService(creditCardRepo)
 
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -124,7 +128,8 @@ func main() {
 		subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 		installmentHandler := api.NewInstallmentHandler(installmentService)
 		billingHandler := api.NewBillingHandler(billingService)
-		exchangeRateHandler := api.NewExchangeRateHandler(exchangeRateService)
+		bankAccountHandler := api.NewBankAccountHandler(bankAccountService)
+		creditCardHandler := api.NewCreditCardHandler(creditCardService)
 
 		// 初始化排程器管理器（不啟動）
 		schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -145,7 +150,7 @@ func main() {
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, exchangeRateHandler)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -181,8 +186,8 @@ func main() {
 	log.Printf("Redis cache enabled: default=%v, US stocks=1h (to avoid Alpha Vantage API limits)", cacheExpiration)
 
 	// 初始化匯率服務（帶 Redis 快取）
-	exchangeRateAPIClient := client.NewExchangeRateAPIClient()
-	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateAPIClient, redisCache.GetClient())
+	exchangeRateClient := client.NewExchangeRateAPIClient()
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo, exchangeRateClient, redisCache.GetClient())
 
 	// 初始化 FIFO Calculator（需要 exchangeRateService）
 	fifoCalculator := service.NewFIFOCalculator(exchangeRateService)
@@ -206,6 +211,8 @@ func main() {
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo, categoryRepo)
 	installmentService := service.NewInstallmentService(installmentRepo, categoryRepo)
 	billingService := service.NewBillingService(subscriptionRepo, installmentRepo, cashFlowRepo)
+	bankAccountService := service.NewBankAccountService(bankAccountRepo)
+	creditCardService := service.NewCreditCardService(creditCardRepo)
 
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -221,13 +228,14 @@ func main() {
 	settingsHandler := api.NewSettingsHandler(settingsService)
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
-	exchangeRateHandler := api.NewExchangeRateHandler(exchangeRateService)
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 	cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
 	categoryHandler := api.NewCategoryHandler(categoryService)
 	subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 	installmentHandler := api.NewInstallmentHandler(installmentService)
 	billingHandler := api.NewBillingHandler(billingService)
+	bankAccountHandler := api.NewBankAccountHandler(bankAccountService)
+	creditCardHandler := api.NewCreditCardHandler(creditCardService)
 
 	// 初始化並啟動排程器管理器
 	schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -253,7 +261,7 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, exchangeRateHandler)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -266,7 +274,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, exchangeRateHandler *api.ExchangeRateHandler) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -447,10 +455,26 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			billing.POST("/process-installments", billingHandler.ProcessInstallmentBilling)
 		}
 
-		// Exchange Rates 路由
-		exchangeRates := apiGroup.Group("/exchange-rates")
+		// Bank Accounts 路由
+		bankAccounts := apiGroup.Group("/bank-accounts")
 		{
-			exchangeRates.POST("/refresh", exchangeRateHandler.RefreshExchangeRate)
+			bankAccounts.POST("", bankAccountHandler.CreateBankAccount)
+			bankAccounts.GET("", bankAccountHandler.ListBankAccounts)
+			bankAccounts.GET("/:id", bankAccountHandler.GetBankAccount)
+			bankAccounts.PUT("/:id", bankAccountHandler.UpdateBankAccount)
+			bankAccounts.DELETE("/:id", bankAccountHandler.DeleteBankAccount)
+		}
+
+		// Credit Cards 路由
+		creditCards := apiGroup.Group("/credit-cards")
+		{
+			creditCards.POST("", creditCardHandler.CreateCreditCard)
+			creditCards.GET("", creditCardHandler.ListCreditCards)
+			creditCards.GET("/upcoming-billing", creditCardHandler.GetUpcomingBilling)
+			creditCards.GET("/upcoming-payment", creditCardHandler.GetUpcomingPayment)
+			creditCards.GET("/:id", creditCardHandler.GetCreditCard)
+			creditCards.PUT("/:id", creditCardHandler.UpdateCreditCard)
+			creditCards.DELETE("/:id", creditCardHandler.DeleteCreditCard)
 		}
 	}
 
