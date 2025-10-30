@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { useTestDiscord, useSendDailyReport } from "@/hooks/useDiscord";
+import { useRefreshExchangeRate } from "@/hooks/useExchangeRates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -18,7 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loading } from "@/components/ui/loading";
 import { toast } from "sonner";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, RefreshCw } from "lucide-react";
 import type {
   DiscordSettings,
   AllocationSettings,
@@ -30,6 +32,7 @@ export default function SettingsPage() {
   const updateSettingsMutation = useUpdateSettings();
   const testDiscordMutation = useTestDiscord();
   const sendDailyReportMutation = useSendDailyReport();
+  const refreshExchangeRateMutation = useRefreshExchangeRate();
 
   // Discord 設定狀態
   const [discordSettings, setDiscordSettings] = useState<DiscordSettings>({
@@ -55,6 +58,12 @@ export default function SettingsPage() {
       installment_completion: true,
       expiry_days: 7,
     });
+
+  // 匯率資訊狀態
+  const [exchangeRateInfo, setExchangeRateInfo] = useState<{
+    rate: number;
+    updatedAt: string;
+  } | null>(null);
 
   // 當設定載入完成時，更新狀態
   useEffect(() => {
@@ -145,6 +154,20 @@ export default function SettingsPage() {
 
     try {
       await sendDailyReportMutation.mutateAsync();
+    } catch (error) {
+      // 錯誤已在 mutation 的 onError 中處理
+    }
+  };
+
+  // 處理更新匯率
+  const handleRefreshExchangeRate = async () => {
+    try {
+      const result = await refreshExchangeRateMutation.mutateAsync();
+      // 更新本地狀態以顯示最新資訊
+      setExchangeRateInfo({
+        rate: result.rate,
+        updatedAt: result.updated_at,
+      });
     } catch (error) {
       // 錯誤已在 mutation 的 onError 中處理
     }
@@ -530,6 +553,76 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   提前幾天發送到期提醒（1-30 天）
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 匯率設定 - 獨立一行 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>匯率設定</CardTitle>
+              <CardDescription>管理系統使用的匯率資料</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 當前匯率資訊 */}
+              <div className="space-y-2">
+                <Label>當前匯率</Label>
+                <div className="flex items-center gap-2">
+                  <div className="text-2xl font-bold">
+                    {exchangeRateInfo
+                      ? `USD/TWD: ${exchangeRateInfo.rate.toFixed(4)}`
+                      : "USD/TWD: --"}
+                  </div>
+                  <Badge variant="secondary">ExchangeRate-API</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  即時匯率資料來源
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* 最後更新時間 */}
+              <div className="space-y-2">
+                <Label>最後更新時間</Label>
+                <div className="text-sm text-muted-foreground">
+                  {exchangeRateInfo
+                    ? new Date(exchangeRateInfo.updatedAt).toLocaleString(
+                        "zh-TW",
+                        {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        }
+                      )
+                    : "尚未更新"}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* 更新按鈕 */}
+              <div className="flex justify-start">
+                <Button
+                  onClick={handleRefreshExchangeRate}
+                  disabled={refreshExchangeRateMutation.isPending}
+                  variant="default"
+                >
+                  {refreshExchangeRateMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      更新中...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      更新匯率
+                    </>
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>

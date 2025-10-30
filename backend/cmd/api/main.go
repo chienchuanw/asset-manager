@@ -124,6 +124,7 @@ func main() {
 		subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 		installmentHandler := api.NewInstallmentHandler(installmentService)
 		billingHandler := api.NewBillingHandler(billingService)
+		exchangeRateHandler := api.NewExchangeRateHandler(exchangeRateService)
 
 		// 初始化排程器管理器（不啟動）
 		schedulerManagerConfig := scheduler.SchedulerManagerConfig{
@@ -144,7 +145,7 @@ func main() {
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, exchangeRateHandler)
 		return
 	}
 	defer redisCache.Close()
@@ -220,6 +221,7 @@ func main() {
 	settingsHandler := api.NewSettingsHandler(settingsService)
 	assetSnapshotHandler := api.NewAssetSnapshotHandler(assetSnapshotService)
 	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
+	exchangeRateHandler := api.NewExchangeRateHandler(exchangeRateService)
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 	cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
 	categoryHandler := api.NewCategoryHandler(categoryService)
@@ -251,7 +253,7 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, exchangeRateHandler)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -264,7 +266,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, exchangeRateHandler *api.ExchangeRateHandler) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -443,6 +445,12 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			billing.POST("/process-daily", billingHandler.ProcessDailyBilling)
 			billing.POST("/process-subscriptions", billingHandler.ProcessSubscriptionBilling)
 			billing.POST("/process-installments", billingHandler.ProcessInstallmentBilling)
+		}
+
+		// Exchange Rates 路由
+		exchangeRates := apiGroup.Group("/exchange-rates")
+		{
+			exchangeRates.POST("/refresh", exchangeRateHandler.RefreshExchangeRate)
 		}
 	}
 
