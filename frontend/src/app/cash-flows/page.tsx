@@ -126,9 +126,9 @@ export default function CashFlowsPage() {
             }}
           />
 
-          {/* 統計卡片區域 */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {/* 摘要統計卡片 */}
+          {/* 統計卡片區域 - 六張卡片並排 */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {/* 摘要統計卡片 - 佔三欄 */}
             <CashFlowSummaryCard startDate={startDate} endDate={endDate} />
 
             {/* 記錄統計卡片 */}

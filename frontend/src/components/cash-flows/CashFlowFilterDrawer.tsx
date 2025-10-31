@@ -74,14 +74,15 @@ export function CashFlowFilterDrawer({
           )}
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] sm:max-w-2xl sm:mx-auto">
         <DrawerHeader>
           <DrawerTitle>進階篩選</DrawerTitle>
           <DrawerDescription>設定篩選條件以縮小搜尋範圍</DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-4 overflow-y-auto">
-          <div className="space-y-6">
+          {/* 桌面版:使用網格佈局 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* 現金流類型篩選 */}
             <div className="space-y-2">
               <Label htmlFor="filter-type">現金流類型</Label>
@@ -101,8 +102,8 @@ export function CashFlowFilterDrawer({
               </Select>
             </div>
 
-            {/* 日期範圍篩選 */}
-            <div className="space-y-2">
+            {/* 日期範圍篩選 - 跨兩欄 */}
+            <div className="space-y-2 sm:col-span-2">
               <Label>自訂日期範圍</Label>
               <div className="flex flex-col items-center">
                 <Calendar
@@ -144,4 +145,3 @@ export function CashFlowFilterDrawer({
     </Drawer>
   );
 }
-

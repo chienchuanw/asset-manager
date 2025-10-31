@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AssetTrendChart } from "@/components/dashboard/AssetTrendChart";
-import { HoldingsTable } from "@/components/dashboard/HoldingsTable";
+import { HoldingsByAssetType } from "@/components/dashboard/HoldingsByAssetType";
 import { AssetAllocationChart } from "@/components/dashboard/AssetAllocationChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { RecurringStatsCard } from "@/components/dashboard/RecurringStatsCard";
@@ -259,9 +259,9 @@ export default function DashboardPage() {
 
           {/* 底部區域 - 響應式佈局 */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-7 md:gap-6">
-            {/* 左側：持倉明細表格 */}
+            {/* 左側：持倉明細(依資產類別分組) */}
             <div className="lg:col-span-4">
-              <HoldingsTable holdings={holdings || []} />
+              <HoldingsByAssetType holdings={holdings || []} />
             </div>
 
             {/* 右側：近期交易和訂閱分期 */}

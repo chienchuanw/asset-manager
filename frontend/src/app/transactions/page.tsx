@@ -15,13 +15,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { BatchAddTransactionDialog } from "@/components/transactions/BatchAddTransactionDialog";
 import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog";
-import { TransactionCard } from "@/components/transactions/TransactionCard";
 import { TransactionFilterDrawer } from "@/components/transactions/TransactionFilterDrawer";
 import {
   DateRangeTabs,
@@ -34,9 +48,11 @@ import {
   TransactionType,
   type Transaction,
   type TransactionFilters,
+  getAssetTypeLabel,
 } from "@/types/transaction";
-import { Search, Download } from "lucide-react";
+import { Search, Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
+import { toast } from "sonner";
 
 export default function TransactionsPage() {
   // 狀態管理
@@ -303,41 +319,192 @@ export default function TransactionsPage() {
                 </div>
               )}
 
-              {/* 交易記錄卡片列表 */}
-              <div className="space-y-4">
-                {isLoading ? (
-                  // 載入中骨架屏
-                  Array.from({ length: 3 }).map((_, index) => (
-                    <Card key={index}>
-                      <CardContent className="p-4">
-                        <Skeleton className="h-32 w-full" />
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : filteredTransactions.length === 0 ? (
-                  // 無資料
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">
-                      {searchQuery ||
-                      filterType !== "all" ||
-                      filterAssetType !== "all" ||
-                      customDateRange
-                        ? "沒有符合條件的交易記錄"
-                        : "尚無交易記錄，點擊「新增交易」開始記錄"}
-                    </p>
-                  </div>
-                ) : (
-                  // 交易卡片列表
-                  filteredTransactions.map((transaction) => (
-                    <TransactionCard
-                      key={transaction.id}
-                      transaction={transaction}
-                      onEdit={setEditingTransaction}
-                      onDelete={handleDelete}
-                      isDeleting={deleteMutation.isPending}
-                    />
-                  ))
-                )}
+              {/* 交易記錄表格 */}
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>日期</TableHead>
+                      <TableHead>資產</TableHead>
+                      <TableHead>類型</TableHead>
+                      <TableHead className="text-right">數量</TableHead>
+                      <TableHead className="text-right">價格</TableHead>
+                      <TableHead className="text-right">金額</TableHead>
+                      <TableHead className="text-right hidden md:table-cell">
+                        手續費
+                      </TableHead>
+                      <TableHead className="text-right hidden md:table-cell">
+                        交易稅
+                      </TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      // 載入中骨架屏
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Skeleton className="h-4 w-20" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-16" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-16" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-20" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-20" />
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Skeleton className="h-4 w-16" />
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Skeleton className="h-4 w-16" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-8" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : filteredTransactions.length === 0 ? (
+                      // 無資料
+                      <TableRow>
+                        <TableCell colSpan={9} className="h-24 text-center">
+                          <p className="text-muted-foreground">
+                            {searchQuery ||
+                            filterType !== "all" ||
+                            filterAssetType !== "all" ||
+                            customDateRange
+                              ? "沒有符合條件的交易記錄"
+                              : "尚無交易記錄，點擊「新增交易」開始記錄"}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      // 交易記錄列表
+                      filteredTransactions.map((transaction) => {
+                        const typeColor =
+                          transaction.type === "buy"
+                            ? "text-red-600"
+                            : transaction.type === "sell"
+                            ? "text-green-600"
+                            : transaction.type === "dividend"
+                            ? "text-blue-600"
+                            : "text-gray-600";
+
+                        const typeLabel =
+                          transaction.type === "buy"
+                            ? "買入"
+                            : transaction.type === "sell"
+                            ? "賣出"
+                            : transaction.type === "dividend"
+                            ? "股利"
+                            : "手續費";
+
+                        return (
+                          <TableRow key={transaction.id}>
+                            <TableCell className="text-sm">
+                              {new Date(transaction.date).toLocaleDateString(
+                                "zh-TW"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-sm">
+                                  {transaction.symbol}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {transaction.name}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="w-fit mt-1 text-xs"
+                                >
+                                  {getAssetTypeLabel(transaction.asset_type)}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`${typeColor} border-current`}
+                              >
+                                {typeLabel}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">
+                              {transaction.quantity?.toLocaleString("zh-TW", {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 4,
+                              }) || "-"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">
+                              {transaction.price
+                                ? `${transaction.price.toLocaleString("zh-TW", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 4,
+                                  })}`
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm font-medium">
+                              {transaction.amount.toLocaleString("zh-TW", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm text-muted-foreground hidden md:table-cell">
+                              {transaction.fee
+                                ? transaction.fee.toLocaleString("zh-TW", {
+                                    minimumFractionDigits: 2,
+                                  })
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm text-muted-foreground hidden md:table-cell">
+                              {transaction.tax
+                                ? transaction.tax.toLocaleString("zh-TW", {
+                                    minimumFractionDigits: 2,
+                                  })
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      setEditingTransaction(transaction)
+                                    }
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    編輯
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDelete(transaction.id)}
+                                    className="text-red-600"
+                                    disabled={deleteMutation.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    刪除
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
