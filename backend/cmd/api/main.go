@@ -478,6 +478,12 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			creditCards.PUT("/:id", creditCardHandler.UpdateCreditCard)
 			creditCards.DELETE("/:id", creditCardHandler.DeleteCreditCard)
 		}
+
+		// Exchange Rates 路由
+		exchangeRates := apiGroup.Group("/exchange-rates")
+		{
+			exchangeRates.POST("/refresh", exchangeRateHandler.RefreshExchangeRate)
+		}
 	}
 
 	// 啟動伺服器
