@@ -81,8 +81,16 @@ export function DateRangeTabs({
   onValueChange,
   className,
 }: DateRangeTabsProps) {
+  // 處理 Tabs 元件的 onValueChange 類型轉換
+  const handleValueChange = (newValue: string) => {
+    // 確保值是有效的 DateRangeType
+    if (newValue === "today" || newValue === "week" || newValue === "month") {
+      onValueChange(newValue as DateRangeType);
+    }
+  };
+
   return (
-    <Tabs value={value} onValueChange={onValueChange} className={className}>
+    <Tabs value={value} onValueChange={handleValueChange} className={className}>
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="today">今日</TabsTrigger>
         <TabsTrigger value="week">本週</TabsTrigger>
@@ -91,4 +99,3 @@ export function DateRangeTabs({
     </Tabs>
   );
 }
-
