@@ -23,6 +23,10 @@ jobs:
       start_ts: ${{ steps.mark.outputs.start_ts }}
 
     steps:
+      - id: mark
+        name: Mark start timestamp
+        run: echo "start_ts=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
       - name: 📢 Send Discord Notification - Started
         run: |
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
