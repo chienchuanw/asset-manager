@@ -19,6 +19,8 @@ jobs:
   notify-start:
     name: Notify Deployment Start
     runs-on: ubuntu-latest
+    outputs:
+      start_ts: ${{ steps.mark.outputs.start_ts }}
 
     steps:
       - name: 📢 Send Discord Notification - Started
@@ -343,6 +345,17 @@ jobs:
     if: always()
 
     steps:
+      - name: Compute duration
+        id: calc
+        run: |
+          START_TS='${{ needs.notify-start.outputs.start_ts }}'
+          END_TS=$(date -u +%s)
+          DURATION=$((END_TS - START_TS))
+          H=$(( DURATION / 3600 ))
+          M=$(( (DURATION % 3600) / 60 ))
+          S=$(( DURATION % 60 ))
+          printf "duration_hms=%02dh %02dm %02ds\n" "$H" "$M" "$S" >> "$GITHUB_OUTPUT"
+
       - name: 📢 Send Discord Notification - Success
         if: needs.deploy.result == 'success'
         run: |
@@ -369,12 +382,12 @@ jobs:
                   "value": "[`'"${GITHUB_SHA:0:7}"'`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
                 },
                 {
-                  "name": "Environment",
-                  "value": "Production"
-                },
-                {
                   "name": "URL",
                   "value": "https://asset.chienchuanw.com"
+                },
+                {
+                  "name": "Duration",
+                  "value": "'"${{ steps.calc.outputs.duration_hms }}"'"
                 },
                 {
                   "name": "Time",
@@ -421,12 +434,12 @@ jobs:
                   "value": "[`'"${GITHUB_SHA:0:7}"'`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
                 },
                 {
-                  "name": "Failed Stage",
-                  "value": "'"$FAILED_STAGE"'"
-                },
-                {
                   "name": "View Logs",
                   "value": "[GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+                },
+                {
+                  "name": "Duration",
+                  "value": "'"${{ steps.calc.outputs.duration_hms }}"'"
                 },
                 {
                   "name": "Time",
