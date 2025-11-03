@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/api"
@@ -50,6 +54,7 @@ func main() {
 	// PerformanceSnapshotRepository 需要 sqlx.DB
 	dbx := sqlx.NewDb(database, "postgres")
 	performanceSnapshotRepo := repository.NewPerformanceSnapshotRepository(dbx)
+	schedulerLogRepo := repository.NewSchedulerLogRepository(dbx)
 
 	authService := service.NewAuthService()
 
@@ -145,13 +150,14 @@ func main() {
 			rebalanceService,
 			billingService,
 			exchangeRateService,
+			nil, // schedulerLogRepo 設為 nil（因為 Redis 不可用時也不記錄）
 			schedulerManagerConfig,
 		)
 		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, exchangeRateHandler)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, exchangeRateHandler, nil)
 		return
 	}
 	defer redisCache.Close()
@@ -252,18 +258,18 @@ func main() {
 		rebalanceService,
 		billingService,
 		exchangeRateService,
+		schedulerLogRepo, // 加入 schedulerLogRepo
 		schedulerManagerConfig,
 	)
 	if err := schedulerManager.Start(); err != nil {
 		log.Printf("Warning: Failed to start scheduler manager: %v", err)
 	}
-	defer schedulerManager.Stop()
 
 	// 初始化排程器 Handler
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
-	// 啟動伺服器
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, exchangeRateHandler)
+	// 啟動伺服器（會在內部處理 graceful shutdown）
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, exchangeRateHandler, schedulerManager)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -276,7 +282,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 }
 
 // startServer 啟動 HTTP 伺服器
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, exchangeRateHandler *api.ExchangeRateHandler) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, exchangeRateHandler *api.ExchangeRateHandler, schedulerManager *scheduler.SchedulerManager) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -384,6 +390,7 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		schedulerGroup := apiGroup.Group("/scheduler")
 		{
 			schedulerGroup.GET("/status", schedulerHandler.GetStatus)
+			schedulerGroup.GET("/summaries", schedulerHandler.GetTaskSummaries)
 			schedulerGroup.POST("/trigger/snapshot", schedulerHandler.TriggerSnapshot)
 			schedulerGroup.POST("/trigger/discord-report", schedulerHandler.TriggerDiscordReport)
 			schedulerGroup.POST("/reload/discord", schedulerHandler.ReloadDiscordSchedule)
@@ -486,9 +493,41 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		}
 	}
 
-	// 啟動伺服器
-	log.Println("Starting server on :8080...")
-	if err := router.Run(":8080"); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// 建立 HTTP 伺服器
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
 	}
+
+	// 在 goroutine 中啟動伺服器
+	go func() {
+		log.Println("Starting server on :8080...")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	// 等待中斷信號
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server gracefully...")
+
+	// 停止排程器
+	if schedulerManager != nil {
+		log.Println("Stopping scheduler...")
+		schedulerManager.Stop()
+		// 等待正在執行的任務完成
+		time.Sleep(5 * time.Second)
+	}
+
+	// 設定 5 秒的超時時間來關閉伺服器
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited")
 }

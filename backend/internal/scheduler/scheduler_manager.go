@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
+	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/robfig/cron/v3"
 )
@@ -22,6 +23,7 @@ type SchedulerManager struct {
 	rebalanceService    service.RebalanceService
 	billingService      service.BillingService
 	exchangeRateService service.ExchangeRateService
+	schedulerLogRepo    repository.SchedulerLogRepository
 	enabled             bool
 	dailySnapshotTime   string // 格式: "HH:MM" (例如: "23:59")
 	discordReportTime   string // 格式: "HH:MM" (例如: "09:00")
@@ -48,6 +50,7 @@ func NewSchedulerManager(
 	rebalanceService service.RebalanceService,
 	billingService service.BillingService,
 	exchangeRateService service.ExchangeRateService,
+	schedulerLogRepo repository.SchedulerLogRepository,
 	config SchedulerManagerConfig,
 ) *SchedulerManager {
 	return &SchedulerManager{
@@ -59,6 +62,7 @@ func NewSchedulerManager(
 		rebalanceService:    rebalanceService,
 		billingService:      billingService,
 		exchangeRateService: exchangeRateService,
+		schedulerLogRepo:    schedulerLogRepo,
 		enabled:             config.Enabled,
 		dailySnapshotTime:   config.DailySnapshotTime,
 		dailyBillingTime:    "00:01", // 預設在每天 00:01 執行扣款
@@ -109,7 +113,10 @@ func (m *SchedulerManager) startSnapshotSchedule() error {
 
 	// 註冊每日快照任務
 	jobID, err := m.cron.AddFunc(cronExpr, func() {
-		log.Println("Running daily snapshot task...")
+		startTime := time.Now()
+		log.Printf("[%s] Running daily snapshot task...", startTime.Format("2006-01-02 15:04:05"))
+
+		var taskErr error
 
 		// 先更新今日匯率
 		if m.exchangeRateService != nil {
@@ -124,9 +131,14 @@ func (m *SchedulerManager) startSnapshotSchedule() error {
 		// 建立每日快照
 		if err := m.snapshotService.CreateDailySnapshots(); err != nil {
 			log.Printf("Error creating daily snapshots: %v", err)
+			taskErr = err
+			m.sendFailureNotification("每日資產快照", err)
 		} else {
 			log.Println("Daily snapshots created successfully")
 		}
+
+		// 記錄執行結果
+		m.logTaskExecution("daily_snapshot", startTime, taskErr)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add snapshot cron job: %w", err)
@@ -171,12 +183,19 @@ func (m *SchedulerManager) startDiscordReportSchedule() error {
 
 	// 註冊 Discord 報告任務
 	jobID, err := m.cron.AddFunc(cronExpr, func() {
-		log.Println("Running daily Discord report task...")
-		if err := m.sendDailyDiscordReport(); err != nil {
-			log.Printf("Error sending Discord report: %v", err)
+		startTime := time.Now()
+		log.Printf("[%s] Running daily Discord report task...", startTime.Format("2006-01-02 15:04:05"))
+
+		taskErr := m.sendDailyDiscordReport()
+		if taskErr != nil {
+			log.Printf("Error sending Discord report: %v", taskErr)
+			m.sendFailureNotification("Discord 每日報告", taskErr)
 		} else {
 			log.Println("Discord report sent successfully")
 		}
+
+		// 記錄執行結果
+		m.logTaskExecution("discord_report", startTime, taskErr)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add Discord report cron job: %w", err)
@@ -456,23 +475,30 @@ func (m *SchedulerManager) startDailyBillingSchedule() error {
 
 	// 新增排程任務
 	jobID, err := m.cron.AddFunc(cronExpr, func() {
-		log.Println("Starting daily billing process...")
+		startTime := time.Now()
+		log.Printf("[%s] Starting daily billing process...", startTime.Format("2006-01-02 15:04:05"))
+
+		var taskErr error
 
 		// 執行每日扣款
 		result, err := m.billingService.ProcessDailyBilling(time.Now())
 		if err != nil {
 			log.Printf("Error processing daily billing: %v", err)
-			return
+			taskErr = err
+			m.sendFailureNotification("每日扣款處理", err)
+		} else {
+			log.Printf("Daily billing completed: %d subscriptions, %d installments, total: %.2f TWD",
+				result.SubscriptionCount,
+				result.InstallmentCount,
+				result.TotalAmount,
+			)
+
+			// 發送 Discord 通知（如果啟用）
+			m.sendDailyBillingNotification(result)
 		}
 
-		log.Printf("Daily billing completed: %d subscriptions, %d installments, total: %.2f TWD",
-			result.SubscriptionCount,
-			result.InstallmentCount,
-			result.TotalAmount,
-		)
-
-		// 發送 Discord 通知（如果啟用）
-		m.sendDailyBillingNotification(result)
+		// 記錄執行結果
+		m.logTaskExecution("daily_billing", startTime, taskErr)
 	})
 
 	if err != nil {
@@ -528,3 +554,89 @@ type SchedulerStatus struct {
 	NextDiscordRun    time.Time `json:"next_discord_run"`
 }
 
+// logTaskExecution 記錄任務執行結果
+func (m *SchedulerManager) logTaskExecution(taskName string, startTime time.Time, taskErr error) {
+	if m.schedulerLogRepo == nil {
+		return // 如果沒有 repository，跳過記錄
+	}
+
+	completedAt := time.Now()
+	duration := completedAt.Sub(startTime).Seconds()
+
+	status := "success"
+	var errorMsg *string
+	if taskErr != nil {
+		status = "failed"
+		errStr := taskErr.Error()
+		errorMsg = &errStr
+	}
+
+	logEntry := &models.SchedulerLog{
+		TaskName:        taskName,
+		Status:          status,
+		ErrorMessage:    errorMsg,
+		StartedAt:       startTime,
+		CompletedAt:     &completedAt,
+		DurationSeconds: &duration,
+	}
+
+	if err := m.schedulerLogRepo.Create(logEntry); err != nil {
+		// 記錄失敗不應該影響主流程
+		log.Printf("Warning: Failed to log scheduler execution: %v\n", err)
+	}
+}
+
+// sendFailureNotification 發送任務失敗通知到 Discord
+func (m *SchedulerManager) sendFailureNotification(taskName string, taskErr error) {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		log.Printf("Error getting settings for failure notification: %v", err)
+		return
+	}
+
+	// 檢查 Discord 是否啟用
+	if !settings.Discord.Enabled || settings.Discord.WebhookURL == "" {
+		return
+	}
+
+	// 建立失敗通知訊息
+	message := &models.DiscordMessage{
+		Content: fmt.Sprintf("⚠️ **排程任務執行失敗**\n\n"+
+			"**任務名稱：** %s\n"+
+			"**時間：** %s\n"+
+			"**錯誤訊息：** %s",
+			taskName,
+			time.Now().Format("2006-01-02 15:04:05"),
+			taskErr.Error(),
+		),
+	}
+
+	// 發送通知
+	if err := m.discordService.SendMessage(settings.Discord.WebhookURL, message); err != nil {
+		log.Printf("Error sending failure notification: %v", err)
+	}
+}
+
+// GetTaskSummaries 取得所有排程任務的執行摘要
+func (m *SchedulerManager) GetTaskSummaries() ([]models.SchedulerLogSummary, error) {
+	if m.schedulerLogRepo == nil {
+		return nil, fmt.Errorf("scheduler log repository not available")
+	}
+
+	taskNames := []string{"daily_snapshot", "discord_report", "daily_billing"}
+	summaries := make([]models.SchedulerLogSummary, 0, len(taskNames))
+
+	for _, taskName := range taskNames {
+		summary, err := m.schedulerLogRepo.GetSummaryByTaskName(taskName)
+		if err != nil {
+			log.Printf("Warning: Failed to get summary for task %s: %v", taskName, err)
+			continue
+		}
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
+	}
+
+	return summaries, nil
+}

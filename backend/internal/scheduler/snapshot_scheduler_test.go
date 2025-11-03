@@ -376,6 +376,7 @@ func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		nil, // schedulerLogRepo
 		config,
 	)
 
@@ -421,6 +422,7 @@ func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		nil, // schedulerLogRepo
 		config,
 	)
 

@@ -3,17 +3,29 @@ package api
 import (
 	"net/http"
 
+	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/chienchuanw/asset-manager/internal/scheduler"
 	"github.com/gin-gonic/gin"
 )
 
+// SchedulerManagerInterface 定義 SchedulerManager 的介面
+type SchedulerManagerInterface interface {
+	Start() error
+	Stop()
+	RunSnapshotNow() error
+	RunDiscordReportNow() error
+	ReloadDiscordSchedule() error
+	GetStatus() scheduler.SchedulerStatus
+	GetTaskSummaries() ([]models.SchedulerLogSummary, error)
+}
+
 // SchedulerHandler 排程器 Handler
 type SchedulerHandler struct {
-	schedulerManager *scheduler.SchedulerManager
+	schedulerManager SchedulerManagerInterface
 }
 
 // NewSchedulerHandler 建立新的排程器 Handler
-func NewSchedulerHandler(schedulerManager *scheduler.SchedulerManager) *SchedulerHandler {
+func NewSchedulerHandler(schedulerManager SchedulerManagerInterface) *SchedulerHandler {
 	return &SchedulerHandler{
 		schedulerManager: schedulerManager,
 	}
@@ -110,3 +122,28 @@ func (h *SchedulerHandler) ReloadDiscordSchedule(c *gin.Context) {
 	})
 }
 
+// GetTaskSummaries 取得所有排程任務的執行摘要
+// @Summary 取得排程任務執行摘要
+// @Description 取得所有排程任務的最後執行狀態和時間
+// @Tags scheduler
+// @Accept json
+// @Produce json
+// @Success 200 {object} APIResponse{data=[]models.SchedulerLogSummary}
+// @Failure 500 {object} APIResponse
+// @Router /api/scheduler/summaries [get]
+func (h *SchedulerHandler) GetTaskSummaries(c *gin.Context) {
+	summaries, err := h.schedulerManager.GetTaskSummaries()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "GET_TASK_SUMMARIES_FAILED",
+				Message: "Failed to get task summaries: " + err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Data: summaries,
+	})
+}
