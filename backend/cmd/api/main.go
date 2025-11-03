@@ -247,7 +247,7 @@ func main() {
 
 	// 初始化並啟動排程器管理器
 	schedulerManagerConfig := scheduler.SchedulerManagerConfig{
-		Enabled:           os.Getenv("SCHEDULER_ENABLED") == "true",
+		Enabled:           os.Getenv("SNAPSHOT_SCHEDULER_ENABLED") == "true",
 		DailySnapshotTime: getEnvOrDefault("SCHEDULER_SNAPSHOT_TIME", "23:59"),
 	}
 	schedulerManager := scheduler.NewSchedulerManager(
