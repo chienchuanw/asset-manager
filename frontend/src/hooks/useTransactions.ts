@@ -122,6 +122,10 @@ export function useCreateTransaction(
       await queryClient.invalidateQueries({
         queryKey: transactionKeys.lists(),
       });
+      // 使持倉列表失效（新交易會影響持倉）
+      await queryClient.invalidateQueries({
+        queryKey: ["holdings"],
+      });
     },
     ...options,
   });
@@ -171,6 +175,11 @@ export function useUpdateTransaction(
       // 使該筆交易的快取失效
       await queryClient.invalidateQueries({
         queryKey: transactionKeys.detail(variables.id),
+      });
+
+      // 使持倉列表失效（交易更新會影響持倉）
+      await queryClient.invalidateQueries({
+        queryKey: ["holdings"],
       });
     },
     ...options,
@@ -228,6 +237,10 @@ export function useCreateTransactionsBatch(
       await queryClient.invalidateQueries({
         queryKey: transactionKeys.lists(),
       });
+      // 使持倉列表失效（批次交易會影響持倉）
+      await queryClient.invalidateQueries({
+        queryKey: ["holdings"],
+      });
     },
     ...options,
   });
@@ -266,6 +279,11 @@ export function useDeleteTransaction(
       // 移除該筆交易的快取
       queryClient.removeQueries({
         queryKey: transactionKeys.detail(variables),
+      });
+
+      // 使持倉列表失效（刪除交易會影響持倉）
+      await queryClient.invalidateQueries({
+        queryKey: ["holdings"],
       });
     },
     ...options,

@@ -166,6 +166,14 @@ export function useCreateCashFlow(
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.summaries(),
       });
+      // 使銀行帳戶列表失效（餘額可能已更新）
+      await queryClient.invalidateQueries({
+        queryKey: ["bankAccounts"],
+      });
+      // 使信用卡列表失效（餘額可能已更新）
+      await queryClient.invalidateQueries({
+        queryKey: ["creditCards"],
+      });
     },
     ...options,
   });
@@ -219,6 +227,14 @@ export function useUpdateCashFlow(
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.summaries(),
       });
+      // 使銀行帳戶列表失效（餘額可能已更新）
+      await queryClient.invalidateQueries({
+        queryKey: ["bankAccounts"],
+      });
+      // 使信用卡列表失效（餘額可能已更新）
+      await queryClient.invalidateQueries({
+        queryKey: ["creditCards"],
+      });
     },
     ...options,
   });
@@ -260,6 +276,14 @@ export function useDeleteCashFlow(
       // 使所有摘要的快取失效
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.summaries(),
+      });
+      // 使銀行帳戶列表失效（餘額可能已更新）
+      await queryClient.invalidateQueries({
+        queryKey: ["bankAccounts"],
+      });
+      // 使信用卡列表失效（餘額可能已更新）
+      await queryClient.invalidateQueries({
+        queryKey: ["creditCards"],
       });
     },
     ...options,
