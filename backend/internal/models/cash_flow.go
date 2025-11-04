@@ -18,9 +18,11 @@ const (
 type SourceType string
 
 const (
-	SourceTypeManual       SourceType = "manual"       // 手動建立
+	SourceTypeManual       SourceType = "manual"       // 手動建立（現金交易）
 	SourceTypeSubscription SourceType = "subscription" // 訂閱自動產生
 	SourceTypeInstallment  SourceType = "installment"  // 分期自動產生
+	SourceTypeBankAccount  SourceType = "bank_account" // 銀行帳戶交易
+	SourceTypeCreditCard   SourceType = "credit_card"  // 信用卡交易
 )
 
 // CashFlowCategory 現金流分類模型
@@ -66,11 +68,13 @@ type CreateCashFlowInput struct {
 
 // UpdateCashFlowInput 更新現金流記錄的輸入資料
 type UpdateCashFlowInput struct {
-	Date        *time.Time `json:"date,omitempty"`
-	CategoryID  *uuid.UUID `json:"category_id,omitempty"`
-	Amount      *float64   `json:"amount,omitempty" binding:"omitempty,gt=0"`
-	Description *string    `json:"description,omitempty" binding:"omitempty,max=500"`
-	Note        *string    `json:"note,omitempty"`
+	Date        *time.Time  `json:"date,omitempty"`
+	CategoryID  *uuid.UUID  `json:"category_id,omitempty"`
+	Amount      *float64    `json:"amount,omitempty" binding:"omitempty,gt=0"`
+	Description *string     `json:"description,omitempty" binding:"omitempty,max=500"`
+	Note        *string     `json:"note,omitempty"`
+	SourceType  *SourceType `json:"source_type,omitempty"`
+	SourceID    *uuid.UUID  `json:"source_id,omitempty"`
 }
 
 // CreateCategoryInput 建立分類的輸入資料
@@ -96,7 +100,7 @@ func (t CashFlowType) Validate() bool {
 // Validate 驗證 SourceType 是否有效
 func (s SourceType) Validate() bool {
 	switch s {
-	case SourceTypeManual, SourceTypeSubscription, SourceTypeInstallment:
+	case SourceTypeManual, SourceTypeSubscription, SourceTypeInstallment, SourceTypeBankAccount, SourceTypeCreditCard:
 		return true
 	}
 	return false

@@ -15,6 +15,7 @@ type BankAccountRepository interface {
 	GetByID(id uuid.UUID) (*models.BankAccount, error)
 	GetAll(currency *models.Currency) ([]*models.BankAccount, error)
 	Update(id uuid.UUID, input *models.UpdateBankAccountInput) (*models.BankAccount, error)
+	UpdateBalance(id uuid.UUID, amount float64) (*models.BankAccount, error)
 	Delete(id uuid.UUID) error
 }
 
@@ -223,6 +224,38 @@ func (r *bankAccountRepository) Update(id uuid.UUID, input *models.UpdateBankAcc
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to update bank account: %w", err)
+	}
+
+	return account, nil
+}
+
+// UpdateBalance 更新銀行帳戶餘額（增加或減少指定金額）
+func (r *bankAccountRepository) UpdateBalance(id uuid.UUID, amount float64) (*models.BankAccount, error) {
+	query := `
+		UPDATE bank_accounts
+		SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING id, bank_name, account_type, account_number_last4, currency, balance, note, created_at, updated_at
+	`
+
+	account := &models.BankAccount{}
+	err := r.db.QueryRow(query, amount, id).Scan(
+		&account.ID,
+		&account.BankName,
+		&account.AccountType,
+		&account.AccountNumberLast4,
+		&account.Currency,
+		&account.Balance,
+		&account.Note,
+		&account.CreatedAt,
+		&account.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("bank account not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to update bank account balance: %w", err)
 	}
 
 	return account, nil

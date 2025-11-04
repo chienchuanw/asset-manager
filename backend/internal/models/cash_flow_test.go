@@ -77,6 +77,16 @@ func TestSourceType_Validate(t *testing.T) {
 			want:       true,
 		},
 		{
+			name:       "valid bank account type",
+			sourceType: SourceTypeBankAccount,
+			want:       true,
+		},
+		{
+			name:       "valid credit card type",
+			sourceType: SourceTypeCreditCard,
+			want:       true,
+		},
+		{
 			name:       "invalid type",
 			sourceType: SourceType("invalid"),
 			want:       false,
@@ -101,5 +111,7 @@ func TestSourceType_Constants(t *testing.T) {
 	assert.Equal(t, SourceType("manual"), SourceTypeManual, "SourceTypeManual should be 'manual'")
 	assert.Equal(t, SourceType("subscription"), SourceTypeSubscription, "SourceTypeSubscription should be 'subscription'")
 	assert.Equal(t, SourceType("installment"), SourceTypeInstallment, "SourceTypeInstallment should be 'installment'")
+	assert.Equal(t, SourceType("bank_account"), SourceTypeBankAccount, "SourceTypeBankAccount should be 'bank_account'")
+	assert.Equal(t, SourceType("credit_card"), SourceTypeCreditCard, "SourceTypeCreditCard should be 'credit_card'")
 }
 

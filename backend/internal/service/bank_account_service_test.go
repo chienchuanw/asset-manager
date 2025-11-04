@@ -47,6 +47,14 @@ func (m *MockBankAccountRepository) Update(id uuid.UUID, input *models.UpdateBan
 	return args.Get(0).(*models.BankAccount), args.Error(1)
 }
 
+func (m *MockBankAccountRepository) UpdateBalance(id uuid.UUID, amount float64) (*models.BankAccount, error) {
+	args := m.Called(id, amount)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.BankAccount), args.Error(1)
+}
+
 func (m *MockBankAccountRepository) Delete(id uuid.UUID) error {
 	args := m.Called(id)
 	return args.Error(0)

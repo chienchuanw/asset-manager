@@ -20,6 +20,7 @@ type CreditCardRepository interface {
 	GetUpcomingBilling(daysAhead int) ([]*models.CreditCard, error)
 	GetUpcomingPayment(daysAhead int) ([]*models.CreditCard, error)
 	Update(id uuid.UUID, input *models.UpdateCreditCardInput) (*models.CreditCard, error)
+	UpdateUsedCredit(id uuid.UUID, amount float64) (*models.CreditCard, error)
 	Delete(id uuid.UUID) error
 }
 
@@ -453,6 +454,40 @@ func (r *creditCardRepository) Update(id uuid.UUID, input *models.UpdateCreditCa
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to update credit card: %w", err)
+	}
+
+	return card, nil
+}
+
+// UpdateUsedCredit 更新信用卡已使用額度（增加或減少指定金額）
+func (r *creditCardRepository) UpdateUsedCredit(id uuid.UUID, amount float64) (*models.CreditCard, error) {
+	query := `
+		UPDATE credit_cards
+		SET used_credit = used_credit + $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+	`
+
+	card := &models.CreditCard{}
+	err := r.db.QueryRow(query, amount, id).Scan(
+		&card.ID,
+		&card.IssuingBank,
+		&card.CardName,
+		&card.CardNumberLast4,
+		&card.BillingDay,
+		&card.PaymentDueDay,
+		&card.CreditLimit,
+		&card.UsedCredit,
+		&card.Note,
+		&card.CreatedAt,
+		&card.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("credit card not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to update credit card used credit: %w", err)
 	}
 
 	return card, nil

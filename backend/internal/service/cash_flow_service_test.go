@@ -14,7 +14,9 @@ import (
 func TestCashFlowService_CreateCashFlow(t *testing.T) {
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	categoryID := uuid.New()
 	category := &models.CashFlowCategory{
@@ -67,7 +69,9 @@ func TestCreateCashFlow_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	categoryID := uuid.New()
 	input := &models.CreateCashFlowInput{
@@ -114,7 +118,9 @@ func TestCreateCashFlow_InvalidType(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	input := &models.CreateCashFlowInput{
 		Date:        time.Date(2025, 10, 25, 0, 0, 0, 0, time.UTC),
@@ -138,7 +144,9 @@ func TestCreateCashFlow_InvalidAmount(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	tests := []struct {
 		name   string
@@ -174,7 +182,9 @@ func TestCreateCashFlow_CategoryTypeMismatch(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	categoryID := uuid.New()
 	input := &models.CreateCashFlowInput{
@@ -209,7 +219,9 @@ func TestGetCashFlow_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	cashFlowID := uuid.New()
 	expectedCashFlow := &models.CashFlow{
@@ -237,7 +249,9 @@ func TestListCashFlows_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	filters := repository.CashFlowFilters{}
 	expectedCashFlows := []*models.CashFlow{
@@ -272,7 +286,9 @@ func TestDeleteCashFlow_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	cashFlowID := uuid.New()
 	mockRepo.On("Delete", cashFlowID).Return(nil)
@@ -290,7 +306,9 @@ func TestGetSummary_Success(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
-	service := NewCashFlowService(mockRepo, mockCategoryRepo)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	startDate := time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 10, 31, 0, 0, 0, 0, time.UTC)

@@ -79,6 +79,14 @@ func (m *MockCreditCardRepository) Update(id uuid.UUID, input *models.UpdateCred
 	return args.Get(0).(*models.CreditCard), args.Error(1)
 }
 
+func (m *MockCreditCardRepository) UpdateUsedCredit(id uuid.UUID, amount float64) (*models.CreditCard, error) {
+	args := m.Called(id, amount)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CreditCard), args.Error(1)
+}
+
 func (m *MockCreditCardRepository) Delete(id uuid.UUID) error {
 	args := m.Called(id)
 	return args.Error(0)
