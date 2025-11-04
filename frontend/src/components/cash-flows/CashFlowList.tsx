@@ -31,6 +31,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PaymentMethodDisplay } from "./PaymentMethodDisplay";
 
 interface CashFlowListProps {
   filters?: CashFlowFilters;
@@ -71,6 +72,7 @@ export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
             <TableHead>日期</TableHead>
             <TableHead>類型</TableHead>
             <TableHead>分類</TableHead>
+            <TableHead>付款方式</TableHead>
             <TableHead>描述</TableHead>
             <TableHead className="text-right">金額</TableHead>
             <TableHead className="w-[50px]"></TableHead>
@@ -91,6 +93,9 @@ export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
                   <Skeleton className="h-4 w-24" />
                 </TableCell>
                 <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
                   <Skeleton className="h-4 w-32" />
                 </TableCell>
                 <TableCell>
@@ -104,7 +109,7 @@ export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
           ) : !cashFlows || cashFlows.length === 0 ? (
             // 無資料
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
+              <TableCell colSpan={7} className="h-24 text-center">
                 <p className="text-muted-foreground">尚無現金流記錄</p>
               </TableCell>
             </TableRow>
@@ -139,6 +144,9 @@ export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <PaymentMethodDisplay cashFlow={cashFlow} />
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">

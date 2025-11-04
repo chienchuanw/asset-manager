@@ -5,6 +5,7 @@
 export { CategorySelect } from "./CategorySelect";
 export { PaymentMethodSelect } from "./PaymentMethodSelect";
 export { AccountSelect } from "./AccountSelect";
+export { PaymentMethodDisplay } from "./PaymentMethodDisplay";
 export { AddCashFlowDialog } from "./AddCashFlowDialog";
 export { CashFlowSummaryCard } from "./CashFlowSummaryCard";
 export { CashFlowList } from "./CashFlowList";
