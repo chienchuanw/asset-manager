@@ -57,10 +57,6 @@ export function CashFlowList({ filters }: CashFlowListProps) {
 
   // 刪除現金流 mutation
   const deleteMutation = useDeleteCashFlow({
-    onSuccess: () => {
-      toast.success("記錄刪除成功");
-      // React Query 的自動失效機制會處理資料更新
-    },
     onError: (error) => {
       toast.error(error.message || "刪除失敗");
     },

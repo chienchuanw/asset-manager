@@ -18,6 +18,7 @@ import type {
   CashFlowType,
 } from "@/types/cash-flow";
 import { APIError } from "@/lib/api/client";
+import { toast } from "sonner";
 
 /**
  * Query Keys
@@ -64,9 +65,13 @@ export function useCashFlows(
   filters?: CashFlowFilters,
   options?: Omit<UseQueryOptions<CashFlow[], APIError>, "queryKey" | "queryFn">
 ) {
+  const queryKey = cashFlowKeys.list(filters);
+
   return useQuery<CashFlow[], APIError>({
-    queryKey: cashFlowKeys.list(filters),
-    queryFn: () => cashFlowsAPI.getAll(filters),
+    queryKey,
+    queryFn: () => {
+      return cashFlowsAPI.getAll(filters);
+    },
     ...options,
   });
 }
@@ -253,6 +258,9 @@ export function useDeleteCashFlow(
   return useMutation<void, APIError, string>({
     mutationFn: cashFlowsAPI.delete,
     onSuccess: async () => {
+      // 顯示成功訊息
+      toast.success("記錄刪除成功");
+
       // 使所有現金流相關查詢失效
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.all,
