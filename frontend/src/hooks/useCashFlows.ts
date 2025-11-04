@@ -216,6 +216,9 @@ export function useUpdateCashFlow(
   >({
     mutationFn: ({ id, data }) => cashFlowsAPI.update(id, data),
     onSuccess: async () => {
+      // 顯示成功訊息
+      toast.success("記錄更新成功");
+
       // 使所有現金流相關查詢失效
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.all,

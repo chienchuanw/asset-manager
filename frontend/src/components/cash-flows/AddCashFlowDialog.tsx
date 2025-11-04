@@ -45,6 +45,19 @@ import { PaymentMethodSelect } from "./PaymentMethodSelect";
 import { AccountSelect } from "./AccountSelect";
 import { toast } from "sonner";
 
+/**
+ * 將日期字串轉換為 ISO 格式，避免時區問題
+ * @param dateString YYYY-MM-DD 格式的日期字串
+ * @returns ISO 8601 格式的日期字串
+ */
+const formatDateToISO = (dateString: string): string => {
+  // 解析日期字串為年、月、日
+  const [year, month, day] = dateString.split("-").map(Number);
+  // 使用本地時間建立 Date 物件，避免時區轉換
+  const date = new Date(year, month - 1, day, 12, 0, 0); // 設定為中午避免夏令時問題
+  return date.toISOString();
+};
+
 interface AddCashFlowDialogProps {
   onSuccess?: () => void;
 }
@@ -93,8 +106,8 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
 
   // 送出表單
   const onSubmit = (data: CreateCashFlowFormData) => {
-    // 將日期轉換為 ISO 8601 格式
-    const isoDate = new Date(data.date).toISOString();
+    // 將日期轉換為 ISO 8601 格式，避免時區問題
+    const isoDate = formatDateToISO(data.date);
 
     // 準備提交資料
     const submitData: any = {
