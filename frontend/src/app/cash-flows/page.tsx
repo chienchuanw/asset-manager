@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Card,
@@ -27,12 +28,14 @@ import {
   DateRangeType,
   calculateDateRange,
 } from "@/components/common/DateRangeTabs";
-import { useCashFlows } from "@/hooks";
+import { useCashFlows, cashFlowKeys } from "@/hooks";
 import { CashFlowType, type CashFlowFilters } from "@/types/cash-flow";
 import { Download, Search } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
 export default function CashFlowsPage() {
+  const queryClient = useQueryClient();
+
   // 狀態管理
   const [filterType, setFilterType] = useState<CashFlowType | "all">("all");
   const [dateRangeType, setDateRangeType] = useState<DateRangeType>("today");
@@ -71,7 +74,15 @@ export default function CashFlowsPage() {
   }, [filterType, startDate, endDate]);
 
   // 取得現金流列表資料
-  const { data: cashFlows, isLoading, error, refetch } = useCashFlows(filters);
+  const {
+    data: cashFlows,
+    isLoading,
+    error,
+    refetch,
+  } = useCashFlows(filters, {
+    // 確保資料總是最新的
+    staleTime: 0,
+  });
 
   // 計算統計資料
   const stats = useMemo(() => {
@@ -96,6 +107,14 @@ export default function CashFlowsPage() {
   const handleResetFilters = () => {
     setFilterType("all");
     setCustomDateRange(undefined);
+  };
+
+  // 重新獲取所有相關資料
+  const handleRefreshData = async () => {
+    // 讓所有現金流相關查詢失效，強制重新獲取
+    await queryClient.invalidateQueries({
+      queryKey: cashFlowKeys.all,
+    });
   };
 
   // 客戶端篩選(搜尋)
@@ -177,7 +196,7 @@ export default function CashFlowsPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <AddCashFlowDialog onSuccess={() => refetch()} />
+                  <AddCashFlowDialog onSuccess={handleRefreshData} />
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
                     匯出

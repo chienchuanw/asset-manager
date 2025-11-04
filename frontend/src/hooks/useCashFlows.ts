@@ -158,13 +158,9 @@ export function useCreateCashFlow(
   return useMutation<CashFlow, APIError, CreateCashFlowInput>({
     mutationFn: cashFlowsAPI.create,
     onSuccess: async () => {
-      // 使所有現金流列表的快取失效
+      // 使所有現金流相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.lists(),
-      });
-      // 使所有摘要的快取失效
-      await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.summaries(),
+        queryKey: cashFlowKeys.all,
       });
       // 使銀行帳戶列表失效（餘額可能已更新）
       await queryClient.invalidateQueries({
@@ -214,18 +210,10 @@ export function useUpdateCashFlow(
     { id: string; data: UpdateCashFlowInput }
   >({
     mutationFn: ({ id, data }) => cashFlowsAPI.update(id, data),
-    onSuccess: async (_data, variables) => {
-      // 使所有現金流列表的快取失效
+    onSuccess: async () => {
+      // 使所有現金流相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.lists(),
-      });
-      // 使該筆記錄的快取失效
-      await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.detail(variables.id),
-      });
-      // 使所有摘要的快取失效
-      await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.summaries(),
+        queryKey: cashFlowKeys.all,
       });
       // 使銀行帳戶列表失效（餘額可能已更新）
       await queryClient.invalidateQueries({
@@ -264,18 +252,10 @@ export function useDeleteCashFlow(
 
   return useMutation<void, APIError, string>({
     mutationFn: cashFlowsAPI.delete,
-    onSuccess: async (_data, variables) => {
-      // 使所有現金流列表的快取失效
+    onSuccess: async () => {
+      // 使所有現金流相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.lists(),
-      });
-      // 移除該筆記錄的快取
-      queryClient.removeQueries({
-        queryKey: cashFlowKeys.detail(variables),
-      });
-      // 使所有摘要的快取失效
-      await queryClient.invalidateQueries({
-        queryKey: cashFlowKeys.summaries(),
+        queryKey: cashFlowKeys.all,
       });
       // 使銀行帳戶列表失效（餘額可能已更新）
       await queryClient.invalidateQueries({

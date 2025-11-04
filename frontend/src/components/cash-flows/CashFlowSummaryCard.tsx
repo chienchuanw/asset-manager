@@ -20,7 +20,10 @@ export function CashFlowSummaryCard({
   startDate,
   endDate,
 }: CashFlowSummaryCardProps) {
-  const { data: summary, isLoading } = useCashFlowSummary(startDate, endDate);
+  const { data: summary, isLoading } = useCashFlowSummary(startDate, endDate, {
+    // 確保資料總是最新的
+    staleTime: 0,
+  });
 
   if (isLoading) {
     return (
