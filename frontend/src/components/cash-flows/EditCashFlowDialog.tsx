@@ -54,7 +54,7 @@ interface EditCashFlowDialogProps {
 
 /**
  * 編輯現金流對話框
- * 
+ *
  * 提供編輯現金流記錄的表單介面
  */
 export function EditCashFlowDialog({
@@ -74,8 +74,8 @@ export function EditCashFlowDialog({
       category_id: "",
       description: "",
       amount: 0,
-      payment_method_type: PaymentMethodType.CASH,
-      payment_method_id: "",
+      payment_method: PaymentMethodType.CASH,
+      account_id: "",
       note: "",
     },
   });
@@ -84,16 +84,30 @@ export function EditCashFlowDialog({
   useEffect(() => {
     if (cashFlow && open) {
       // 格式化日期為 YYYY-MM-DD 格式
-      const formattedDate = new Date(cashFlow.date).toISOString().split('T')[0];
-      
+      const formattedDate = new Date(cashFlow.date).toISOString().split("T")[0];
+
+      // 將 source_type 轉換為 payment_method
+      let paymentMethod: PaymentMethodType = PaymentMethodType.CASH;
+      let accountId = "";
+
+      if (cashFlow.source_type && cashFlow.source_id) {
+        if (cashFlow.source_type === "bank_account") {
+          paymentMethod = PaymentMethodType.BANK_ACCOUNT;
+          accountId = cashFlow.source_id;
+        } else if (cashFlow.source_type === "credit_card") {
+          paymentMethod = PaymentMethodType.CREDIT_CARD;
+          accountId = cashFlow.source_id;
+        }
+      }
+
       form.reset({
         date: formattedDate,
         type: cashFlow.type,
         category_id: cashFlow.category?.id || "",
         description: cashFlow.description,
         amount: cashFlow.amount,
-        payment_method_type: cashFlow.payment_method_type,
-        payment_method_id: cashFlow.payment_method_id || "",
+        payment_method: paymentMethod,
+        account_id: accountId,
         note: cashFlow.note || "",
       });
     }
@@ -120,15 +134,26 @@ export function EditCashFlowDialog({
     setIsSubmitting(true);
 
     // 準備更新資料
-    const updateData = {
-      ...data,
-      // 轉換日期格式為 ISO 字串
+    const updateData: any = {
       date: new Date(data.date + "T00:00:00").toISOString(),
-      // 根據付款方式類型決定是否包含 payment_method_id
-      payment_method_id: data.payment_method_type === PaymentMethodType.CASH 
-        ? null 
-        : data.payment_method_id,
+      type: data.type,
+      category_id: data.category_id,
+      amount: data.amount,
+      description: data.description,
+      note: data.note,
     };
+
+    // 根據付款方式設定 source_type 和 source_id
+    if (data.payment_method !== PaymentMethodType.CASH) {
+      updateData.source_type = paymentMethodTypeToSourceType(
+        data.payment_method
+      );
+      updateData.source_id = data.account_id;
+    } else {
+      // 如果是現金，清除 source_type 和 source_id
+      updateData.source_type = null;
+      updateData.source_id = null;
+    }
 
     updateMutation.mutate({
       id: cashFlow.id,
@@ -137,16 +162,14 @@ export function EditCashFlowDialog({
   };
 
   // 監聽付款方式類型變更
-  const paymentMethodType = form.watch("payment_method_type");
+  const paymentMethod = form.watch("payment_method");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>編輯現金流記錄</DialogTitle>
-          <DialogDescription>
-            修改現金流記錄的詳細資訊
-          </DialogDescription>
+          <DialogDescription>修改現金流記錄的詳細資訊</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -253,7 +276,7 @@ export function EditCashFlowDialog({
             {/* 付款方式 */}
             <FormField
               control={form.control}
-              name="payment_method_type"
+              name="payment_method"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>付款方式 *</FormLabel>
@@ -267,22 +290,22 @@ export function EditCashFlowDialog({
             />
 
             {/* 帳戶選擇（當付款方式不是現金時顯示） */}
-            {paymentMethodType !== PaymentMethodType.CASH && (
+            {paymentMethod !== PaymentMethodType.CASH && (
               <FormField
                 control={form.control}
-                name="payment_method_id"
+                name="account_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {paymentMethodType === PaymentMethodType.BANK_ACCOUNT
+                      {paymentMethod === PaymentMethodType.BANK_ACCOUNT
                         ? "銀行帳戶"
                         : "信用卡"}{" "}
                       *
                     </FormLabel>
                     <AccountSelect
-                      value={field.value}
+                      value={field.value || ""}
                       onValueChange={field.onChange}
-                      sourceType={paymentMethodTypeToSourceType(paymentMethodType)}
+                      paymentMethodType={paymentMethod}
                     />
                     <FormMessage />
                   </FormItem>
@@ -302,6 +325,7 @@ export function EditCashFlowDialog({
                       placeholder="選填備註資訊"
                       className="resize-none"
                       {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -319,7 +343,9 @@ export function EditCashFlowDialog({
                 取消
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 更新記錄
               </Button>
             </DialogFooter>
