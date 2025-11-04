@@ -13,6 +13,31 @@ export const CashFlowType = {
 
 export type CashFlowType = (typeof CashFlowType)[keyof typeof CashFlowType];
 
+/**
+ * 付款來源類型
+ */
+export const SourceType = {
+  MANUAL: "manual", // 手動建立（現金交易）
+  SUBSCRIPTION: "subscription", // 訂閱自動產生
+  INSTALLMENT: "installment", // 分期自動產生
+  BANK_ACCOUNT: "bank_account", // 銀行帳戶交易
+  CREDIT_CARD: "credit_card", // 信用卡交易
+} as const;
+
+export type SourceType = (typeof SourceType)[keyof typeof SourceType];
+
+/**
+ * 付款方式類型（用於前端 UI）
+ */
+export const PaymentMethodType = {
+  CASH: "cash", // 現金
+  BANK_ACCOUNT: "bank_account", // 銀行帳戶
+  CREDIT_CARD: "credit_card", // 信用卡
+} as const;
+
+export type PaymentMethodType =
+  (typeof PaymentMethodType)[keyof typeof PaymentMethodType];
+
 // ==================== 資料模型 ====================
 
 /**
@@ -39,6 +64,8 @@ export interface CashFlow {
   currency: Currency;
   description: string;
   note: string | null;
+  source_type?: SourceType | null; // 付款來源類型
+  source_id?: string | null; // 付款來源 ID（銀行帳戶或信用卡 ID）
   created_at: string; // ISO 8601 格式
   updated_at: string; // ISO 8601 格式
   category?: CashFlowCategory; // 關聯的分類資料（可選）
@@ -65,6 +92,8 @@ export interface CreateCashFlowInput {
   amount: number;
   description: string;
   note?: string | null;
+  source_type?: SourceType | null; // 付款來源類型
+  source_id?: string | null; // 付款來源 ID
 }
 
 /**
@@ -77,6 +106,8 @@ export interface UpdateCashFlowInput {
   amount?: number;
   description?: string;
   note?: string | null;
+  source_type?: SourceType | null; // 付款來源類型
+  source_id?: string | null; // 付款來源 ID
 }
 
 /**
@@ -95,6 +126,14 @@ export interface UpdateCategoryInput {
 }
 
 /**
+ * 付款方式選項
+ */
+export interface PaymentMethodOption {
+  type: PaymentMethodType;
+  account_id?: string; // 當 type 為 bank_account 或 credit_card 時必填
+}
+
+/**
  * 現金流列表的篩選條件
  */
 export interface CashFlowFilters {
@@ -102,6 +141,7 @@ export interface CashFlowFilters {
   category_id?: string;
   start_date?: string; // ISO 8601 格式
   end_date?: string; // ISO 8601 格式
+  source_type?: SourceType; // 付款來源類型篩選
   limit?: number;
   offset?: number;
   [key: string]: string | number | undefined;
@@ -136,19 +176,59 @@ export const cashFlowTypeSchema = z.enum([
 ]);
 
 /**
+ * 付款來源類型 Schema
+ */
+export const sourceTypeSchema = z.enum([
+  SourceType.MANUAL,
+  SourceType.SUBSCRIPTION,
+  SourceType.INSTALLMENT,
+  SourceType.BANK_ACCOUNT,
+  SourceType.CREDIT_CARD,
+]);
+
+/**
+ * 付款方式類型 Schema
+ */
+export const paymentMethodTypeSchema = z.enum([
+  PaymentMethodType.CASH,
+  PaymentMethodType.BANK_ACCOUNT,
+  PaymentMethodType.CREDIT_CARD,
+]);
+
+/**
  * 建立現金流記錄的表單 Schema
  */
-export const createCashFlowSchema = z.object({
-  date: z.string().min(1, "日期為必填"),
-  type: cashFlowTypeSchema,
-  category_id: z.string().min(1, "分類為必填"),
-  amount: z.number({ message: "金額必須為數字" }).positive("金額必須大於 0"),
-  description: z
-    .string()
-    .min(1, "描述為必填")
-    .max(500, "描述不可超過 500 字元"),
-  note: z.string().max(1000, "備註不可超過 1000 字元").nullable().optional(),
-});
+export const createCashFlowSchema = z
+  .object({
+    date: z.string().min(1, "日期為必填"),
+    type: cashFlowTypeSchema,
+    category_id: z.string().min(1, "分類為必填"),
+    amount: z.number({ message: "金額必須為數字" }).positive("金額必須大於 0"),
+    description: z
+      .string()
+      .min(1, "描述為必填")
+      .max(500, "描述不可超過 500 字元"),
+    note: z.string().max(1000, "備註不可超過 1000 字元").nullable().optional(),
+    // 付款方式相關欄位
+    payment_method: paymentMethodTypeSchema,
+    account_id: z.string().optional(), // 當付款方式為銀行帳戶或信用卡時必填
+  })
+  .refine(
+    (data) => {
+      // 當付款方式為銀行帳戶或信用卡時，account_id 為必填
+      if (
+        data.payment_method === PaymentMethodType.BANK_ACCOUNT ||
+        data.payment_method === PaymentMethodType.CREDIT_CARD
+      ) {
+        return data.account_id && data.account_id.length > 0;
+      }
+      return true;
+    },
+    {
+      message: "請選擇帳戶",
+      path: ["account_id"],
+    }
+  );
 
 /**
  * 建立現金流記錄的表單資料型別
@@ -158,7 +238,41 @@ export type CreateCashFlowFormData = z.infer<typeof createCashFlowSchema>;
 /**
  * 更新現金流記錄的表單 Schema
  */
-export const updateCashFlowSchema = createCashFlowSchema.partial();
+export const updateCashFlowSchema = z
+  .object({
+    date: z.string().min(1, "日期為必填").optional(),
+    type: cashFlowTypeSchema.optional(),
+    category_id: z.string().min(1, "分類為必填").optional(),
+    amount: z
+      .number({ message: "金額必須為數字" })
+      .positive("金額必須大於 0")
+      .optional(),
+    description: z
+      .string()
+      .min(1, "描述為必填")
+      .max(500, "描述不可超過 500 字元")
+      .optional(),
+    note: z.string().max(1000, "備註不可超過 1000 字元").nullable().optional(),
+    // 付款方式相關欄位
+    payment_method: paymentMethodTypeSchema.optional(),
+    account_id: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // 當付款方式為銀行帳戶或信用卡時，account_id 為必填
+      if (
+        data.payment_method === PaymentMethodType.BANK_ACCOUNT ||
+        data.payment_method === PaymentMethodType.CREDIT_CARD
+      ) {
+        return data.account_id && data.account_id.length > 0;
+      }
+      return true;
+    },
+    {
+      message: "請選擇帳戶",
+      path: ["account_id"],
+    }
+  );
 
 /**
  * 更新現金流記錄的表單資料型別
@@ -241,6 +355,60 @@ export function getCashFlowTypeOptions() {
     value,
     label: getCashFlowTypeLabel(value),
   }));
+}
+
+/**
+ * 取得付款方式類型的顯示名稱
+ */
+export function getPaymentMethodTypeLabel(
+  paymentMethodType: PaymentMethodType
+): string {
+  const labels: Record<PaymentMethodType, string> = {
+    [PaymentMethodType.CASH]: "現金",
+    [PaymentMethodType.BANK_ACCOUNT]: "銀行帳戶",
+    [PaymentMethodType.CREDIT_CARD]: "信用卡",
+  };
+  return labels[paymentMethodType];
+}
+
+/**
+ * 取得所有付款方式類型選項
+ */
+export function getPaymentMethodTypeOptions() {
+  return Object.values(PaymentMethodType).map((value) => ({
+    value,
+    label: getPaymentMethodTypeLabel(value),
+  }));
+}
+
+/**
+ * 將付款方式類型轉換為來源類型
+ */
+export function paymentMethodTypeToSourceType(
+  paymentMethodType: PaymentMethodType
+): SourceType {
+  const mapping: Record<PaymentMethodType, SourceType> = {
+    [PaymentMethodType.CASH]: SourceType.MANUAL,
+    [PaymentMethodType.BANK_ACCOUNT]: SourceType.BANK_ACCOUNT,
+    [PaymentMethodType.CREDIT_CARD]: SourceType.CREDIT_CARD,
+  };
+  return mapping[paymentMethodType];
+}
+
+/**
+ * 將來源類型轉換為付款方式類型
+ */
+export function sourceTypeToPaymentMethodType(
+  sourceType: SourceType
+): PaymentMethodType {
+  const mapping: Record<SourceType, PaymentMethodType> = {
+    [SourceType.MANUAL]: PaymentMethodType.CASH,
+    [SourceType.SUBSCRIPTION]: PaymentMethodType.CASH, // 訂閱預設為現金
+    [SourceType.INSTALLMENT]: PaymentMethodType.CASH, // 分期預設為現金
+    [SourceType.BANK_ACCOUNT]: PaymentMethodType.BANK_ACCOUNT,
+    [SourceType.CREDIT_CARD]: PaymentMethodType.CREDIT_CARD,
+  };
+  return mapping[sourceType];
 }
 
 /**

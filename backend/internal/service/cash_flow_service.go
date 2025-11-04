@@ -179,15 +179,22 @@ func (s *cashFlowService) DeleteCashFlow(id uuid.UUID) error {
 		return fmt.Errorf("failed to get cash flow for deletion: %w", err)
 	}
 
+	// 回復餘額變動（在刪除記錄之前）
+	if cashFlow.SourceType != nil && cashFlow.SourceID != nil {
+		err = s.revertBalanceUpdateWithError(cashFlow.Type, *cashFlow.SourceType, *cashFlow.SourceID, cashFlow.Amount)
+		if err != nil {
+			return fmt.Errorf("failed to revert balance update: %w", err)
+		}
+	}
+
 	// 刪除現金流記錄
 	err = s.repo.Delete(id)
 	if err != nil {
+		// 如果刪除失敗，需要重新套用餘額變動
+		if cashFlow.SourceType != nil && cashFlow.SourceID != nil {
+			s.validateAndUpdateBalance(cashFlow.Type, *cashFlow.SourceType, *cashFlow.SourceID, cashFlow.Amount)
+		}
 		return fmt.Errorf("failed to delete cash flow: %w", err)
-	}
-
-	// 回復餘額變動
-	if cashFlow.SourceType != nil && cashFlow.SourceID != nil {
-		s.revertBalanceUpdate(cashFlow.Type, *cashFlow.SourceType, *cashFlow.SourceID, cashFlow.Amount)
 	}
 
 	return nil
@@ -235,6 +242,19 @@ func (s *cashFlowService) revertBalanceUpdate(cashFlowType models.CashFlowType, 
 		s.updateCreditCardBalance(cashFlowType, sourceID, -amount)
 	}
 	// 忽略錯誤，因為這是回復操作
+}
+
+// revertBalanceUpdateWithError 回復餘額變動並返回錯誤（用於刪除操作）
+func (s *cashFlowService) revertBalanceUpdateWithError(cashFlowType models.CashFlowType, sourceType models.SourceType, sourceID uuid.UUID, amount float64) error {
+	// 回復操作：將原本的金額變動反向操作
+	switch sourceType {
+	case models.SourceTypeBankAccount:
+		return s.updateBankAccountBalance(cashFlowType, sourceID, -amount)
+	case models.SourceTypeCreditCard:
+		return s.updateCreditCardBalance(cashFlowType, sourceID, -amount)
+	default:
+		return nil // manual 類型不需要回復餘額
+	}
 }
 
 // updateBankAccountBalance 更新銀行帳戶餘額

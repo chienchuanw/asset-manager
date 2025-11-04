@@ -36,9 +36,13 @@ import {
   type CreateCashFlowFormData,
   getCashFlowTypeOptions,
   CashFlowType,
+  PaymentMethodType,
+  paymentMethodTypeToSourceType,
 } from "@/types/cash-flow";
 import { Plus, Loader2 } from "lucide-react";
 import { CategorySelect } from "./CategorySelect";
+import { PaymentMethodSelect } from "./PaymentMethodSelect";
+import { AccountSelect } from "./AccountSelect";
 import { toast } from "sonner";
 
 interface AddCashFlowDialogProps {
@@ -77,21 +81,40 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
       amount: 0,
       description: "",
       note: null,
+      payment_method: PaymentMethodType.CASH, // 預設為現金
+      account_id: "", // 帳戶 ID
     },
   });
 
   // 監聽類型變化，重置分類選擇
   const cashFlowType = form.watch("type");
+  // 監聽付款方式變化，重置帳戶選擇
+  const paymentMethod = form.watch("payment_method");
 
   // 送出表單
   const onSubmit = (data: CreateCashFlowFormData) => {
     // 將日期轉換為 ISO 8601 格式
     const isoDate = new Date(data.date).toISOString();
 
-    createMutation.mutate({
-      ...data,
+    // 準備提交資料
+    const submitData: any = {
       date: isoDate,
-    });
+      type: data.type,
+      category_id: data.category_id,
+      amount: data.amount,
+      description: data.description,
+      note: data.note,
+    };
+
+    // 根據付款方式設定 source_type 和 source_id
+    if (data.payment_method !== PaymentMethodType.CASH) {
+      submitData.source_type = paymentMethodTypeToSourceType(
+        data.payment_method
+      );
+      submitData.source_id = data.account_id;
+    }
+
+    createMutation.mutate(submitData);
   };
 
   return (
@@ -203,6 +226,59 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               )}
             />
 
+            {/* 付款方式 */}
+            <FormField
+              control={form.control}
+              name="payment_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>付款方式</FormLabel>
+                  <FormControl>
+                    <PaymentMethodSelect
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // 重置帳戶選擇
+                        form.setValue("account_id", "");
+                      }}
+                      placeholder="選擇付款方式"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 帳戶選擇 */}
+            {paymentMethod !== PaymentMethodType.CASH && (
+              <FormField
+                control={form.control}
+                name="account_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {paymentMethod === PaymentMethodType.BANK_ACCOUNT
+                        ? "銀行帳戶"
+                        : "信用卡"}
+                    </FormLabel>
+                    <FormControl>
+                      <AccountSelect
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        paymentMethodType={paymentMethod}
+                        placeholder={`選擇${
+                          paymentMethod === PaymentMethodType.BANK_ACCOUNT
+                            ? "銀行帳戶"
+                            : "信用卡"
+                        }`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             {/* 描述 */}
             <FormField
               control={form.control}
@@ -260,4 +336,3 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
     </Dialog>
   );
 }
-

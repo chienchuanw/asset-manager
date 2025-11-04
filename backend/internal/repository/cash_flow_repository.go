@@ -92,9 +92,9 @@ func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.
 // GetByID 根據 ID 取得現金流記錄（包含分類資訊）
 func (r *cashFlowRepository) GetByID(id uuid.UUID) (*models.CashFlow, error) {
 	query := `
-		SELECT 
-			cf.id, cf.date, cf.type, cf.category_id, cf.amount, cf.currency, 
-			cf.description, cf.note, cf.created_at, cf.updated_at,
+		SELECT
+			cf.id, cf.date, cf.type, cf.category_id, cf.amount, cf.currency,
+			cf.description, cf.note, cf.source_type, cf.source_id, cf.created_at, cf.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM cash_flows cf
 		LEFT JOIN cash_flow_categories c ON cf.category_id = c.id
@@ -114,6 +114,8 @@ func (r *cashFlowRepository) GetByID(id uuid.UUID) (*models.CashFlow, error) {
 		&cashFlow.Currency,
 		&cashFlow.Description,
 		&cashFlow.Note,
+		&cashFlow.SourceType,
+		&cashFlow.SourceID,
 		&cashFlow.CreatedAt,
 		&cashFlow.UpdatedAt,
 		&cashFlow.Category.ID,
@@ -137,9 +139,9 @@ func (r *cashFlowRepository) GetByID(id uuid.UUID) (*models.CashFlow, error) {
 // GetAll 取得所有現金流記錄（支援篩選，包含分類資訊）
 func (r *cashFlowRepository) GetAll(filters CashFlowFilters) ([]*models.CashFlow, error) {
 	query := `
-		SELECT 
-			cf.id, cf.date, cf.type, cf.category_id, cf.amount, cf.currency, 
-			cf.description, cf.note, cf.created_at, cf.updated_at,
+		SELECT
+			cf.id, cf.date, cf.type, cf.category_id, cf.amount, cf.currency,
+			cf.description, cf.note, cf.source_type, cf.source_id, cf.created_at, cf.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM cash_flows cf
 		LEFT JOIN cash_flow_categories c ON cf.category_id = c.id
@@ -210,6 +212,8 @@ func (r *cashFlowRepository) GetAll(filters CashFlowFilters) ([]*models.CashFlow
 			&cashFlow.Currency,
 			&cashFlow.Description,
 			&cashFlow.Note,
+			&cashFlow.SourceType,
+			&cashFlow.SourceID,
 			&cashFlow.CreatedAt,
 			&cashFlow.UpdatedAt,
 			&cashFlow.Category.ID,
@@ -269,6 +273,18 @@ func (r *cashFlowRepository) Update(id uuid.UUID, input *models.UpdateCashFlowIn
 		argCount++
 	}
 
+	if input.SourceType != nil {
+		setClauses = append(setClauses, fmt.Sprintf("source_type = $%d", argCount))
+		args = append(args, *input.SourceType)
+		argCount++
+	}
+
+	if input.SourceID != nil {
+		setClauses = append(setClauses, fmt.Sprintf("source_id = $%d", argCount))
+		args = append(args, *input.SourceID)
+		argCount++
+	}
+
 	if len(setClauses) == 0 {
 		return nil, fmt.Errorf("no fields to update")
 	}
@@ -280,7 +296,7 @@ func (r *cashFlowRepository) Update(id uuid.UUID, input *models.UpdateCashFlowIn
 		UPDATE cash_flows
 		SET %s
 		WHERE id = $%d
-		RETURNING id, date, type, category_id, amount, currency, description, note, created_at, updated_at
+		RETURNING id, date, type, category_id, amount, currency, description, note, source_type, source_id, created_at, updated_at
 	`, strings.Join(setClauses, ", "), argCount)
 
 	cashFlow := &models.CashFlow{}
@@ -293,6 +309,8 @@ func (r *cashFlowRepository) Update(id uuid.UUID, input *models.UpdateCashFlowIn
 		&cashFlow.Currency,
 		&cashFlow.Description,
 		&cashFlow.Note,
+		&cashFlow.SourceType,
+		&cashFlow.SourceID,
 		&cashFlow.CreatedAt,
 		&cashFlow.UpdatedAt,
 	)
