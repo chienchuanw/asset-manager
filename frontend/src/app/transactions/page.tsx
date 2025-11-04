@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Card,
@@ -42,7 +43,11 @@ import {
   calculateDateRange,
   type DateRangeType,
 } from "@/components/common/DateRangeTabs";
-import { useTransactions, useDeleteTransaction } from "@/hooks";
+import {
+  useTransactions,
+  useDeleteTransaction,
+  transactionKeys,
+} from "@/hooks";
 import {
   AssetType,
   TransactionType,
@@ -55,6 +60,8 @@ import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
 export default function TransactionsPage() {
+  const queryClient = useQueryClient();
+
   // 狀態管理
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRangeType, setDateRangeType] = useState<DateRangeType>("today");
@@ -107,12 +114,15 @@ export default function TransactionsPage() {
     isLoading,
     error,
     refetch,
-  } = useTransactions(apiFilters);
+  } = useTransactions(apiFilters, {
+    // 確保資料總是最新的
+    staleTime: 0,
+  });
 
   // 刪除交易 mutation
   const deleteMutation = useDeleteTransaction({
     onSuccess: () => {
-      refetch();
+      handleRefreshData();
     },
   });
 
@@ -179,6 +189,14 @@ export default function TransactionsPage() {
     setFilterType("all");
     setFilterAssetType("all");
     setCustomDateRange(undefined);
+  };
+
+  // 重新獲取所有相關資料
+  const handleRefreshData = async () => {
+    // 讓所有交易相關查詢失效，強制重新獲取
+    await queryClient.invalidateQueries({
+      queryKey: transactionKeys.all,
+    });
   };
 
   return (
@@ -275,8 +293,8 @@ export default function TransactionsPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <AddTransactionDialog onSuccess={() => refetch()} />
-                  <BatchAddTransactionDialog onSuccess={() => refetch()} />
+                  <AddTransactionDialog onSuccess={handleRefreshData} />
+                  <BatchAddTransactionDialog onSuccess={handleRefreshData} />
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
                     匯出
@@ -519,7 +537,7 @@ export default function TransactionsPage() {
           onOpenChange={(open) => {
             if (!open) setEditingTransaction(null);
           }}
-          onSuccess={() => refetch()}
+          onSuccess={handleRefreshData}
         />
       )}
     </AppLayout>

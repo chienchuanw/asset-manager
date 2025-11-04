@@ -118,9 +118,9 @@ export function useCreateTransaction(
   return useMutation<Transaction, APIError, CreateTransactionInput>({
     mutationFn: transactionsAPI.create,
     onSuccess: async () => {
-      // 使所有交易列表的快取失效，強制重新獲取
+      // 使所有交易相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: transactionKeys.lists(),
+        queryKey: transactionKeys.all,
       });
       // 使持倉列表失效（新交易會影響持倉）
       await queryClient.invalidateQueries({
@@ -166,17 +166,11 @@ export function useUpdateTransaction(
     { id: string; data: UpdateTransactionInput }
   >({
     mutationFn: ({ id, data }) => transactionsAPI.update(id, data),
-    onSuccess: async (_data, variables) => {
-      // 使所有交易列表的快取失效
+    onSuccess: async () => {
+      // 使所有交易相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: transactionKeys.lists(),
+        queryKey: transactionKeys.all,
       });
-
-      // 使該筆交易的快取失效
-      await queryClient.invalidateQueries({
-        queryKey: transactionKeys.detail(variables.id),
-      });
-
       // 使持倉列表失效（交易更新會影響持倉）
       await queryClient.invalidateQueries({
         queryKey: ["holdings"],
@@ -233,9 +227,9 @@ export function useCreateTransactionsBatch(
   return useMutation<Transaction[], APIError, BatchCreateTransactionsInput>({
     mutationFn: transactionsAPI.createBatch,
     onSuccess: async () => {
-      // 使所有交易列表的快取失效，強制重新獲取
+      // 使所有交易相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: transactionKeys.lists(),
+        queryKey: transactionKeys.all,
       });
       // 使持倉列表失效（批次交易會影響持倉）
       await queryClient.invalidateQueries({
@@ -270,17 +264,11 @@ export function useDeleteTransaction(
 
   return useMutation<void, APIError, string>({
     mutationFn: transactionsAPI.delete,
-    onSuccess: async (_data, variables) => {
-      // 使所有交易列表的快取失效
+    onSuccess: async () => {
+      // 使所有交易相關查詢失效
       await queryClient.invalidateQueries({
-        queryKey: transactionKeys.lists(),
+        queryKey: transactionKeys.all,
       });
-
-      // 移除該筆交易的快取
-      queryClient.removeQueries({
-        queryKey: transactionKeys.detail(variables),
-      });
-
       // 使持倉列表失效（刪除交易會影響持倉）
       await queryClient.invalidateQueries({
         queryKey: ["holdings"],
