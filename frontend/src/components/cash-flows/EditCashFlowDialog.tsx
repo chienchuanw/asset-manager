@@ -128,17 +128,18 @@ export function EditCashFlowDialog({
 
   // 更新現金流 mutation
   const updateMutation = useUpdateCashFlow({
-    onSuccess: () => {
-      toast.success("記錄更新成功");
-      onOpenChange(false);
-      onSuccess?.();
-      form.reset();
-    },
     onError: (error) => {
       toast.error(error.message || "更新失敗");
     },
-    onSettled: () => {
+    onSettled: (_, error) => {
       setIsSubmitting(false);
+
+      // 如果成功，關閉對話框並重置表單
+      if (!error) {
+        onOpenChange(false);
+        onSuccess?.();
+        form.reset();
+      }
     },
   });
 
