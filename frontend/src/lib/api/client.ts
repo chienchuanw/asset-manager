@@ -43,6 +43,37 @@ function buildURL(path: string, params?: FetchOptions["params"]): string {
  * 處理 API 回應
  */
 async function handleResponse<T>(response: Response): Promise<T> {
+  // 檢查回應狀態
+  if (!response.ok) {
+    // 嘗試解析錯誤訊息
+    try {
+      const contentType = response.headers.get("content-type");
+      const isJSON = contentType?.includes("application/json");
+
+      if (isJSON) {
+        const errorData: APIResponse<T> = await response.json();
+        throw new APIError(
+          errorData.error?.code || "UNKNOWN_ERROR",
+          errorData.error?.message || "未知錯誤",
+          response.status
+        );
+      }
+    } catch (parseError) {
+      // 如果無法解析錯誤訊息，使用預設錯誤
+    }
+
+    throw new APIError(
+      "HTTP_ERROR",
+      `HTTP ${response.status} 錯誤`,
+      response.status
+    );
+  }
+
+  // 處理 204 No Content 回應
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   // 檢查 Content-Type
   const contentType = response.headers.get("content-type");
   const isJSON = contentType?.includes("application/json");
@@ -60,10 +91,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const data: APIResponse<T> = await response.json();
 
   // 檢查是否有錯誤
-  if (!response.ok || data.error) {
+  if (data.error) {
     throw new APIError(
-      data.error?.code || "UNKNOWN_ERROR",
-      data.error?.message || "未知錯誤",
+      data.error.code || "UNKNOWN_ERROR",
+      data.error.message || "未知錯誤",
       response.status
     );
   }

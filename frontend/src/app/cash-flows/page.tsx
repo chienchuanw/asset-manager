@@ -78,7 +78,6 @@ export default function CashFlowsPage() {
     data: cashFlows,
     isLoading,
     error,
-    refetch,
   } = useCashFlows(filters, {
     // 確保資料總是最新的
     staleTime: 0,
@@ -238,7 +237,7 @@ export default function CashFlowsPage() {
               )}
 
               {/* 現金流列表 */}
-              <CashFlowList filters={filters} onRefresh={() => refetch()} />
+              <CashFlowList filters={filters} />
             </CardContent>
           </Card>
         </div>

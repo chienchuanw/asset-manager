@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -20,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCashFlows, useDeleteCashFlow } from "@/hooks";
 import {
   type CashFlowFilters,
+  type CashFlow,
   getCashFlowTypeLabel,
   formatAmount,
 } from "@/types/cash-flow";
@@ -32,26 +34,32 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PaymentMethodDisplay } from "./PaymentMethodDisplay";
+import { EditCashFlowDialog } from "./EditCashFlowDialog";
 
 interface CashFlowListProps {
   filters?: CashFlowFilters;
-  onRefresh?: () => void;
 }
 
 /**
  * 現金流列表元件
  *
- * 顯示現金流記錄的卡片列表，支援刪除操作
+ * 顯示現金流記錄的表格列表，支援編輯和刪除操作
  */
-export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
+export function CashFlowList({ filters }: CashFlowListProps) {
+  // 編輯狀態
+  const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null);
+
   // 取得現金流列表
-  const { data: cashFlows, isLoading } = useCashFlows(filters);
+  const { data: cashFlows, isLoading } = useCashFlows(filters, {
+    // 確保資料總是最新的
+    staleTime: 0,
+  });
 
   // 刪除現金流 mutation
   const deleteMutation = useDeleteCashFlow({
     onSuccess: () => {
       toast.success("記錄刪除成功");
-      onRefresh?.();
+      // React Query 的自動失效機制會處理資料更新
     },
     onError: (error) => {
       toast.error(error.message || "刪除失敗");
@@ -172,10 +180,7 @@ export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => {
-                            // TODO: 實作編輯功能
-                            console.log("Edit cash flow:", cashFlow.id);
-                          }}
+                          onClick={() => setEditingCashFlow(cashFlow)}
                         >
                           <Pencil className="h-4 w-4 mr-2" />
                           編輯
@@ -197,6 +202,21 @@ export function CashFlowList({ filters, onRefresh }: CashFlowListProps) {
           )}
         </TableBody>
       </Table>
+
+      {/* 編輯現金流對話框 */}
+      {editingCashFlow && (
+        <EditCashFlowDialog
+          cashFlow={editingCashFlow}
+          open={!!editingCashFlow}
+          onOpenChange={(open) => {
+            if (!open) setEditingCashFlow(null);
+          }}
+          onSuccess={() => {
+            // React Query 的自動失效機制會處理資料更新
+            setEditingCashFlow(null);
+          }}
+        />
+      )}
     </div>
   );
 }
