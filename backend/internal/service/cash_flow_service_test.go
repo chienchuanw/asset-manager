@@ -291,6 +291,18 @@ func TestDeleteCashFlow_Success(t *testing.T) {
 	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
 
 	cashFlowID := uuid.New()
+
+	// 建立一個現金交易記錄（manual 類型，不需要回復餘額）
+	sourceType := models.SourceTypeManual
+	cashFlow := &models.CashFlow{
+		ID:          cashFlowID,
+		Type:        models.CashFlowTypeExpense,
+		Amount:      100.0,
+		SourceType:  &sourceType,
+		SourceID:    nil,
+	}
+
+	mockRepo.On("GetByID", cashFlowID).Return(cashFlow, nil)
 	mockRepo.On("Delete", cashFlowID).Return(nil)
 
 	// Act
