@@ -31,6 +31,8 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PaymentMethodDisplay } from "./PaymentMethodDisplay";
@@ -120,9 +122,31 @@ export function CashFlowList({ filters }: CashFlowListProps) {
           ) : (
             // 現金流記錄列表
             cashFlows.map((cashFlow) => {
-              const isIncome = cashFlow.type === "income";
-              const typeColor = isIncome ? "text-green-600" : "text-red-600";
-              const TypeIcon = isIncome ? TrendingUp : TrendingDown;
+              // 根據類型決定顏色和圖示
+              let typeColor: string;
+              let TypeIcon: any;
+
+              switch (cashFlow.type) {
+                case "income":
+                  typeColor = "text-green-600";
+                  TypeIcon = TrendingUp;
+                  break;
+                case "expense":
+                  typeColor = "text-red-600";
+                  TypeIcon = TrendingDown;
+                  break;
+                case "transfer_in":
+                  typeColor = "text-gray-600";
+                  TypeIcon = ArrowDownToLine;
+                  break;
+                case "transfer_out":
+                  typeColor = "text-gray-600";
+                  TypeIcon = ArrowUpFromLine;
+                  break;
+                default:
+                  typeColor = "text-gray-600";
+                  TypeIcon = TrendingUp;
+              }
 
               return (
                 <TableRow key={cashFlow.id}>
@@ -165,7 +189,11 @@ export function CashFlowList({ filters }: CashFlowListProps) {
                   <TableCell
                     className={`text-right tabular-nums text-sm font-medium ${typeColor}`}
                   >
-                    {isIncome ? "+" : "-"}${formatAmount(cashFlow.amount)}
+                    {cashFlow.type === "income" ||
+                    cashFlow.type === "transfer_in"
+                      ? "+"
+                      : "-"}
+                    ${formatAmount(cashFlow.amount)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

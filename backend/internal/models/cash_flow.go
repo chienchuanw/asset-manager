@@ -10,8 +10,10 @@ import (
 type CashFlowType string
 
 const (
-	CashFlowTypeIncome  CashFlowType = "income"  // 收入
-	CashFlowTypeExpense CashFlowType = "expense" // 支出
+	CashFlowTypeIncome     CashFlowType = "income"      // 收入
+	CashFlowTypeExpense    CashFlowType = "expense"     // 支出
+	CashFlowTypeTransferIn CashFlowType = "transfer_in" // 存入帳戶
+	CashFlowTypeTransferOut CashFlowType = "transfer_out" // 從帳戶轉出
 )
 
 // SourceType 現金流來源類型
@@ -91,7 +93,7 @@ type UpdateCategoryInput struct {
 // Validate 驗證 CashFlowType 是否有效
 func (t CashFlowType) Validate() bool {
 	switch t {
-	case CashFlowTypeIncome, CashFlowTypeExpense:
+	case CashFlowTypeIncome, CashFlowTypeExpense, CashFlowTypeTransferIn, CashFlowTypeTransferOut:
 		return true
 	}
 	return false

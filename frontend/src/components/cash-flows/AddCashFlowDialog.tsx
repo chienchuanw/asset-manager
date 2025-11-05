@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -103,6 +103,17 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
   const cashFlowType = form.watch("type");
   // 監聽付款方式變化，重置帳戶選擇
   const paymentMethod = form.watch("payment_method");
+
+  // 當類型變為轉帳時，自動設定為銀行帳戶付款方式
+  React.useEffect(() => {
+    if (
+      cashFlowType === CashFlowType.TRANSFER_IN ||
+      cashFlowType === CashFlowType.TRANSFER_OUT
+    ) {
+      form.setValue("payment_method", PaymentMethodType.BANK_ACCOUNT);
+      form.setValue("account_id", "");
+    }
+  }, [cashFlowType, form]);
 
   // 送出表單
   const onSubmit = (data: CreateCashFlowFormData) => {
@@ -255,9 +266,19 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                         form.setValue("account_id", "");
                       }}
                       placeholder="選擇付款方式"
+                      disabled={
+                        cashFlowType === CashFlowType.TRANSFER_IN ||
+                        cashFlowType === CashFlowType.TRANSFER_OUT
+                      }
                     />
                   </FormControl>
                   <FormMessage />
+                  {(cashFlowType === CashFlowType.TRANSFER_IN ||
+                    cashFlowType === CashFlowType.TRANSFER_OUT) && (
+                    <p className="text-sm text-muted-foreground">
+                      轉帳類型僅支援銀行帳戶
+                    </p>
+                  )}
                 </FormItem>
               )}
             />

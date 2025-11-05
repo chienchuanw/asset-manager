@@ -9,6 +9,8 @@ import { Currency } from "./transaction";
 export const CashFlowType = {
   INCOME: "income",
   EXPENSE: "expense",
+  TRANSFER_IN: "transfer_in", // 存入帳戶
+  TRANSFER_OUT: "transfer_out", // 從帳戶轉出
 } as const;
 
 export type CashFlowType = (typeof CashFlowType)[keyof typeof CashFlowType];
@@ -173,6 +175,8 @@ export interface APIResponse<T> {
 export const cashFlowTypeSchema = z.enum([
   CashFlowType.INCOME,
   CashFlowType.EXPENSE,
+  CashFlowType.TRANSFER_IN,
+  CashFlowType.TRANSFER_OUT,
 ]);
 
 /**
@@ -215,6 +219,18 @@ export const createCashFlowSchema = z
   })
   .refine(
     (data) => {
+      // 轉帳類型必須選擇銀行帳戶
+      if (
+        data.type === CashFlowType.TRANSFER_IN ||
+        data.type === CashFlowType.TRANSFER_OUT
+      ) {
+        return (
+          data.payment_method === PaymentMethodType.BANK_ACCOUNT &&
+          data.account_id &&
+          data.account_id.length > 0
+        );
+      }
+
       // 當付款方式為銀行帳戶或信用卡時，account_id 為必填
       if (
         data.payment_method === PaymentMethodType.BANK_ACCOUNT ||
@@ -225,7 +241,7 @@ export const createCashFlowSchema = z
       return true;
     },
     {
-      message: "請選擇帳戶",
+      message: "轉帳類型必須選擇銀行帳戶",
       path: ["account_id"],
     }
   );
@@ -319,6 +335,8 @@ export function getCashFlowTypeLabel(cashFlowType: CashFlowType): string {
   const labels: Record<CashFlowType, string> = {
     [CashFlowType.INCOME]: "收入",
     [CashFlowType.EXPENSE]: "支出",
+    [CashFlowType.TRANSFER_IN]: "存入",
+    [CashFlowType.TRANSFER_OUT]: "轉出",
   };
   return labels[cashFlowType];
 }
@@ -331,18 +349,22 @@ export function getCashFlowTypeColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
     [CashFlowType.INCOME]: "text-red-600",
     [CashFlowType.EXPENSE]: "text-green-600",
+    [CashFlowType.TRANSFER_IN]: "text-gray-600",
+    [CashFlowType.TRANSFER_OUT]: "text-gray-600",
   };
   return colors[cashFlowType];
 }
 
 /**
  * 取得現金流類型的背景顏色（用於 UI 顯示）
- * 台灣習慣：紅漲綠跌 - 收入為紅色，支出為綠色
+ * 台灣習慣：紅漲綠跌 - 收入為紅色，支出為綠色，轉帳為灰色
  */
 export function getCashFlowTypeBgColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
     [CashFlowType.INCOME]: "bg-red-100",
     [CashFlowType.EXPENSE]: "bg-green-100",
+    [CashFlowType.TRANSFER_IN]: "bg-gray-100",
+    [CashFlowType.TRANSFER_OUT]: "bg-gray-100",
   };
   return colors[cashFlowType];
 }

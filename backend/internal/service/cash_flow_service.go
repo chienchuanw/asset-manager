@@ -74,6 +74,16 @@ func (s *cashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*mo
 		return nil, fmt.Errorf("category type (%s) does not match cash flow type (%s)", category.Type, input.Type)
 	}
 
+	// 對於轉帳類型，強制要求選擇銀行帳戶
+	if input.Type == models.CashFlowTypeTransferIn || input.Type == models.CashFlowTypeTransferOut {
+		if input.SourceType == nil || input.SourceID == nil {
+			return nil, fmt.Errorf("bank account is required for transfer transactions")
+		}
+		if *input.SourceType != models.SourceTypeBankAccount {
+			return nil, fmt.Errorf("only bank account is allowed for transfer transactions")
+		}
+	}
+
 	// 驗證並處理付款方式
 	if input.SourceType != nil && input.SourceID != nil {
 		err := s.validateAndUpdateBalance(input.Type, *input.SourceType, *input.SourceID, input.Amount)
@@ -267,11 +277,12 @@ func (s *cashFlowService) updateBankAccountBalance(cashFlowType models.CashFlowT
 
 	// 計算餘額變動
 	var balanceChange float64
-	if cashFlowType == models.CashFlowTypeIncome {
-		// 收入：增加銀行帳戶餘額
+	switch cashFlowType {
+	case models.CashFlowTypeIncome, models.CashFlowTypeTransferIn:
+		// 收入或存入：增加銀行帳戶餘額
 		balanceChange = amount
-	} else {
-		// 支出：減少銀行帳戶餘額
+	case models.CashFlowTypeExpense, models.CashFlowTypeTransferOut:
+		// 支出或轉出：減少銀行帳戶餘額
 		balanceChange = -amount
 	}
 
