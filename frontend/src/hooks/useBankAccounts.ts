@@ -53,6 +53,7 @@ export function useBankAccounts(
   return useQuery<BankAccount[], APIError>({
     queryKey: bankAccountKeys.list(filters),
     queryFn: () => bankAccountsAPI.getAll(filters),
+    staleTime: 0, // 強制每次都重新驗證資料
     ...options,
   });
 }
@@ -71,10 +72,7 @@ export function useBankAccounts(
  */
 export function useBankAccount(
   id: string,
-  options?: Omit<
-    UseQueryOptions<BankAccount, APIError>,
-    "queryKey" | "queryFn"
-  >
+  options?: Omit<UseQueryOptions<BankAccount, APIError>, "queryKey" | "queryFn">
 ) {
   return useQuery<BankAccount, APIError>({
     queryKey: bankAccountKeys.detail(id),
@@ -193,4 +191,3 @@ export function useDeleteBankAccount(
     ...options,
   });
 }
-
