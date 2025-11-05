@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { useCreateCashFlow } from "@/hooks";
+import { useCreateCashFlow, useCategories } from "@/hooks";
 import {
   createCashFlowSchema,
   type CreateCashFlowFormData,
@@ -104,7 +104,10 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
   // 監聽付款方式變化，重置帳戶選擇
   const paymentMethod = form.watch("payment_method");
 
-  // 當類型變為轉帳時，自動設定為銀行帳戶付款方式
+  // 取得分類列表，用於自動選擇「移轉」分類
+  const { data: categories } = useCategories(cashFlowType);
+
+  // 當類型變為轉帳時，自動設定為銀行帳戶付款方式並選擇「移轉」分類
   React.useEffect(() => {
     if (
       cashFlowType === CashFlowType.TRANSFER_IN ||
@@ -112,8 +115,14 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
     ) {
       form.setValue("payment_method", PaymentMethodType.BANK_ACCOUNT);
       form.setValue("account_id", "");
+
+      // 自動選擇「移轉」分類
+      const transferCategory = categories?.find((cat) => cat.name === "移轉");
+      if (transferCategory) {
+        form.setValue("category_id", transferCategory.id);
+      }
     }
-  }, [cashFlowType, form]);
+  }, [cashFlowType, categories, form]);
 
   // 送出表單
   const onSubmit = (data: CreateCashFlowFormData) => {

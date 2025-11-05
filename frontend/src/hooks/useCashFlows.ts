@@ -19,6 +19,8 @@ import type {
 } from "@/types/cash-flow";
 import { APIError } from "@/lib/api/client";
 import { toast } from "sonner";
+import { bankAccountKeys } from "./useBankAccounts";
+import { creditCardKeys } from "./useCreditCards";
 
 /**
  * Query Keys
@@ -169,11 +171,11 @@ export function useCreateCashFlow(
       });
       // 使銀行帳戶列表失效（餘額可能已更新）
       await queryClient.invalidateQueries({
-        queryKey: ["bankAccounts"],
+        queryKey: bankAccountKeys.all,
       });
-      // 使信用卡列表失效（餘額可能已更新）
+      // 使信用卡列表失效（已使用額度可能已更新）
       await queryClient.invalidateQueries({
-        queryKey: ["creditCards"],
+        queryKey: creditCardKeys.all,
       });
     },
     ...options,
@@ -225,11 +227,11 @@ export function useUpdateCashFlow(
       });
       // 使銀行帳戶列表失效（餘額可能已更新）
       await queryClient.invalidateQueries({
-        queryKey: ["bankAccounts"],
+        queryKey: bankAccountKeys.all,
       });
-      // 使信用卡列表失效（餘額可能已更新）
+      // 使信用卡列表失效（已使用額度可能已更新）
       await queryClient.invalidateQueries({
-        queryKey: ["creditCards"],
+        queryKey: creditCardKeys.all,
       });
     },
     ...options,
@@ -270,11 +272,11 @@ export function useDeleteCashFlow(
       });
       // 使銀行帳戶列表失效（餘額可能已更新）
       await queryClient.invalidateQueries({
-        queryKey: ["bankAccounts"],
+        queryKey: bankAccountKeys.all,
       });
-      // 使信用卡列表失效（餘額可能已更新）
+      // 使信用卡列表失效（已使用額度可能已更新）
       await queryClient.invalidateQueries({
-        queryKey: ["creditCards"],
+        queryKey: creditCardKeys.all,
       });
     },
     ...options,
