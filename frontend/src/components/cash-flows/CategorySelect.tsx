@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import {
   Select,
   SelectContent,
@@ -17,6 +19,8 @@ interface CategorySelectProps {
   type: CashFlowType;
   placeholder?: string;
   disabled?: boolean;
+  // 當提供此名稱時，元件在分類資料載入後會自動選擇該名稱的分類（若目前尚未選定）
+  autoSelectName?: string;
 }
 
 /**
@@ -30,9 +34,25 @@ export function CategorySelect({
   type,
   placeholder = "選擇分類",
   disabled = false,
+  autoSelectName,
 }: CategorySelectProps) {
   // 取得分類列表
   const { data: categories, isLoading } = useCategories(type);
+
+  // 當提供 autoSelectName 且目前尚未選擇分類時，於分類載入後自動選擇對應分類
+  React.useEffect(() => {
+    // 僅在提供 autoSelectName 且當前 value 為空或不在清單中時自動帶入
+    // 這可避免父層 setValue 與子元件選單載入時間差造成的「閃跳後又被清空」
+    if (!autoSelectName || !categories) return;
+
+    const exists = value && categories.some((c) => c.id === value);
+    if (exists) return;
+
+    const target = categories.find((c) => c.name === autoSelectName);
+    if (target) {
+      onValueChange(target.id);
+    }
+  }, [autoSelectName, categories, value, onValueChange]);
 
   if (isLoading) {
     return (
@@ -52,9 +72,7 @@ export function CategorySelect({
           <SelectItem key={category.id} value={category.id}>
             {category.name}
             {category.is_system && (
-              <span className="ml-2 text-xs text-muted-foreground">
-                (系統)
-              </span>
+              <span className="ml-2 text-xs text-muted-foreground">(系統)</span>
             )}
           </SelectItem>
         ))}
@@ -62,4 +80,3 @@ export function CategorySelect({
     </Select>
   );
 }
-

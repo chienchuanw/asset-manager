@@ -21,6 +21,7 @@ import { APIError } from "@/lib/api/client";
 import { toast } from "sonner";
 import { bankAccountKeys } from "./useBankAccounts";
 import { creditCardKeys } from "./useCreditCards";
+import type { BankAccount } from "@/types/user-management";
 
 /**
  * Query Keys
@@ -164,17 +165,44 @@ export function useCreateCashFlow(
 
   return useMutation<CashFlow, APIError, CreateCashFlowInput>({
     mutationFn: cashFlowsAPI.create,
-    onSuccess: async () => {
-      // 使所有現金流相關查詢失效
+    onSuccess: async (_data, variables) => {
+      // 1) 先讓現金流列表失效（局部重新取得）
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.all,
+        refetchType: "active",
       });
-      // 使銀行帳戶列表失效（餘額可能已更新）
-      await queryClient.invalidateQueries({
+
+      // 2) 立即樂觀更新銀行帳戶餘額：轉入加、轉出減（讓 UI 立即反映）
+      if (
+        variables &&
+        variables.source_type === "bank_account" &&
+        variables.source_id &&
+        (variables.type === "transfer_in" || variables.type === "transfer_out")
+      ) {
+        const delta =
+          variables.type === "transfer_in"
+            ? variables.amount
+            : -variables.amount;
+
+        // 更新所有銀行帳戶列表的快取
+        queryClient.setQueriesData(
+          { queryKey: bankAccountKeys.list(undefined) },
+          (old: BankAccount[] | undefined) => {
+            if (!old) return old;
+            return old.map((acc) =>
+              acc.id === variables.source_id
+                ? { ...acc, balance: acc.balance + delta }
+                : acc
+            );
+          }
+        );
+      }
+
+      // 3) 再重置快取以確保跨頁切換時拿到新資料
+      await queryClient.resetQueries({
         queryKey: bankAccountKeys.all,
       });
-      // 使信用卡列表失效（已使用額度可能已更新）
-      await queryClient.invalidateQueries({
+      await queryClient.resetQueries({
         queryKey: creditCardKeys.all,
       });
     },
@@ -221,16 +249,17 @@ export function useUpdateCashFlow(
       // 顯示成功訊息
       toast.success("記錄更新成功");
 
-      // 使所有現金流相關查詢失效
+      // 使所有現金流相關查詢失效並重新取得
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.all,
+        refetchType: "active",
       });
-      // 使銀行帳戶列表失效（餘額可能已更新）
-      await queryClient.invalidateQueries({
+      // 完全重置銀行帳戶快取（餘額可能已更新）
+      await queryClient.resetQueries({
         queryKey: bankAccountKeys.all,
       });
-      // 使信用卡列表失效（已使用額度可能已更新）
-      await queryClient.invalidateQueries({
+      // 完全重置信用卡快取（已使用額度可能已更新）
+      await queryClient.resetQueries({
         queryKey: creditCardKeys.all,
       });
     },
@@ -266,16 +295,17 @@ export function useDeleteCashFlow(
       // 顯示成功訊息
       toast.success("記錄刪除成功");
 
-      // 使所有現金流相關查詢失效
+      // 使所有現金流相關查詢失效並重新取得
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.all,
+        refetchType: "active",
       });
-      // 使銀行帳戶列表失效（餘額可能已更新）
-      await queryClient.invalidateQueries({
+      // 完全重置銀行帳戶快取（餘額可能已更新）
+      await queryClient.resetQueries({
         queryKey: bankAccountKeys.all,
       });
-      // 使信用卡列表失效（已使用額度可能已更新）
-      await queryClient.invalidateQueries({
+      // 完全重置信用卡快取（已使用額度可能已更新）
+      await queryClient.resetQueries({
         queryKey: creditCardKeys.all,
       });
     },

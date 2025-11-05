@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { useCreateCashFlow, useCategories } from "@/hooks";
+import { useCreateCashFlow } from "@/hooks";
 import {
   createCashFlowSchema,
   type CreateCashFlowFormData,
@@ -104,25 +104,18 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
   // 監聽付款方式變化，重置帳戶選擇
   const paymentMethod = form.watch("payment_method");
 
-  // 取得分類列表，用於自動選擇「移轉」分類
-  const { data: categories } = useCategories(cashFlowType);
-
-  // 當類型變為轉帳時，自動設定為銀行帳戶付款方式並選擇「移轉」分類
+  // 當類型變為轉帳時，自動設定付款方式為銀行帳戶（分類交由子元件自動帶入）
   React.useEffect(() => {
-    if (
+    const isTransfer =
       cashFlowType === CashFlowType.TRANSFER_IN ||
-      cashFlowType === CashFlowType.TRANSFER_OUT
-    ) {
+      cashFlowType === CashFlowType.TRANSFER_OUT;
+
+    if (isTransfer) {
+      // 設定付款方式為銀行帳戶
       form.setValue("payment_method", PaymentMethodType.BANK_ACCOUNT);
       form.setValue("account_id", "");
-
-      // 自動選擇「移轉」分類
-      const transferCategory = categories?.find((cat) => cat.name === "移轉");
-      if (transferCategory) {
-        form.setValue("category_id", transferCategory.id);
-      }
     }
-  }, [cashFlowType, categories, form]);
+  }, [cashFlowType, form]);
 
   // 送出表單
   const onSubmit = (data: CreateCashFlowFormData) => {
@@ -193,8 +186,13 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                   <Select
                     onValueChange={(value) => {
                       field.onChange(value);
-                      // 重置分類選擇
-                      form.setValue("category_id", "");
+                      // 重置分類選擇（轉帳類型會由 useEffect 自動設定，所以這裡不重置）
+                      const isTransfer =
+                        value === CashFlowType.TRANSFER_IN ||
+                        value === CashFlowType.TRANSFER_OUT;
+                      if (!isTransfer) {
+                        form.setValue("category_id", "");
+                      }
                     }}
                     defaultValue={field.value}
                   >
@@ -229,6 +227,12 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                       onValueChange={field.onChange}
                       type={cashFlowType}
                       placeholder="選擇分類"
+                      autoSelectName={
+                        cashFlowType === CashFlowType.TRANSFER_IN ||
+                        cashFlowType === CashFlowType.TRANSFER_OUT
+                          ? "移轉"
+                          : undefined
+                      }
                     />
                   </FormControl>
                   <FormMessage />
