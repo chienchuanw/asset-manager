@@ -2,10 +2,14 @@
 
 -- 移除包含轉帳類型的約束
 ALTER TABLE cash_flows DROP CONSTRAINT IF EXISTS cash_flows_type_check;
+ALTER TABLE cash_flow_categories DROP CONSTRAINT IF EXISTS cash_flow_categories_type_check;
 
 -- 恢復原始的 type 約束（只包含 income 和 expense）
-ALTER TABLE cash_flows ADD CONSTRAINT cash_flows_type_check 
+ALTER TABLE cash_flows ADD CONSTRAINT cash_flows_type_check
+    CHECK (type IN ('income', 'expense'));
+ALTER TABLE cash_flow_categories ADD CONSTRAINT cash_flow_categories_type_check
     CHECK (type IN ('income', 'expense'));
 
 -- 移除註解
 COMMENT ON COLUMN cash_flows.type IS NULL;
+COMMENT ON COLUMN cash_flow_categories.type IS NULL;
