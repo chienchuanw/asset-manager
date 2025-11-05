@@ -7,10 +7,10 @@ import type { NextRequest } from "next/server";
 const PUBLIC_PATHS = ["/login"];
 
 /**
- * Middleware 函式
+ * Proxy 函式
  * 保護所有路由，未登入時重導向到登入頁面
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 取得 token cookie
@@ -40,8 +40,8 @@ export function middleware(request: NextRequest) {
 }
 
 /**
- * Middleware 配置
- * 指定哪些路徑需要執行 middleware
+ * Proxy 配置
+ * 指定哪些路徑需要執行 proxy
  */
 export const config = {
   matcher: [
