@@ -15,6 +15,7 @@ type CreditCardService interface {
 	ListCreditCards() ([]*models.CreditCard, error)
 	GetUpcomingBilling(daysAhead int) ([]*models.CreditCard, error)
 	GetUpcomingPayment(daysAhead int) ([]*models.CreditCard, error)
+	GetTomorrowPaymentDue() ([]*models.CreditCard, error) // 取得明天需要繳款的信用卡
 	UpdateCreditCard(id uuid.UUID, input *models.UpdateCreditCardInput) (*models.CreditCard, error)
 	DeleteCreditCard(id uuid.UUID) error
 }
@@ -113,3 +114,8 @@ func (s *creditCardService) DeleteCreditCard(id uuid.UUID) error {
 	return nil
 }
 
+// GetTomorrowPaymentDue 取得明天需要繳款的信用卡
+func (s *creditCardService) GetTomorrowPaymentDue() ([]*models.CreditCard, error) {
+	// 使用 GetUpcomingPayment(1) 取得明天需要繳款的信用卡
+	return s.GetUpcomingPayment(1)
+}

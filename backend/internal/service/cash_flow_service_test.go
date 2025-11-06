@@ -344,3 +344,196 @@ func TestGetSummary_Success(t *testing.T) {
 	assert.Equal(t, 40000.0, result.NetCashFlow)
 	mockRepo.AssertExpectations(t)
 }
+
+// TestCreateCashFlow_CreditCardPayment_Success 測試成功建立信用卡繳款記錄
+func TestCreateCashFlow_CreditCardPayment_Success(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	sourceType := models.SourceTypeBankAccount
+	targetType := models.SourceTypeCreditCard
+
+	// 建立轉帳分類
+	category := &models.CashFlowCategory{
+		ID:   categoryID,
+		Name: "轉帳",
+		Type: models.CashFlowTypeTransferOut,
+	}
+
+	// 建立銀行帳戶
+	bankAccount := &models.BankAccount{
+		ID:      bankAccountID,
+		Balance: 50000,
+	}
+
+	// 建立信用卡
+	creditCard := &models.CreditCard{
+		ID:          creditCardID,
+		CreditLimit: 100000,
+		UsedCredit:  30000,
+	}
+
+	// 繳款金額
+	paymentAmount := 30000.0
+
+	input := &models.CreateCashFlowInput{
+		Date:        time.Date(2025, 1, 20, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeTransferOut,
+		CategoryID:  categoryID,
+		Amount:      paymentAmount,
+		Description: "繳信用卡費",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    &creditCardID,
+	}
+
+	expectedCashFlow := &models.CashFlow{
+		ID:          uuid.New(),
+		Date:        input.Date,
+		Type:        input.Type,
+		CategoryID:  input.CategoryID,
+		Amount:      input.Amount,
+		Currency:    models.CurrencyTWD,
+		Description: input.Description,
+		SourceType:  input.SourceType,
+		SourceID:    input.SourceID,
+		TargetType:  input.TargetType,
+		TargetID:    input.TargetID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	updatedBankAccount := &models.BankAccount{
+		ID:      bankAccountID,
+		Balance: 20000, // 50000 - 30000
+	}
+
+	updatedCreditCard := &models.CreditCard{
+		ID:          creditCardID,
+		CreditLimit: 100000,
+		UsedCredit:  0, // 30000 - 30000
+	}
+
+	// 設定 mock 期望
+	mockCategoryRepo.On("GetByID", categoryID).Return(category, nil)
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(bankAccount, nil)
+	mockBankAccountRepo.On("UpdateBalance", bankAccountID, -paymentAmount).Return(updatedBankAccount, nil)
+	mockCreditCardRepo.On("GetByID", creditCardID).Return(creditCard, nil)
+	mockCreditCardRepo.On("UpdateUsedCredit", creditCardID, -paymentAmount).Return(updatedCreditCard, nil)
+	mockRepo.On("Create", input).Return(expectedCashFlow, nil)
+
+	// Act
+	result, err := service.CreateCashFlow(input)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, expectedCashFlow.ID, result.ID)
+	assert.Equal(t, expectedCashFlow.Amount, result.Amount)
+	assert.Equal(t, models.CashFlowTypeTransferOut, result.Type)
+	mockCategoryRepo.AssertExpectations(t)
+	mockBankAccountRepo.AssertExpectations(t)
+	mockCreditCardRepo.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
+}
+
+// TestCreateCashFlow_CreditCardPayment_PartialPayment 測試部分繳款
+func TestCreateCashFlow_CreditCardPayment_PartialPayment(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	sourceType := models.SourceTypeBankAccount
+	targetType := models.SourceTypeCreditCard
+
+	category := &models.CashFlowCategory{
+		ID:   categoryID,
+		Name: "轉帳",
+		Type: models.CashFlowTypeTransferOut,
+	}
+
+	bankAccount := &models.BankAccount{
+		ID:      bankAccountID,
+		Balance: 50000,
+	}
+
+	creditCard := &models.CreditCard{
+		ID:          creditCardID,
+		CreditLimit: 100000,
+		UsedCredit:  30000,
+	}
+
+	// 部分繳款金額
+	paymentAmount := 15000.0
+
+	input := &models.CreateCashFlowInput{
+		Date:        time.Date(2025, 1, 20, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeTransferOut,
+		CategoryID:  categoryID,
+		Amount:      paymentAmount,
+		Description: "部分繳信用卡費",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    &creditCardID,
+	}
+
+	expectedCashFlow := &models.CashFlow{
+		ID:          uuid.New(),
+		Date:        input.Date,
+		Type:        input.Type,
+		CategoryID:  input.CategoryID,
+		Amount:      input.Amount,
+		Currency:    models.CurrencyTWD,
+		Description: input.Description,
+		SourceType:  input.SourceType,
+		SourceID:    input.SourceID,
+		TargetType:  input.TargetType,
+		TargetID:    input.TargetID,
+	}
+
+	updatedBankAccount := &models.BankAccount{
+		ID:      bankAccountID,
+		Balance: 35000, // 50000 - 15000
+	}
+
+	updatedCreditCard := &models.CreditCard{
+		ID:          creditCardID,
+		CreditLimit: 100000,
+		UsedCredit:  15000, // 30000 - 15000 (還有 15000 未繳)
+	}
+
+	// 設定 mock 期望
+	mockCategoryRepo.On("GetByID", categoryID).Return(category, nil)
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(bankAccount, nil)
+	mockBankAccountRepo.On("UpdateBalance", bankAccountID, -paymentAmount).Return(updatedBankAccount, nil)
+	mockCreditCardRepo.On("GetByID", creditCardID).Return(creditCard, nil)
+	mockCreditCardRepo.On("UpdateUsedCredit", creditCardID, -paymentAmount).Return(updatedCreditCard, nil)
+	mockRepo.On("Create", input).Return(expectedCashFlow, nil)
+
+	// Act
+	result, err := service.CreateCashFlow(input)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, paymentAmount, result.Amount)
+	mockCategoryRepo.AssertExpectations(t)
+	mockBankAccountRepo.AssertExpectations(t)
+	mockCreditCardRepo.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
+}

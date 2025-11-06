@@ -26,6 +26,9 @@ type DiscordService interface {
 
 	// SendInstallmentCompletionNotification 發送分期完成通知
 	SendInstallmentCompletionNotification(webhookURL string, installments []*models.Installment, remainingCount int) error
+
+	// SendCreditCardPaymentReminder 發送信用卡繳款提醒
+	SendCreditCardPaymentReminder(webhookURL string, creditCards []*models.CreditCard) error
 }
 
 // discordService Discord 服務實作
@@ -491,4 +494,99 @@ func (s *discordService) SendInstallmentCompletionNotification(webhookURL string
 	}
 
 	return s.SendMessage(webhookURL, message)
+}
+
+// SendCreditCardPaymentReminder 發送信用卡繳款提醒
+func (s *discordService) SendCreditCardPaymentReminder(webhookURL string, creditCards []*models.CreditCard) error {
+	if len(creditCards) == 0 {
+		return nil
+	}
+
+	// 建立 Embed
+	embed := models.DiscordEmbed{
+		Title:       "🔔 信用卡繳款提醒",
+		Description: "以下信用卡明天是繳款日，請記得準時繳款！",
+		Color:       0xff9800, // 橘色
+		Fields:      []models.DiscordEmbedField{},
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Footer: &models.DiscordEmbedFooter{
+			Text: "Asset Manager - 信用卡管理",
+		},
+	}
+
+	// 信用卡列表
+	cardText := ""
+	for i, card := range creditCards {
+		if i >= 10 { // 最多顯示 10 張
+			cardText += fmt.Sprintf("...及其他 %d 張信用卡\n", len(creditCards)-10)
+			break
+		}
+
+		availableCredit := card.CreditLimit - card.UsedCredit
+		utilizationRate := (card.UsedCredit / card.CreditLimit) * 100
+
+		cardText += fmt.Sprintf(
+			"💳 **%s %s** (****%s)\n"+
+				"   繳款日: 每月 %d 號\n"+
+				"   目前已使用額度: NT$ %s\n"+
+				"   可用額度: NT$ %s\n"+
+				"   使用率: %.1f%%\n\n",
+			card.IssuingBank,
+			card.CardName,
+			card.CardNumberLast4,
+			card.PaymentDueDay,
+			formatCurrency(card.UsedCredit),
+			formatCurrency(availableCredit),
+			utilizationRate,
+		)
+	}
+
+	embed.Fields = append(embed.Fields, models.DiscordEmbedField{
+		Name:   "明天需要繳款的信用卡",
+		Value:  cardText,
+		Inline: false,
+	})
+
+	message := &models.DiscordMessage{
+		Embeds: []models.DiscordEmbed{embed},
+	}
+
+	return s.SendMessage(webhookURL, message)
+}
+
+// formatCurrency 格式化貨幣顯示（加入千分位逗號）
+func formatCurrency(amount float64) string {
+	// 將數字轉為整數字串
+	intAmount := int64(amount)
+	str := fmt.Sprintf("%d", intAmount)
+
+	// 如果是負數，先處理符號
+	negative := false
+	if str[0] == '-' {
+		negative = true
+		str = str[1:]
+	}
+
+	// 加入千分位逗號
+	n := len(str)
+	if n <= 3 {
+		if negative {
+			return "-" + str
+		}
+		return str
+	}
+
+	// 從右到左每三位加一個逗號
+	result := ""
+	for i, digit := range str {
+		if i > 0 && (n-i)%3 == 0 {
+			result += ","
+		}
+		result += string(digit)
+	}
+
+	if negative {
+		return "-" + result
+	}
+	return result
 }

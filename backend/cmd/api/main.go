@@ -150,7 +150,8 @@ func main() {
 			rebalanceService,
 			billingService,
 			exchangeRateService,
-			nil, // schedulerLogRepo 設為 nil（因為 Redis 不可用時也不記錄）
+			creditCardService, // 加入信用卡服務
+			nil,               // schedulerLogRepo 設為 nil（因為 Redis 不可用時也不記錄）
 			schedulerManagerConfig,
 		)
 		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
@@ -258,7 +259,8 @@ func main() {
 		rebalanceService,
 		billingService,
 		exchangeRateService,
-		schedulerLogRepo, // 加入 schedulerLogRepo
+		creditCardService, // 加入信用卡服務
+		schedulerLogRepo,  // 加入 schedulerLogRepo
 		schedulerManagerConfig,
 	)
 	if err := schedulerManager.Start(); err != nil {

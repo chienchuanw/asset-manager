@@ -50,9 +50,9 @@ func NewCashFlowRepository(db *sql.DB) CashFlowRepository {
 // Create 建立新的現金流記錄
 func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.CashFlow, error) {
 	query := `
-		INSERT INTO cash_flows (date, type, category_id, amount, currency, description, note, source_type, source_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, date, type, category_id, amount, currency, description, note, source_type, source_id, created_at, updated_at
+		INSERT INTO cash_flows (date, type, category_id, amount, currency, description, note, source_type, source_id, target_type, target_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, date, type, category_id, amount, currency, description, note, source_type, source_id, target_type, target_id, created_at, updated_at
 	`
 
 	cashFlow := &models.CashFlow{}
@@ -67,6 +67,8 @@ func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.
 		input.Note,
 		input.SourceType,
 		input.SourceID,
+		input.TargetType,
+		input.TargetID,
 	).Scan(
 		&cashFlow.ID,
 		&cashFlow.Date,
@@ -78,6 +80,8 @@ func (r *cashFlowRepository) Create(input *models.CreateCashFlowInput) (*models.
 		&cashFlow.Note,
 		&cashFlow.SourceType,
 		&cashFlow.SourceID,
+		&cashFlow.TargetType,
+		&cashFlow.TargetID,
 		&cashFlow.CreatedAt,
 		&cashFlow.UpdatedAt,
 	)
@@ -94,7 +98,7 @@ func (r *cashFlowRepository) GetByID(id uuid.UUID) (*models.CashFlow, error) {
 	query := `
 		SELECT
 			cf.id, cf.date, cf.type, cf.category_id, cf.amount, cf.currency,
-			cf.description, cf.note, cf.source_type, cf.source_id, cf.created_at, cf.updated_at,
+			cf.description, cf.note, cf.source_type, cf.source_id, cf.target_type, cf.target_id, cf.created_at, cf.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM cash_flows cf
 		LEFT JOIN cash_flow_categories c ON cf.category_id = c.id
@@ -116,6 +120,8 @@ func (r *cashFlowRepository) GetByID(id uuid.UUID) (*models.CashFlow, error) {
 		&cashFlow.Note,
 		&cashFlow.SourceType,
 		&cashFlow.SourceID,
+		&cashFlow.TargetType,
+		&cashFlow.TargetID,
 		&cashFlow.CreatedAt,
 		&cashFlow.UpdatedAt,
 		&cashFlow.Category.ID,
@@ -141,7 +147,7 @@ func (r *cashFlowRepository) GetAll(filters CashFlowFilters) ([]*models.CashFlow
 	query := `
 		SELECT
 			cf.id, cf.date, cf.type, cf.category_id, cf.amount, cf.currency,
-			cf.description, cf.note, cf.source_type, cf.source_id, cf.created_at, cf.updated_at,
+			cf.description, cf.note, cf.source_type, cf.source_id, cf.target_type, cf.target_id, cf.created_at, cf.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM cash_flows cf
 		LEFT JOIN cash_flow_categories c ON cf.category_id = c.id
@@ -214,6 +220,8 @@ func (r *cashFlowRepository) GetAll(filters CashFlowFilters) ([]*models.CashFlow
 			&cashFlow.Note,
 			&cashFlow.SourceType,
 			&cashFlow.SourceID,
+			&cashFlow.TargetType,
+			&cashFlow.TargetID,
 			&cashFlow.CreatedAt,
 			&cashFlow.UpdatedAt,
 			&cashFlow.Category.ID,

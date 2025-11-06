@@ -15,24 +15,27 @@ import (
 // SchedulerManager 排程器管理器
 // 統一管理所有排程任務（快照、Discord 報告、每日扣款等）
 type SchedulerManager struct {
-	cron                *cron.Cron
-	snapshotService     service.AssetSnapshotService
-	discordService      service.DiscordService
-	settingsService     service.SettingsService
-	holdingService      service.HoldingService
-	rebalanceService    service.RebalanceService
-	billingService      service.BillingService
-	exchangeRateService service.ExchangeRateService
-	schedulerLogRepo    repository.SchedulerLogRepository
-	enabled             bool
-	dailySnapshotTime   string // 格式: "HH:MM" (例如: "23:59")
-	discordReportTime   string // 格式: "HH:MM" (例如: "09:00")
-	dailyBillingTime    string // 格式: "HH:MM" (例如: "00:01")
-	discordEnabled      bool
-	mu                  sync.RWMutex
-	snapshotJobID       cron.EntryID
-	discordReportJobID  cron.EntryID
-	dailyBillingJobID   cron.EntryID
+	cron                   *cron.Cron
+	snapshotService        service.AssetSnapshotService
+	discordService         service.DiscordService
+	settingsService        service.SettingsService
+	holdingService         service.HoldingService
+	rebalanceService       service.RebalanceService
+	billingService         service.BillingService
+	exchangeRateService    service.ExchangeRateService
+	creditCardService      service.CreditCardService // 新增信用卡服務
+	schedulerLogRepo       repository.SchedulerLogRepository
+	enabled                bool
+	dailySnapshotTime      string // 格式: "HH:MM" (例如: "23:59")
+	discordReportTime      string // 格式: "HH:MM" (例如: "09:00")
+	dailyBillingTime       string // 格式: "HH:MM" (例如: "00:01")
+	creditCardReminderTime string // 格式: "HH:MM" (例如: "09:00")
+	discordEnabled         bool
+	mu                     sync.RWMutex
+	snapshotJobID          cron.EntryID
+	discordReportJobID     cron.EntryID
+	dailyBillingJobID      cron.EntryID
+	creditCardReminderJobID cron.EntryID // 新增信用卡提醒任務 ID
 }
 
 // SchedulerManagerConfig 排程器管理器配置
@@ -50,22 +53,25 @@ func NewSchedulerManager(
 	rebalanceService service.RebalanceService,
 	billingService service.BillingService,
 	exchangeRateService service.ExchangeRateService,
+	creditCardService service.CreditCardService, // 新增信用卡服務參數
 	schedulerLogRepo repository.SchedulerLogRepository,
 	config SchedulerManagerConfig,
 ) *SchedulerManager {
 	return &SchedulerManager{
-		cron:                cron.New(),
-		snapshotService:     snapshotService,
-		discordService:      discordService,
-		settingsService:     settingsService,
-		holdingService:      holdingService,
-		rebalanceService:    rebalanceService,
-		billingService:      billingService,
-		exchangeRateService: exchangeRateService,
-		schedulerLogRepo:    schedulerLogRepo,
-		enabled:             config.Enabled,
-		dailySnapshotTime:   config.DailySnapshotTime,
-		dailyBillingTime:    "00:01", // 預設在每天 00:01 執行扣款
+		cron:                   cron.New(),
+		snapshotService:        snapshotService,
+		discordService:         discordService,
+		settingsService:        settingsService,
+		holdingService:         holdingService,
+		rebalanceService:       rebalanceService,
+		billingService:         billingService,
+		exchangeRateService:    exchangeRateService,
+		creditCardService:      creditCardService, // 初始化信用卡服務
+		schedulerLogRepo:       schedulerLogRepo,
+		enabled:                config.Enabled,
+		dailySnapshotTime:      config.DailySnapshotTime,
+		dailyBillingTime:       "00:01",                  // 預設在每天 00:01 執行扣款
+		creditCardReminderTime: "09:00",                  // 預設在每天 09:00 執行信用卡提醒
 	}
 }
 
@@ -91,6 +97,12 @@ func (m *SchedulerManager) Start() error {
 	if err := m.startDailyBillingSchedule(); err != nil {
 		log.Printf("Warning: Failed to start daily billing schedule: %v", err)
 		// 不返回錯誤，因為扣款排程是可選的
+	}
+
+	// 啟動信用卡繳款提醒排程
+	if err := m.startCreditCardReminderSchedule(); err != nil {
+		log.Printf("Warning: Failed to start credit card reminder schedule: %v", err)
+		// 不返回錯誤，因為提醒排程是可選的
 	}
 
 	// 啟動 cron
@@ -305,6 +317,102 @@ func (m *SchedulerManager) sendDailyDiscordReport() error {
 		return fmt.Errorf("failed to send Discord message: %w", err)
 	}
 
+	return nil
+}
+
+// startCreditCardReminderSchedule 啟動信用卡繳款提醒排程
+func (m *SchedulerManager) startCreditCardReminderSchedule() error {
+	// 解析時間
+	hour, minute, err := parseTime(m.creditCardReminderTime)
+	if err != nil {
+		return fmt.Errorf("invalid credit card reminder time: %w", err)
+	}
+
+	// 建立 cron 表達式 (每天指定時間執行)
+	cronExpr := fmt.Sprintf("%d %d * * *", minute, hour)
+
+	// 註冊信用卡提醒任務
+	jobID, err := m.cron.AddFunc(cronExpr, func() {
+		log.Println("Starting credit card payment reminder task...")
+		if err := m.sendCreditCardPaymentReminder(); err != nil {
+			log.Printf("Error in credit card payment reminder: %v", err)
+			// 記錄失敗日誌
+			if m.schedulerLogRepo != nil {
+				now := time.Now()
+				errMsg := fmt.Sprintf("Failed to send credit card payment reminder: %v", err)
+				logEntry := &models.SchedulerLog{
+					TaskName:     "credit_card_reminder",
+					Status:       "failed",
+					ErrorMessage: &errMsg,
+					StartedAt:    now,
+					CompletedAt:  &now,
+				}
+				if createErr := m.schedulerLogRepo.Create(logEntry); createErr != nil {
+					log.Printf("Failed to create scheduler log: %v", createErr)
+				}
+			}
+		} else {
+			log.Println("Credit card payment reminder task completed successfully")
+			// 記錄成功日誌
+			if m.schedulerLogRepo != nil {
+				now := time.Now()
+				logEntry := &models.SchedulerLog{
+					TaskName:    "credit_card_reminder",
+					Status:      "success",
+					StartedAt:   now,
+					CompletedAt: &now,
+				}
+				if createErr := m.schedulerLogRepo.Create(logEntry); createErr != nil {
+					log.Printf("Failed to create scheduler log: %v", createErr)
+				}
+			}
+		}
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to add credit card reminder job: %w", err)
+	}
+
+	m.mu.Lock()
+	m.creditCardReminderJobID = jobID
+	m.mu.Unlock()
+
+	log.Printf("Credit card payment reminder scheduled at %s (cron: %s)", m.creditCardReminderTime, cronExpr)
+	return nil
+}
+
+// sendCreditCardPaymentReminder 發送信用卡繳款提醒
+func (m *SchedulerManager) sendCreditCardPaymentReminder() error {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		return fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	// 檢查 Discord 是否啟用
+	if !settings.Discord.Enabled {
+		log.Println("Discord is disabled, skipping credit card payment reminder")
+		return nil
+	}
+
+	// 取得明天需要繳款的信用卡
+	creditCards, err := m.creditCardService.GetTomorrowPaymentDue()
+	if err != nil {
+		return fmt.Errorf("failed to get tomorrow payment due credit cards: %w", err)
+	}
+
+	// 如果沒有需要提醒的信用卡，直接返回
+	if len(creditCards) == 0 {
+		log.Println("No credit cards need payment reminder tomorrow")
+		return nil
+	}
+
+	// 發送 Discord 提醒
+	if err := m.discordService.SendCreditCardPaymentReminder(settings.Discord.WebhookURL, creditCards); err != nil {
+		return fmt.Errorf("failed to send credit card payment reminder: %w", err)
+	}
+
+	log.Printf("Credit card payment reminder sent for %d card(s)", len(creditCards))
 	return nil
 }
 

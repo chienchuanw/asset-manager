@@ -84,7 +84,7 @@ func (s *cashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*mo
 		}
 	}
 
-	// 驗證並處理付款方式
+	// 驗證並處理付款方式 (source)
 	if input.SourceType != nil && input.SourceID != nil {
 		err := s.validateAndUpdateBalance(input.Type, *input.SourceType, *input.SourceID, input.Amount)
 		if err != nil {
@@ -92,12 +92,27 @@ func (s *cashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*mo
 		}
 	}
 
+	// 處理轉帳目標 (target) - 只在 transfer_out 類型時處理
+	if input.Type == models.CashFlowTypeTransferOut && input.TargetType != nil && input.TargetID != nil {
+		err := s.validateAndUpdateTarget(*input.TargetType, *input.TargetID, input.Amount)
+		if err != nil {
+			// 如果目標更新失敗，需要回復 source 的餘額變動
+			if input.SourceType != nil && input.SourceID != nil {
+				s.revertBalanceUpdate(input.Type, *input.SourceType, *input.SourceID, input.Amount)
+			}
+			return nil, fmt.Errorf("failed to update target balance: %w", err)
+		}
+	}
+
 	// 呼叫 repository 建立現金流記錄
 	cashFlow, err := s.repo.Create(input)
 	if err != nil {
-		// 如果建立失敗，需要回復餘額變動
+		// 如果建立失敗，需要回復所有餘額變動
 		if input.SourceType != nil && input.SourceID != nil {
 			s.revertBalanceUpdate(input.Type, *input.SourceType, *input.SourceID, input.Amount)
+		}
+		if input.Type == models.CashFlowTypeTransferOut && input.TargetType != nil && input.TargetID != nil {
+			s.revertTargetUpdate(*input.TargetType, *input.TargetID, input.Amount)
 		}
 		return nil, fmt.Errorf("failed to create cash flow: %w", err)
 	}
@@ -320,6 +335,55 @@ func (s *cashFlowService) updateCreditCardBalance(cashFlowType models.CashFlowTy
 	}
 
 	return nil
+}
+
+// validateAndUpdateTarget 驗證並更新轉帳目標的餘額
+func (s *cashFlowService) validateAndUpdateTarget(targetType models.SourceType, targetID uuid.UUID, amount float64) error {
+	switch targetType {
+	case models.SourceTypeCreditCard:
+		// 驗證信用卡是否存在
+		_, err := s.creditCardRepo.GetByID(targetID)
+		if err != nil {
+			return fmt.Errorf("credit card not found: %w", err)
+		}
+
+		// 繳款給信用卡 → 減少已使用額度
+		_, err = s.creditCardRepo.UpdateUsedCredit(targetID, -amount)
+		if err != nil {
+			return fmt.Errorf("failed to update credit card used credit: %w", err)
+		}
+
+	case models.SourceTypeBankAccount:
+		// 驗證銀行帳戶是否存在
+		_, err := s.bankAccountRepo.GetByID(targetID)
+		if err != nil {
+			return fmt.Errorf("bank account not found: %w", err)
+		}
+
+		// 轉帳到銀行帳戶 → 增加餘額
+		_, err = s.bankAccountRepo.UpdateBalance(targetID, amount)
+		if err != nil {
+			return fmt.Errorf("failed to update bank account balance: %w", err)
+		}
+
+	default:
+		return fmt.Errorf("invalid target type: %s", targetType)
+	}
+
+	return nil
+}
+
+// revertTargetUpdate 回復轉帳目標的餘額變動
+func (s *cashFlowService) revertTargetUpdate(targetType models.SourceType, targetID uuid.UUID, amount float64) {
+	switch targetType {
+	case models.SourceTypeCreditCard:
+		// 回復信用卡已使用額度（加回去）
+		s.creditCardRepo.UpdateUsedCredit(targetID, amount)
+
+	case models.SourceTypeBankAccount:
+		// 回復銀行帳戶餘額（減回去）
+		s.bankAccountRepo.UpdateBalance(targetID, -amount)
+	}
 }
 
 // handlePaymentMethodChange 處理付款方式變更時的餘額調整

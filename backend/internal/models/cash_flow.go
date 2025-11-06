@@ -49,6 +49,8 @@ type CashFlow struct {
 	Note        *string      `json:"note,omitempty" db:"note"`
 	SourceType  *SourceType  `json:"source_type,omitempty" db:"source_type"`
 	SourceID    *uuid.UUID   `json:"source_id,omitempty" db:"source_id"`
+	TargetType  *SourceType  `json:"target_type,omitempty" db:"target_type"` // 轉帳目標類型
+	TargetID    *uuid.UUID   `json:"target_id,omitempty" db:"target_id"`     // 轉帳目標ID
 	CreatedAt   time.Time    `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time    `json:"updated_at" db:"updated_at"`
 
@@ -66,6 +68,8 @@ type CreateCashFlowInput struct {
 	Note        *string      `json:"note,omitempty"`
 	SourceType  *SourceType  `json:"source_type,omitempty"`
 	SourceID    *uuid.UUID   `json:"source_id,omitempty"`
+	TargetType  *SourceType  `json:"target_type,omitempty"` // 轉帳目標類型
+	TargetID    *uuid.UUID   `json:"target_id,omitempty"`   // 轉帳目標ID
 }
 
 // UpdateCashFlowInput 更新現金流記錄的輸入資料
@@ -77,6 +81,8 @@ type UpdateCashFlowInput struct {
 	Note        *string     `json:"note,omitempty"`
 	SourceType  *SourceType `json:"source_type,omitempty"`
 	SourceID    *uuid.UUID  `json:"source_id,omitempty"`
+	TargetType  *SourceType `json:"target_type,omitempty"` // 轉帳目標類型
+	TargetID    *uuid.UUID  `json:"target_id,omitempty"`   // 轉帳目標ID
 }
 
 // CreateCategoryInput 建立分類的輸入資料
