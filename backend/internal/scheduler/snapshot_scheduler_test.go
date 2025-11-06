@@ -7,6 +7,7 @@ import (
 
 	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/chienchuanw/asset-manager/internal/service"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -268,6 +269,11 @@ func (m *MockDiscordService) SendInstallmentCompletionNotification(webhookURL st
 	return args.Error(0)
 }
 
+func (m *MockDiscordService) SendCreditCardPaymentReminder(webhookURL string, creditCards []*models.CreditCard) error {
+	args := m.Called(webhookURL, creditCards)
+	return args.Error(0)
+}
+
 // MockSettingsService 模擬 SettingsService
 type MockSettingsService struct {
 	mock.Mock
@@ -368,6 +374,8 @@ func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCreditCardService := new(MockCreditCardService)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -376,6 +384,7 @@ func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		nil, // schedulerLogRepo
 		config,
 	)
@@ -414,6 +423,8 @@ func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCreditCardService := new(MockCreditCardService)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -422,6 +433,7 @@ func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		nil, // schedulerLogRepo
 		config,
 	)
@@ -443,3 +455,68 @@ func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
 	mockSnapshotService.AssertCalled(t, "CreateDailySnapshots")
 }
 
+// MockCreditCardService 模擬 CreditCardService
+type MockCreditCardService struct {
+	mock.Mock
+}
+
+func (m *MockCreditCardService) CreateCreditCard(input *models.CreateCreditCardInput) (*models.CreditCard, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CreditCard), args.Error(1)
+}
+
+func (m *MockCreditCardService) GetCreditCard(id uuid.UUID) (*models.CreditCard, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CreditCard), args.Error(1)
+}
+
+func (m *MockCreditCardService) ListCreditCards() ([]*models.CreditCard, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CreditCard), args.Error(1)
+}
+
+func (m *MockCreditCardService) UpdateCreditCard(id uuid.UUID, input *models.UpdateCreditCardInput) (*models.CreditCard, error) {
+	args := m.Called(id, input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CreditCard), args.Error(1)
+}
+
+func (m *MockCreditCardService) DeleteCreditCard(id uuid.UUID) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockCreditCardService) GetUpcomingBilling(days int) ([]*models.CreditCard, error) {
+	args := m.Called(days)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CreditCard), args.Error(1)
+}
+
+func (m *MockCreditCardService) GetUpcomingPayment(days int) ([]*models.CreditCard, error) {
+	args := m.Called(days)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CreditCard), args.Error(1)
+}
+
+func (m *MockCreditCardService) GetTomorrowPaymentDue() ([]*models.CreditCard, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CreditCard), args.Error(1)
+}

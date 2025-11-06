@@ -76,6 +76,7 @@ func TestSchedulerManager_logTaskExecution_Success(t *testing.T) {
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 	mockSchedulerLogRepo := new(MockSchedulerLogRepository)
 
 	config := SchedulerManagerConfig{
@@ -91,6 +92,7 @@ func TestSchedulerManager_logTaskExecution_Success(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		mockSchedulerLogRepo,
 		config,
 	)
@@ -120,6 +122,7 @@ func TestSchedulerManager_logTaskExecution_Failed(t *testing.T) {
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 	mockSchedulerLogRepo := new(MockSchedulerLogRepository)
 
 	config := SchedulerManagerConfig{
@@ -135,6 +138,7 @@ func TestSchedulerManager_logTaskExecution_Failed(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		mockSchedulerLogRepo,
 		config,
 	)
@@ -166,6 +170,7 @@ func TestSchedulerManager_logTaskExecution_NoRepository(t *testing.T) {
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 
 	config := SchedulerManagerConfig{
 		Enabled:           true,
@@ -180,6 +185,7 @@ func TestSchedulerManager_logTaskExecution_NoRepository(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		nil, // 沒有 repository
 		config,
 	)
@@ -202,6 +208,7 @@ func TestSchedulerManager_sendFailureNotification_Success(t *testing.T) {
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 	mockSchedulerLogRepo := new(MockSchedulerLogRepository)
 
 	config := SchedulerManagerConfig{
@@ -217,6 +224,7 @@ func TestSchedulerManager_sendFailureNotification_Success(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		mockSchedulerLogRepo,
 		config,
 	)
@@ -252,6 +260,7 @@ func TestSchedulerManager_sendFailureNotification_DiscordDisabled(t *testing.T) 
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 	mockSchedulerLogRepo := new(MockSchedulerLogRepository)
 
 	config := SchedulerManagerConfig{
@@ -267,6 +276,7 @@ func TestSchedulerManager_sendFailureNotification_DiscordDisabled(t *testing.T) 
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		mockSchedulerLogRepo,
 		config,
 	)
@@ -300,6 +310,7 @@ func TestSchedulerManager_GetTaskSummaries_Success(t *testing.T) {
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 	mockSchedulerLogRepo := new(MockSchedulerLogRepository)
 
 	config := SchedulerManagerConfig{
@@ -315,6 +326,7 @@ func TestSchedulerManager_GetTaskSummaries_Success(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		mockSchedulerLogRepo,
 		config,
 	)
@@ -358,6 +370,7 @@ func TestSchedulerManager_GetTaskSummaries_NoRepository(t *testing.T) {
 	mockRebalanceService := new(MockRebalanceService)
 	mockBillingService := new(MockBillingService)
 	mockExchangeRateService := new(MockExchangeRateService)
+	mockCreditCardService := new(MockCreditCardService)
 
 	config := SchedulerManagerConfig{
 		Enabled:           true,
@@ -372,6 +385,7 @@ func TestSchedulerManager_GetTaskSummaries_NoRepository(t *testing.T) {
 		mockRebalanceService,
 		mockBillingService,
 		mockExchangeRateService,
+		mockCreditCardService,
 		nil, // 沒有 repository
 		config,
 	)
