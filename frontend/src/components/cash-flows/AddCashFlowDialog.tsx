@@ -96,6 +96,8 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
       note: null,
       payment_method: PaymentMethodType.CASH, // 預設為現金
       account_id: "", // 帳戶 ID
+      target_payment_method: undefined, // 轉帳目標付款方式
+      target_account_id: "", // 轉帳目標帳戶 ID
     },
   });
 
@@ -103,6 +105,8 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
   const cashFlowType = form.watch("type");
   // 監聽付款方式變化，重置帳戶選擇
   const paymentMethod = form.watch("payment_method");
+  // 監聽轉帳目標付款方式變化
+  const targetPaymentMethod = form.watch("target_payment_method");
 
   // 當類型變為轉帳時，自動設定付款方式為銀行帳戶（分類交由子元件自動帶入）
   React.useEffect(() => {
@@ -138,6 +142,18 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
         data.payment_method
       );
       submitData.source_id = data.account_id;
+    }
+
+    // 如果是 transfer_out 類型，設定 target_type 和 target_id
+    if (
+      data.type === CashFlowType.TRANSFER_OUT &&
+      data.target_payment_method &&
+      data.target_account_id
+    ) {
+      submitData.target_type = paymentMethodTypeToSourceType(
+        data.target_payment_method
+      );
+      submitData.target_id = data.target_account_id;
     }
 
     createMutation.mutate(submitData);
@@ -324,6 +340,70 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                   </FormItem>
                 )}
               />
+            )}
+
+            {/* 轉帳目標選擇（僅在 transfer_out 時顯示） */}
+            {cashFlowType === CashFlowType.TRANSFER_OUT && (
+              <>
+                {/* 轉帳目標付款方式 */}
+                <FormField
+                  control={form.control}
+                  name="target_payment_method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>轉帳目標類型</FormLabel>
+                      <FormControl>
+                        <PaymentMethodSelect
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // 重置目標帳戶選擇
+                            form.setValue("target_account_id", "");
+                          }}
+                          placeholder="選擇轉帳目標類型"
+                          excludeCash={true}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-sm text-muted-foreground">
+                        選擇要轉入的目標（銀行帳戶或信用卡）
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
+                {/* 轉帳目標帳戶選擇 */}
+                {targetPaymentMethod && (
+                  <FormField
+                    control={form.control}
+                    name="target_account_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {targetPaymentMethod ===
+                          PaymentMethodType.BANK_ACCOUNT
+                            ? "目標銀行帳戶"
+                            : "目標信用卡"}
+                        </FormLabel>
+                        <FormControl>
+                          <AccountSelect
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                            paymentMethodType={targetPaymentMethod}
+                            placeholder={`選擇${
+                              targetPaymentMethod ===
+                              PaymentMethodType.BANK_ACCOUNT
+                                ? "銀行帳戶"
+                                : "信用卡"
+                            }`}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </>
             )}
 
             {/* 描述 */}

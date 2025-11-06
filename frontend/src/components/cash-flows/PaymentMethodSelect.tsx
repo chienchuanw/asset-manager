@@ -16,10 +16,11 @@ import { useBankAccounts, useCreditCards } from "@/hooks";
 import { CreditCard, Wallet, Building2 } from "lucide-react";
 
 interface PaymentMethodSelectProps {
-  value: PaymentMethodType;
+  value?: PaymentMethodType;
   onValueChange: (value: PaymentMethodType) => void;
   placeholder?: string;
   disabled?: boolean;
+  excludeCash?: boolean; // 是否排除現金選項
 }
 
 /**
@@ -33,6 +34,7 @@ export function PaymentMethodSelect({
   onValueChange,
   placeholder = "選擇付款方式",
   disabled = false,
+  excludeCash = false,
 }: PaymentMethodSelectProps) {
   // 取得銀行帳戶和信用卡列表以判斷是否有可用選項
   const { data: bankAccounts } = useBankAccounts();
@@ -41,7 +43,7 @@ export function PaymentMethodSelect({
   // 根據使用者是否有建立帳戶來決定可用選項
   const availableOptions = getPaymentMethodTypeOptions().filter((option) => {
     if (option.value === PaymentMethodType.CASH) {
-      return true; // 現金選項永遠可用
+      return !excludeCash; // 如果 excludeCash 為 true，則排除現金選項
     }
     if (option.value === PaymentMethodType.BANK_ACCOUNT) {
       return bankAccounts && bankAccounts.length > 0;

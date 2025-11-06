@@ -224,40 +224,31 @@ export function CreditCardForm({
             )}
           />
 
-          {/* 已使用額度 */}
-          <FormField
-            control={form.control}
-            name="used_credit"
-            rules={{
-              required: "請輸入已使用額度",
-              min: { value: 0, message: "已使用額度不能為負數" },
-              validate: (value) => {
-                const creditLimit = form.getValues("credit_limit");
-                if (value > creditLimit) {
-                  return "已使用額度不能超過信用額度";
-                }
-                return true;
-              },
-            }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>已使用額度</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="25000.00"
-                    {...field}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      field.onChange(isNaN(value) ? "" : value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* 已使用額度（唯讀顯示） */}
+          {creditCard && (
+            <FormField
+              control={form.control}
+              name="used_credit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>已使用額度</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...field}
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    此欄位由系統自動計算，無法手動修改
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         {/* 備註 */}
@@ -294,4 +285,3 @@ export function CreditCardForm({
     </Form>
   );
 }
-

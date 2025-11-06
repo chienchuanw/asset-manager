@@ -68,6 +68,8 @@ export interface CashFlow {
   note: string | null;
   source_type?: SourceType | null; // 付款來源類型
   source_id?: string | null; // 付款來源 ID（銀行帳戶或信用卡 ID）
+  target_type?: SourceType | null; // 轉帳目標類型（用於 transfer_out）
+  target_id?: string | null; // 轉帳目標 ID（用於 transfer_out，例如信用卡 ID）
   created_at: string; // ISO 8601 格式
   updated_at: string; // ISO 8601 格式
   category?: CashFlowCategory; // 關聯的分類資料（可選）
@@ -96,6 +98,8 @@ export interface CreateCashFlowInput {
   note?: string | null;
   source_type?: SourceType | null; // 付款來源類型
   source_id?: string | null; // 付款來源 ID
+  target_type?: SourceType | null; // 轉帳目標類型（用於 transfer_out）
+  target_id?: string | null; // 轉帳目標 ID（用於 transfer_out）
 }
 
 /**
@@ -110,6 +114,8 @@ export interface UpdateCashFlowInput {
   note?: string | null;
   source_type?: SourceType | null; // 付款來源類型
   source_id?: string | null; // 付款來源 ID
+  target_type?: SourceType | null; // 轉帳目標類型（用於 transfer_out）
+  target_id?: string | null; // 轉帳目標 ID（用於 transfer_out）
 }
 
 /**
@@ -216,6 +222,9 @@ export const createCashFlowSchema = z
     // 付款方式相關欄位
     payment_method: paymentMethodTypeSchema,
     account_id: z.string().optional(), // 當付款方式為銀行帳戶或信用卡時必填
+    // 轉帳目標相關欄位（用於 transfer_out）
+    target_payment_method: paymentMethodTypeSchema.optional(), // 轉帳目標付款方式
+    target_account_id: z.string().optional(), // 轉帳目標帳戶 ID
   })
   .refine(
     (data) => {
@@ -243,6 +252,23 @@ export const createCashFlowSchema = z
     {
       message: "轉帳類型必須選擇銀行帳戶",
       path: ["account_id"],
+    }
+  )
+  .refine(
+    (data) => {
+      // transfer_out 類型必須選擇轉帳目標
+      if (data.type === CashFlowType.TRANSFER_OUT) {
+        return (
+          data.target_payment_method &&
+          data.target_account_id &&
+          data.target_account_id.length > 0
+        );
+      }
+      return true;
+    },
+    {
+      message: "轉出類型必須選擇轉帳目標",
+      path: ["target_account_id"],
     }
   );
 

@@ -89,6 +89,8 @@ export function EditCashFlowDialog({
       amount: 0,
       payment_method: PaymentMethodType.CASH,
       account_id: "",
+      target_payment_method: undefined,
+      target_account_id: "",
       note: "",
     },
   });
@@ -113,6 +115,20 @@ export function EditCashFlowDialog({
         }
       }
 
+      // 將 target_type 轉換為 target_payment_method
+      let targetPaymentMethod: PaymentMethodType | undefined = undefined;
+      let targetAccountId = "";
+
+      if (cashFlow.target_type && cashFlow.target_id) {
+        if (cashFlow.target_type === "bank_account") {
+          targetPaymentMethod = PaymentMethodType.BANK_ACCOUNT;
+          targetAccountId = cashFlow.target_id;
+        } else if (cashFlow.target_type === "credit_card") {
+          targetPaymentMethod = PaymentMethodType.CREDIT_CARD;
+          targetAccountId = cashFlow.target_id;
+        }
+      }
+
       form.reset({
         date: formattedDate,
         type: cashFlow.type,
@@ -121,6 +137,8 @@ export function EditCashFlowDialog({
         amount: cashFlow.amount,
         payment_method: paymentMethod,
         account_id: accountId,
+        target_payment_method: targetPaymentMethod,
+        target_account_id: targetAccountId,
         note: cashFlow.note || "",
       });
     }
@@ -169,6 +187,22 @@ export function EditCashFlowDialog({
       updateData.source_id = null;
     }
 
+    // 如果是 transfer_out 類型，設定 target_type 和 target_id
+    if (
+      data.type === CashFlowType.TRANSFER_OUT &&
+      data.target_payment_method &&
+      data.target_account_id
+    ) {
+      updateData.target_type = paymentMethodTypeToSourceType(
+        data.target_payment_method
+      );
+      updateData.target_id = data.target_account_id;
+    } else {
+      // 如果不是 transfer_out，清除 target_type 和 target_id
+      updateData.target_type = null;
+      updateData.target_id = null;
+    }
+
     updateMutation.mutate({
       id: cashFlow.id,
       data: updateData,
@@ -177,6 +211,8 @@ export function EditCashFlowDialog({
 
   // 監聽付款方式類型變更
   const paymentMethod = form.watch("payment_method");
+  const cashFlowType = form.watch("type");
+  const targetPaymentMethod = form.watch("target_payment_method");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -325,6 +361,71 @@ export function EditCashFlowDialog({
                   </FormItem>
                 )}
               />
+            )}
+
+            {/* 轉帳目標選擇（僅在 transfer_out 時顯示） */}
+            {cashFlowType === CashFlowType.TRANSFER_OUT && (
+              <>
+                {/* 轉帳目標付款方式 */}
+                <FormField
+                  control={form.control}
+                  name="target_payment_method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>轉帳目標類型 *</FormLabel>
+                      <FormControl>
+                        <PaymentMethodSelect
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // 重置目標帳戶選擇
+                            form.setValue("target_account_id", "");
+                          }}
+                          placeholder="選擇轉帳目標類型"
+                          excludeCash={true}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-sm text-muted-foreground">
+                        選擇要轉入的目標（銀行帳戶或信用卡）
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
+                {/* 轉帳目標帳戶選擇 */}
+                {targetPaymentMethod && (
+                  <FormField
+                    control={form.control}
+                    name="target_account_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {targetPaymentMethod ===
+                          PaymentMethodType.BANK_ACCOUNT
+                            ? "目標銀行帳戶"
+                            : "目標信用卡"}{" "}
+                          *
+                        </FormLabel>
+                        <FormControl>
+                          <AccountSelect
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                            paymentMethodType={targetPaymentMethod}
+                            placeholder={`選擇${
+                              targetPaymentMethod ===
+                              PaymentMethodType.BANK_ACCOUNT
+                                ? "銀行帳戶"
+                                : "信用卡"
+                            }`}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </>
             )}
 
             {/* 備註 */}
