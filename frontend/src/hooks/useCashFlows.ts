@@ -165,8 +165,6 @@ export function useCreateCashFlow(
   return useMutation<CashFlow, APIError, CreateCashFlowInput>({
     mutationFn: cashFlowsAPI.create,
     onSuccess: async () => {
-      console.log("[useCashFlows] onSuccess triggered");
-
       // 1) 先讓現金流列表失效（局部重新取得）
       await queryClient.invalidateQueries({
         queryKey: cashFlowKeys.all,
@@ -175,23 +173,14 @@ export function useCreateCashFlow(
 
       // 2) 完全移除銀行帳戶和信用卡的快取資料
       // 這會強制下次訪問時重新取得資料
-      console.log(
-        "[useCashFlows] Removing bank account queries with key:",
-        bankAccountKeys.all
-      );
       queryClient.removeQueries({
         queryKey: bankAccountKeys.all,
         exact: false,
       });
-      console.log(
-        "[useCashFlows] Removing credit card queries with key:",
-        creditCardKeys.all
-      );
       queryClient.removeQueries({
         queryKey: creditCardKeys.all,
         exact: false,
       });
-      console.log("[useCashFlows] Cache cleared successfully");
     },
     ...options,
   });

@@ -52,6 +52,7 @@ export function useCreditCards(
   return useQuery<CreditCard[], APIError>({
     queryKey: creditCardKeys.list(),
     queryFn: () => creditCardsAPI.getAll(),
+    staleTime: 0, // 強制每次都重新驗證資料
     ...options,
   });
 }
@@ -248,4 +249,3 @@ export function useDeleteCreditCard(
     ...options,
   });
 }
-
