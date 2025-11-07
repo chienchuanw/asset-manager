@@ -26,3 +26,53 @@ export async function testDiscord(input: TestDiscordInput): Promise<string> {
 export async function sendDailyReport(): Promise<string> {
   return await apiClient.post<string>("/api/discord/daily-report", {});
 }
+
+// 發送月度報告輸入
+export interface SendMonthlyReportInput {
+  year: number;
+  month: number;
+  webhook_url: string;
+}
+
+/**
+ * 發送月度現金流報告到 Discord
+ * @param input 年份、月份和 Webhook URL
+ * @returns 成功訊息
+ */
+export async function sendMonthlyReport(
+  input: SendMonthlyReportInput
+): Promise<string> {
+  const params = new URLSearchParams({
+    year: input.year.toString(),
+    month: input.month.toString(),
+    webhook_url: input.webhook_url,
+  });
+  return await apiClient.post<string>(
+    `/api/cash-flows/send-monthly-report?${params}`,
+    {}
+  );
+}
+
+// 發送年度報告輸入
+export interface SendYearlyReportInput {
+  year: number;
+  webhook_url: string;
+}
+
+/**
+ * 發送年度現金流報告到 Discord
+ * @param input 年份和 Webhook URL
+ * @returns 成功訊息
+ */
+export async function sendYearlyReport(
+  input: SendYearlyReportInput
+): Promise<string> {
+  const params = new URLSearchParams({
+    year: input.year.toString(),
+    webhook_url: input.webhook_url,
+  });
+  return await apiClient.post<string>(
+    `/api/cash-flows/send-yearly-report?${params}`,
+    {}
+  );
+}

@@ -236,6 +236,11 @@ export interface DiscordSettings {
   webhook_url: string;
   enabled: boolean;
   report_time: string; // HH:MM 格式
+  monthly_report_enabled: boolean; // 啟用月度報告
+  monthly_report_day: number; // 每月發送日期 (1-10)
+  yearly_report_enabled: boolean; // 啟用年度報告
+  yearly_report_month: number; // 每年發送月份 (1-12)
+  yearly_report_day: number; // 每年發送日期 (1-10)
 }
 
 export interface AllocationSettings {

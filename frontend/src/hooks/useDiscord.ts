@@ -1,5 +1,13 @@
 import { useMutation } from "@tanstack/react-query";
-import { testDiscord, sendDailyReport, type TestDiscordInput } from "@/lib/api/discord";
+import {
+  testDiscord,
+  sendDailyReport,
+  sendMonthlyReport,
+  sendYearlyReport,
+  type TestDiscordInput,
+  type SendMonthlyReportInput,
+  type SendYearlyReportInput,
+} from "@/lib/api/discord";
 import { toast } from "sonner";
 
 /**
@@ -34,3 +42,34 @@ export function useSendDailyReport() {
   });
 }
 
+/**
+ * 發送月度現金流報告的 Hook
+ * 提供手動發送月度報告到 Discord 的功能
+ */
+export function useSendMonthlyReport() {
+  return useMutation({
+    mutationFn: (input: SendMonthlyReportInput) => sendMonthlyReport(input),
+    onSuccess: () => {
+      toast.success("月度現金流報告已成功發送到 Discord！");
+    },
+    onError: (error: Error) => {
+      toast.error(`發送失敗：${error.message}`);
+    },
+  });
+}
+
+/**
+ * 發送年度現金流報告的 Hook
+ * 提供手動發送年度報告到 Discord 的功能
+ */
+export function useSendYearlyReport() {
+  return useMutation({
+    mutationFn: (input: SendYearlyReportInput) => sendYearlyReport(input),
+    onSuccess: () => {
+      toast.success("年度現金流報告已成功發送到 Discord！");
+    },
+    onError: (error: Error) => {
+      toast.error(`發送失敗：${error.message}`);
+    },
+  });
+}

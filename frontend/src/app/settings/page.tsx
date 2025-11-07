@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
-import { useTestDiscord, useSendDailyReport } from "@/hooks/useDiscord";
+import {
+  useTestDiscord,
+  useSendDailyReport,
+  useSendMonthlyReport,
+  useSendYearlyReport,
+} from "@/hooks/useDiscord";
 import { useRefreshExchangeRate } from "@/hooks/useExchangeRates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +37,8 @@ export default function SettingsPage() {
   const updateSettingsMutation = useUpdateSettings();
   const testDiscordMutation = useTestDiscord();
   const sendDailyReportMutation = useSendDailyReport();
+  const sendMonthlyReportMutation = useSendMonthlyReport();
+  const sendYearlyReportMutation = useSendYearlyReport();
   const refreshExchangeRateMutation = useRefreshExchangeRate();
 
   // Discord 設定狀態
@@ -39,6 +46,11 @@ export default function SettingsPage() {
     webhook_url: "",
     enabled: false,
     report_time: "09:00",
+    monthly_report_enabled: false,
+    monthly_report_day: 1,
+    yearly_report_enabled: false,
+    yearly_report_month: 1,
+    yearly_report_day: 1,
   });
 
   // 資產配置設定狀態
@@ -159,6 +171,57 @@ export default function SettingsPage() {
     }
   };
 
+  // 處理發送月度報告
+  const handleSendMonthlyReport = async () => {
+    // 檢查 Webhook URL 是否已設定
+    if (!discordSettings.webhook_url) {
+      toast.error("發送失敗", {
+        description: "請先設定 Discord Webhook URL",
+      });
+      return;
+    }
+
+    // 使用上個月的資料
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const year = lastMonth.getFullYear();
+    const month = lastMonth.getMonth() + 1;
+
+    try {
+      await sendMonthlyReportMutation.mutateAsync({
+        year,
+        month,
+        webhook_url: discordSettings.webhook_url,
+      });
+    } catch (error) {
+      // 錯誤已在 mutation 的 onError 中處理
+    }
+  };
+
+  // 處理發送年度報告
+  const handleSendYearlyReport = async () => {
+    // 檢查 Webhook URL 是否已設定
+    if (!discordSettings.webhook_url) {
+      toast.error("發送失敗", {
+        description: "請先設定 Discord Webhook URL",
+      });
+      return;
+    }
+
+    // 使用去年的資料
+    const now = new Date();
+    const year = now.getFullYear() - 1;
+
+    try {
+      await sendYearlyReportMutation.mutateAsync({
+        year,
+        webhook_url: discordSettings.webhook_url,
+      });
+    } catch (error) {
+      // 錯誤已在 mutation 的 onError 中處理
+    }
+  };
+
   // 處理更新匯率
   const handleRefreshExchangeRate = async () => {
     try {
@@ -260,10 +323,145 @@ export default function SettingsPage() {
 
                 <Separator />
 
+                {/* 月度現金流報告設定 */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="monthly-report-enabled">
+                        啟用月度現金流報告
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        每月自動發送現金流摘要報告到 Discord
+                      </p>
+                    </div>
+                    <Switch
+                      id="monthly-report-enabled"
+                      checked={discordSettings.monthly_report_enabled}
+                      onCheckedChange={(checked) =>
+                        setDiscordSettings({
+                          ...discordSettings,
+                          monthly_report_enabled: checked,
+                        })
+                      }
+                    />
+                  </div>
+
+                  {discordSettings.monthly_report_enabled && (
+                    <div className="space-y-2 pl-4 border-l-2 border-muted">
+                      <Label htmlFor="monthly-report-day">每月發送日期</Label>
+                      <select
+                        id="monthly-report-day"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={discordSettings.monthly_report_day}
+                        onChange={(e) =>
+                          setDiscordSettings({
+                            ...discordSettings,
+                            monthly_report_day: parseInt(e.target.value),
+                          })
+                        }
+                      >
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                          (day) => (
+                            <option key={day} value={day}>
+                              每月 {day} 號
+                            </option>
+                          )
+                        )}
+                      </select>
+                      <p className="text-sm text-muted-foreground">
+                        報告將於每月指定日期的 09:00 發送
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* 年度現金流報告設定 */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="yearly-report-enabled">
+                        啟用年度現金流報告
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        每年自動發送現金流摘要報告到 Discord
+                      </p>
+                    </div>
+                    <Switch
+                      id="yearly-report-enabled"
+                      checked={discordSettings.yearly_report_enabled}
+                      onCheckedChange={(checked) =>
+                        setDiscordSettings({
+                          ...discordSettings,
+                          yearly_report_enabled: checked,
+                        })
+                      }
+                    />
+                  </div>
+
+                  {discordSettings.yearly_report_enabled && (
+                    <div className="space-y-4 pl-4 border-l-2 border-muted">
+                      <div className="space-y-2">
+                        <Label htmlFor="yearly-report-month">發送月份</Label>
+                        <select
+                          id="yearly-report-month"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={discordSettings.yearly_report_month}
+                          onChange={(e) =>
+                            setDiscordSettings({
+                              ...discordSettings,
+                              yearly_report_month: parseInt(e.target.value),
+                            })
+                          }
+                        >
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                            (month) => (
+                              <option key={month} value={month}>
+                                {month} 月
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="yearly-report-day">發送日期</Label>
+                        <select
+                          id="yearly-report-day"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={discordSettings.yearly_report_day}
+                          onChange={(e) =>
+                            setDiscordSettings({
+                              ...discordSettings,
+                              yearly_report_day: parseInt(e.target.value),
+                            })
+                          }
+                        >
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                            (day) => (
+                              <option key={day} value={day}>
+                                {day} 號
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">
+                        報告將於每年{discordSettings.yearly_report_month}月
+                        {discordSettings.yearly_report_day}號的 09:00 發送
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
                 {/* Discord 測試按鈕 */}
                 <div className="space-y-3">
                   <Label>測試 Discord 功能</Label>
-                  <div className="flex gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       type="button"
                       variant="outline"
@@ -272,7 +470,6 @@ export default function SettingsPage() {
                         !discordSettings.webhook_url ||
                         testDiscordMutation.isPending
                       }
-                      className="flex-1"
                     >
                       {testDiscordMutation.isPending ? (
                         <>
@@ -282,7 +479,7 @@ export default function SettingsPage() {
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          發送測試訊息
+                          測試訊息
                         </>
                       )}
                     </Button>
@@ -294,7 +491,6 @@ export default function SettingsPage() {
                         !discordSettings.webhook_url ||
                         sendDailyReportMutation.isPending
                       }
-                      className="flex-1"
                     >
                       {sendDailyReportMutation.isPending ? (
                         <>
@@ -304,13 +500,56 @@ export default function SettingsPage() {
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          發送每日報告
+                          每日報告
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSendMonthlyReport}
+                      disabled={
+                        !discordSettings.webhook_url ||
+                        sendMonthlyReportMutation.isPending
+                      }
+                    >
+                      {sendMonthlyReportMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          發送中...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          月度報告
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSendYearlyReport}
+                      disabled={
+                        !discordSettings.webhook_url ||
+                        sendYearlyReportMutation.isPending
+                      }
+                    >
+                      {sendYearlyReportMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          發送中...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          年度報告
                         </>
                       )}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    測試 Discord Webhook 是否正常運作
+                    測試 Discord Webhook
+                    是否正常運作（月度/年度報告將發送上一期間的資料）
                   </p>
                 </div>
               </CardContent>
