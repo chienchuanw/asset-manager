@@ -357,7 +357,7 @@ export default function SettingsPage() {
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
                       <Label htmlFor="monthly-report-day">每月發送日期</Label>
                       <Select
-                        value={discordSettings.monthly_report_day.toString()}
+                        value={String(discordSettings.monthly_report_day || 1)}
                         onValueChange={(value) =>
                           setDiscordSettings({
                             ...discordSettings,
@@ -369,12 +369,12 @@ export default function SettingsPage() {
                           id="monthly-report-day"
                           className="w-full"
                         >
-                          <SelectValue placeholder="選擇日期" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {Array.from({ length: 10 }, (_, i) => i + 1).map(
                             (day) => (
-                              <SelectItem key={day} value={day.toString()}>
+                              <SelectItem key={day} value={String(day)}>
                                 每月 {day} 號
                               </SelectItem>
                             )
@@ -418,7 +418,9 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label htmlFor="yearly-report-month">發送月份</Label>
                         <Select
-                          value={discordSettings.yearly_report_month.toString()}
+                          value={String(
+                            discordSettings.yearly_report_month || 1
+                          )}
                           onValueChange={(value) =>
                             setDiscordSettings({
                               ...discordSettings,
@@ -430,15 +432,12 @@ export default function SettingsPage() {
                             id="yearly-report-month"
                             className="w-full"
                           >
-                            <SelectValue placeholder="選擇月份" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.from({ length: 12 }, (_, i) => i + 1).map(
                               (month) => (
-                                <SelectItem
-                                  key={month}
-                                  value={month.toString()}
-                                >
+                                <SelectItem key={month} value={String(month)}>
                                   {month} 月
                                 </SelectItem>
                               )
@@ -450,7 +449,7 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label htmlFor="yearly-report-day">發送日期</Label>
                         <Select
-                          value={discordSettings.yearly_report_day.toString()}
+                          value={String(discordSettings.yearly_report_day || 1)}
                           onValueChange={(value) =>
                             setDiscordSettings({
                               ...discordSettings,
@@ -462,12 +461,12 @@ export default function SettingsPage() {
                             id="yearly-report-day"
                             className="w-full"
                           >
-                            <SelectValue placeholder="選擇日期" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.from({ length: 10 }, (_, i) => i + 1).map(
                               (day) => (
-                                <SelectItem key={day} value={day.toString()}>
+                                <SelectItem key={day} value={String(day)}>
                                   {day} 號
                                 </SelectItem>
                               )
@@ -477,8 +476,8 @@ export default function SettingsPage() {
                       </div>
 
                       <p className="text-sm text-muted-foreground">
-                        報告將於每年{discordSettings.yearly_report_month}月
-                        {discordSettings.yearly_report_day}號的 09:00 發送
+                        報告將於每年{discordSettings.yearly_report_month || 1}月
+                        {discordSettings.yearly_report_day || 1}號的 09:00 發送
                       </p>
                     </div>
                   )}
