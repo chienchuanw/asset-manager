@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
+	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -274,6 +275,22 @@ func (m *MockDiscordService) SendCreditCardPaymentReminder(webhookURL string, cr
 	return args.Error(0)
 }
 
+func (m *MockDiscordService) FormatMonthlyCashFlowReport(summary *models.MonthlyCashFlowSummary) *models.DiscordMessage {
+	args := m.Called(summary)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*models.DiscordMessage)
+}
+
+func (m *MockDiscordService) FormatYearlyCashFlowReport(summary *models.YearlyCashFlowSummary) *models.DiscordMessage {
+	args := m.Called(summary)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*models.DiscordMessage)
+}
+
 // MockSettingsService 模擬 SettingsService
 type MockSettingsService struct {
 	mock.Mock
@@ -358,6 +375,114 @@ func (m *MockBillingService) ProcessDailyBilling(date time.Time) (*service.Daily
 	return args.Get(0).(*service.DailyBillingResult), args.Error(1)
 }
 
+// MockCashFlowService 模擬 CashFlowService
+type MockCashFlowService struct {
+	mock.Mock
+}
+
+func (m *MockCashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*models.CashFlow, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlow), args.Error(1)
+}
+
+func (m *MockCashFlowService) GetCashFlow(id uuid.UUID) (*models.CashFlow, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlow), args.Error(1)
+}
+
+func (m *MockCashFlowService) ListCashFlows(filters repository.CashFlowFilters) ([]*models.CashFlow, error) {
+	args := m.Called(filters)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CashFlow), args.Error(1)
+}
+
+func (m *MockCashFlowService) UpdateCashFlow(id uuid.UUID, input *models.UpdateCashFlowInput) (*models.CashFlow, error) {
+	args := m.Called(id, input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlow), args.Error(1)
+}
+
+func (m *MockCashFlowService) DeleteCashFlow(id uuid.UUID) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockCashFlowService) GetSummary(startDate, endDate time.Time) (*repository.CashFlowSummary, error) {
+	args := m.Called(startDate, endDate)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.CashFlowSummary), args.Error(1)
+}
+
+func (m *MockCashFlowService) GetMonthlySummaryWithComparison(year, month int) (*models.MonthlyCashFlowSummary, error) {
+	args := m.Called(year, month)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.MonthlyCashFlowSummary), args.Error(1)
+}
+
+func (m *MockCashFlowService) GetYearlySummaryWithComparison(year int) (*models.YearlyCashFlowSummary, error) {
+	args := m.Called(year)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.YearlyCashFlowSummary), args.Error(1)
+}
+
+// MockCashFlowReportLogRepository 模擬 CashFlowReportLogRepository
+type MockCashFlowReportLogRepository struct {
+	mock.Mock
+}
+
+func (m *MockCashFlowReportLogRepository) Create(input *models.CreateCashFlowReportLogInput) (*models.CashFlowReportLog, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlowReportLog), args.Error(1)
+}
+
+func (m *MockCashFlowReportLogRepository) GetByID(id uuid.UUID) (*models.CashFlowReportLog, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlowReportLog), args.Error(1)
+}
+
+func (m *MockCashFlowReportLogRepository) GetLatestByType(reportType models.CashFlowReportType, year, month int) (*models.CashFlowReportLog, error) {
+	args := m.Called(reportType, year, month)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlowReportLog), args.Error(1)
+}
+
+func (m *MockCashFlowReportLogRepository) UpdateStatus(id uuid.UUID, input *models.UpdateCashFlowReportLogInput) error {
+	args := m.Called(id, input)
+	return args.Error(0)
+}
+
+func (m *MockCashFlowReportLogRepository) GetPendingRetries(reportType models.CashFlowReportType) ([]*models.CashFlowReportLog, error) {
+	args := m.Called(reportType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CashFlowReportLog), args.Error(1)
+}
+
 // TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate 測試手動觸發快照時會更新匯率
 func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
 	// Arrange
@@ -375,6 +500,8 @@ func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
 	}
 
 	mockCreditCardService := new(MockCreditCardService)
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
 
 	manager := NewSchedulerManager(
 		mockSnapshotService,
@@ -385,7 +512,9 @@ func TestSchedulerManager_RunSnapshotNow_WithExchangeRateUpdate(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		nil, // schedulerLogRepo
+		mockCashFlowReportLogRepo,
 		config,
 	)
 
@@ -424,6 +553,8 @@ func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
 	}
 
 	mockCreditCardService := new(MockCreditCardService)
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
 
 	manager := NewSchedulerManager(
 		mockSnapshotService,
@@ -434,7 +565,9 @@ func TestSchedulerManager_RunSnapshotNow_ExchangeRateError(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		nil, // schedulerLogRepo
+		mockCashFlowReportLogRepo,
 		config,
 	)
 

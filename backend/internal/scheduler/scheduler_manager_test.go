@@ -84,6 +84,9 @@ func TestSchedulerManager_logTaskExecution_Success(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -93,7 +96,9 @@ func TestSchedulerManager_logTaskExecution_Success(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		mockSchedulerLogRepo,
+		mockCashFlowReportLogRepo,
 		config,
 	)
 
@@ -130,6 +135,9 @@ func TestSchedulerManager_logTaskExecution_Failed(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -139,7 +147,9 @@ func TestSchedulerManager_logTaskExecution_Failed(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		mockSchedulerLogRepo,
+		mockCashFlowReportLogRepo,
 		config,
 	)
 
@@ -177,6 +187,8 @@ func TestSchedulerManager_logTaskExecution_NoRepository(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -186,7 +198,9 @@ func TestSchedulerManager_logTaskExecution_NoRepository(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
-		nil, // 沒有 repository
+		mockCashFlowService,
+		nil, // 沒有 schedulerLogRepo
+		nil, // 沒有 cashFlowReportLogRepo
 		config,
 	)
 
@@ -216,6 +230,9 @@ func TestSchedulerManager_sendFailureNotification_Success(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -225,7 +242,9 @@ func TestSchedulerManager_sendFailureNotification_Success(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		mockSchedulerLogRepo,
+		mockCashFlowReportLogRepo,
 		config,
 	)
 
@@ -268,6 +287,9 @@ func TestSchedulerManager_sendFailureNotification_DiscordDisabled(t *testing.T) 
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -277,7 +299,9 @@ func TestSchedulerManager_sendFailureNotification_DiscordDisabled(t *testing.T) 
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		mockSchedulerLogRepo,
+		mockCashFlowReportLogRepo,
 		config,
 	)
 
@@ -318,6 +342,9 @@ func TestSchedulerManager_GetTaskSummaries_Success(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+	mockCashFlowReportLogRepo := new(MockCashFlowReportLogRepository)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -327,7 +354,9 @@ func TestSchedulerManager_GetTaskSummaries_Success(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
+		mockCashFlowService,
 		mockSchedulerLogRepo,
+		mockCashFlowReportLogRepo,
 		config,
 	)
 
@@ -377,6 +406,8 @@ func TestSchedulerManager_GetTaskSummaries_NoRepository(t *testing.T) {
 		DailySnapshotTime: "23:59",
 	}
 
+	mockCashFlowService := new(MockCashFlowService)
+
 	manager := NewSchedulerManager(
 		mockSnapshotService,
 		mockDiscordService,
@@ -386,7 +417,9 @@ func TestSchedulerManager_GetTaskSummaries_NoRepository(t *testing.T) {
 		mockBillingService,
 		mockExchangeRateService,
 		mockCreditCardService,
-		nil, // 沒有 repository
+		mockCashFlowService,
+		nil, // 沒有 schedulerLogRepo
+		nil, // 沒有 cashFlowReportLogRepo
 		config,
 	)
 
