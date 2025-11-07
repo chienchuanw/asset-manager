@@ -55,6 +55,7 @@ func main() {
 	dbx := sqlx.NewDb(database, "postgres")
 	performanceSnapshotRepo := repository.NewPerformanceSnapshotRepository(dbx)
 	schedulerLogRepo := repository.NewSchedulerLogRepository(dbx)
+	cashFlowReportLogRepo := repository.NewCashFlowReportLogRepository(database)
 
 	authService := service.NewAuthService()
 
@@ -150,8 +151,10 @@ func main() {
 			rebalanceService,
 			billingService,
 			exchangeRateService,
-			creditCardService, // 加入信用卡服務
-			nil,               // schedulerLogRepo 設為 nil（因為 Redis 不可用時也不記錄）
+			creditCardService,
+			cashFlowService,
+			nil, // schedulerLogRepo 設為 nil（因為 Redis 不可用時也不記錄）
+			nil, // cashFlowReportLogRepo 設為 nil
 			schedulerManagerConfig,
 		)
 		schedulerHandler := api.NewSchedulerHandler(schedulerManager)
@@ -259,8 +262,10 @@ func main() {
 		rebalanceService,
 		billingService,
 		exchangeRateService,
-		creditCardService, // 加入信用卡服務
-		schedulerLogRepo,  // 加入 schedulerLogRepo
+		creditCardService,
+		cashFlowService,
+		schedulerLogRepo,
+		cashFlowReportLogRepo,
 		schedulerManagerConfig,
 	)
 	if err := schedulerManager.Start(); err != nil {

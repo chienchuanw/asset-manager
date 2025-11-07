@@ -37,15 +37,16 @@ func (r *cashFlowReportLogRepository) Create(input *models.CreateCashFlowReportL
 		RETURNING id, report_type, year, month, sent_at, success, error_message, retry_count, created_at, updated_at
 	`
 
+	now := time.Now()
 	log := &models.CashFlowReportLog{}
 	err := r.db.QueryRow(
 		query,
 		input.ReportType,
 		input.Year,
 		input.Month,
-		input.SentAt,
+		now,
 		input.Success,
-		input.ErrorMessage,
+		input.ErrorMsg,
 		input.RetryCount,
 	).Scan(
 		&log.ID,
@@ -54,7 +55,7 @@ func (r *cashFlowReportLogRepository) Create(input *models.CreateCashFlowReportL
 		&log.Month,
 		&log.SentAt,
 		&log.Success,
-		&log.ErrorMessage,
+		&log.ErrorMsg,
 		&log.RetryCount,
 		&log.CreatedAt,
 		&log.UpdatedAt,
@@ -70,7 +71,7 @@ func (r *cashFlowReportLogRepository) Create(input *models.CreateCashFlowReportL
 // GetByID 根據 ID 取得報告記錄
 func (r *cashFlowReportLogRepository) GetByID(id uuid.UUID) (*models.CashFlowReportLog, error) {
 	query := `
-		SELECT id, report_type, year, month, sent_at, success, error_message, retry_count, created_at, updated_at
+		SELECT id, report_type, year, month, sent_at, success, error_msg, retry_count, created_at, updated_at
 		FROM cash_flow_report_logs
 		WHERE id = $1
 	`
@@ -83,7 +84,7 @@ func (r *cashFlowReportLogRepository) GetByID(id uuid.UUID) (*models.CashFlowRep
 		&log.Month,
 		&log.SentAt,
 		&log.Success,
-		&log.ErrorMessage,
+		&log.ErrorMsg,
 		&log.RetryCount,
 		&log.CreatedAt,
 		&log.UpdatedAt,
@@ -103,7 +104,7 @@ func (r *cashFlowReportLogRepository) GetByID(id uuid.UUID) (*models.CashFlowRep
 // GetLatestByType 取得指定類型和期間的最新報告記錄
 func (r *cashFlowReportLogRepository) GetLatestByType(reportType models.CashFlowReportType, year, month int) (*models.CashFlowReportLog, error) {
 	query := `
-		SELECT id, report_type, year, month, sent_at, success, error_message, retry_count, created_at, updated_at
+		SELECT id, report_type, year, month, sent_at, success, error_msg, retry_count, created_at, updated_at
 		FROM cash_flow_report_logs
 		WHERE report_type = $1 AND year = $2 AND month = $3
 		ORDER BY created_at DESC
@@ -118,7 +119,7 @@ func (r *cashFlowReportLogRepository) GetLatestByType(reportType models.CashFlow
 		&log.Month,
 		&log.SentAt,
 		&log.Success,
-		&log.ErrorMessage,
+		&log.ErrorMsg,
 		&log.RetryCount,
 		&log.CreatedAt,
 		&log.UpdatedAt,
@@ -139,14 +140,14 @@ func (r *cashFlowReportLogRepository) GetLatestByType(reportType models.CashFlow
 func (r *cashFlowReportLogRepository) UpdateStatus(id uuid.UUID, input *models.UpdateCashFlowReportLogInput) error {
 	query := `
 		UPDATE cash_flow_report_logs
-		SET success = $1, error_message = $2, retry_count = $3, updated_at = $4
+		SET success = $1, error_msg = $2, retry_count = $3, updated_at = $4
 		WHERE id = $5
 	`
 
 	result, err := r.db.Exec(
 		query,
 		input.Success,
-		input.ErrorMessage,
+		input.ErrorMsg,
 		input.RetryCount,
 		time.Now(),
 		id,
@@ -171,7 +172,7 @@ func (r *cashFlowReportLogRepository) UpdateStatus(id uuid.UUID, input *models.U
 // GetPendingRetries 取得需要重試的報告記錄
 func (r *cashFlowReportLogRepository) GetPendingRetries(reportType models.CashFlowReportType) ([]*models.CashFlowReportLog, error) {
 	query := `
-		SELECT id, report_type, year, month, sent_at, success, error_message, retry_count, created_at, updated_at
+		SELECT id, report_type, year, month, sent_at, success, error_msg, retry_count, created_at, updated_at
 		FROM cash_flow_report_logs
 		WHERE report_type = $1 AND success = false AND retry_count < 3
 		ORDER BY created_at ASC
@@ -193,7 +194,7 @@ func (r *cashFlowReportLogRepository) GetPendingRetries(reportType models.CashFl
 			&log.Month,
 			&log.SentAt,
 			&log.Success,
-			&log.ErrorMessage,
+			&log.ErrorMsg,
 			&log.RetryCount,
 			&log.CreatedAt,
 			&log.UpdatedAt,

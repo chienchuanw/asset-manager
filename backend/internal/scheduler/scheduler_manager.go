@@ -113,6 +113,18 @@ func (m *SchedulerManager) Start() error {
 		// 不返回錯誤，因為提醒排程是可選的
 	}
 
+	// 啟動月度現金流報告排程
+	if err := m.startMonthlyCashFlowReportSchedule(); err != nil {
+		log.Printf("Warning: Failed to start monthly cash flow report schedule: %v", err)
+		// 不返回錯誤，因為報告排程是可選的
+	}
+
+	// 啟動年度現金流報告排程
+	if err := m.startYearlyCashFlowReportSchedule(); err != nil {
+		log.Printf("Warning: Failed to start yearly cash flow report schedule: %v", err)
+		// 不返回錯誤，因為報告排程是可選的
+	}
+
 	// 啟動 cron
 	m.cron.Start()
 	log.Println("Scheduler manager started successfully")
@@ -755,4 +767,270 @@ func (m *SchedulerManager) GetTaskSummaries() ([]models.SchedulerLogSummary, err
 	}
 
 	return summaries, nil
+}
+
+// startMonthlyCashFlowReportSchedule 啟動月度現金流報告排程
+func (m *SchedulerManager) startMonthlyCashFlowReportSchedule() error {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		return fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	// 檢查是否啟用月度報告
+	if !settings.Discord.MonthlyReportEnabled {
+		log.Println("Monthly cash flow report is disabled in settings")
+		return nil
+	}
+
+	// 檢查 Discord 是否啟用
+	if !settings.Discord.Enabled {
+		log.Println("Discord is disabled, skipping monthly cash flow report schedule")
+		return nil
+	}
+
+	// 檢查 Webhook URL 是否設定
+	if settings.Discord.WebhookURL == "" {
+		log.Println("Discord webhook URL is not set")
+		return nil
+	}
+
+	// 驗證日期設定（只允許 1-10 號）
+	if settings.Discord.MonthlyReportDay < 1 || settings.Discord.MonthlyReportDay > 10 {
+		return fmt.Errorf("invalid monthly report day: %d (must be 1-10)", settings.Discord.MonthlyReportDay)
+	}
+
+	// 建立 cron 表達式（每月指定日期的 09:00 執行）
+	// 格式: "分 時 日 月 週"
+	cronExpr := fmt.Sprintf("0 9 %d * *", settings.Discord.MonthlyReportDay)
+
+	// 註冊月度報告任務
+	jobID, err := m.cron.AddFunc(cronExpr, func() {
+		startTime := time.Now()
+		log.Printf("[%s] Running monthly cash flow report task...", startTime.Format("2006-01-02 15:04:05"))
+
+		// 計算上個月的年份和月份
+		now := time.Now()
+		year := now.Year()
+		month := int(now.Month()) - 1
+		if month < 1 {
+			month = 12
+			year--
+		}
+
+		taskErr := m.sendMonthlyCashFlowReport(year, month)
+		if taskErr != nil {
+			log.Printf("Error sending monthly cash flow report: %v", taskErr)
+			m.sendFailureNotification("月度現金流報告", taskErr)
+		} else {
+			log.Println("Monthly cash flow report sent successfully")
+		}
+
+		// 記錄執行結果
+		m.logTaskExecution("monthly_cash_flow_report", startTime, taskErr)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add monthly cash flow report cron job: %w", err)
+	}
+
+	// 更新狀態
+	m.mu.Lock()
+	m.monthlyReportJobID = jobID
+	m.mu.Unlock()
+
+	log.Printf("Monthly cash flow report schedule registered at day %d of each month", settings.Discord.MonthlyReportDay)
+	return nil
+}
+
+// startYearlyCashFlowReportSchedule 啟動年度現金流報告排程
+func (m *SchedulerManager) startYearlyCashFlowReportSchedule() error {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		return fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	// 檢查是否啟用年度報告
+	if !settings.Discord.YearlyReportEnabled {
+		log.Println("Yearly cash flow report is disabled in settings")
+		return nil
+	}
+
+	// 檢查 Discord 是否啟用
+	if !settings.Discord.Enabled {
+		log.Println("Discord is disabled, skipping yearly cash flow report schedule")
+		return nil
+	}
+
+	// 檢查 Webhook URL 是否設定
+	if settings.Discord.WebhookURL == "" {
+		log.Println("Discord webhook URL is not set")
+		return nil
+	}
+
+	// 驗證日期設定（只允許 1-10 號）
+	if settings.Discord.YearlyReportDay < 1 || settings.Discord.YearlyReportDay > 10 {
+		return fmt.Errorf("invalid yearly report day: %d (must be 1-10)", settings.Discord.YearlyReportDay)
+	}
+
+	// 驗證月份設定（1-12）
+	if settings.Discord.YearlyReportMonth < 1 || settings.Discord.YearlyReportMonth > 12 {
+		return fmt.Errorf("invalid yearly report month: %d (must be 1-12)", settings.Discord.YearlyReportMonth)
+	}
+
+	// 建立 cron 表達式（每年指定月份和日期的 09:00 執行）
+	// 格式: "分 時 日 月 週"
+	cronExpr := fmt.Sprintf("0 9 %d %d *", settings.Discord.YearlyReportDay, settings.Discord.YearlyReportMonth)
+
+	// 註冊年度報告任務
+	jobID, err := m.cron.AddFunc(cronExpr, func() {
+		startTime := time.Now()
+		log.Printf("[%s] Running yearly cash flow report task...", startTime.Format("2006-01-02 15:04:05"))
+
+		// 計算去年的年份
+		year := time.Now().Year() - 1
+
+		taskErr := m.sendYearlyCashFlowReport(year)
+		if taskErr != nil {
+			log.Printf("Error sending yearly cash flow report: %v", taskErr)
+			m.sendFailureNotification("年度現金流報告", taskErr)
+		} else {
+			log.Println("Yearly cash flow report sent successfully")
+		}
+
+		// 記錄執行結果
+		m.logTaskExecution("yearly_cash_flow_report", startTime, taskErr)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add yearly cash flow report cron job: %w", err)
+	}
+
+	// 更新狀態
+	m.mu.Lock()
+	m.yearlyReportJobID = jobID
+	m.mu.Unlock()
+
+	log.Printf("Yearly cash flow report schedule registered at %d/%d of each year",
+		settings.Discord.YearlyReportMonth, settings.Discord.YearlyReportDay)
+	return nil
+}
+
+// sendMonthlyCashFlowReport 發送月度現金流報告
+func (m *SchedulerManager) sendMonthlyCashFlowReport(year, month int) error {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		return fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	// 檢查是否已經成功發送過
+	if m.cashFlowReportLogRepo != nil {
+		latestLog, err := m.cashFlowReportLogRepo.GetLatestByType(models.CashFlowReportTypeMonthly, year, month)
+		if err != nil {
+			log.Printf("Warning: Failed to check latest report log: %v", err)
+		} else if latestLog != nil && latestLog.Success {
+			log.Printf("Monthly report for %d/%d already sent successfully, skipping", year, month)
+			return nil
+		}
+	}
+
+	// 取得月度摘要（包含比較資料）
+	summary, err := m.cashFlowService.GetMonthlySummaryWithComparison(year, month)
+	if err != nil {
+		return m.recordReportFailure(models.CashFlowReportTypeMonthly, year, month, err)
+	}
+
+	// 格式化 Discord 訊息
+	message := m.discordService.FormatMonthlyCashFlowReport(summary)
+
+	// 發送訊息
+	if err := m.discordService.SendMessage(settings.Discord.WebhookURL, message); err != nil {
+		return m.recordReportFailure(models.CashFlowReportTypeMonthly, year, month, err)
+	}
+
+	// 記錄成功發送
+	return m.recordReportSuccess(models.CashFlowReportTypeMonthly, year, month)
+}
+
+// sendYearlyCashFlowReport 發送年度現金流報告
+func (m *SchedulerManager) sendYearlyCashFlowReport(year int) error {
+	// 取得設定
+	settings, err := m.settingsService.GetSettings()
+	if err != nil {
+		return fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	// 檢查是否已經成功發送過（年度報告的 month 設為 0）
+	if m.cashFlowReportLogRepo != nil {
+		latestLog, err := m.cashFlowReportLogRepo.GetLatestByType(models.CashFlowReportTypeYearly, year, 0)
+		if err != nil {
+			log.Printf("Warning: Failed to check latest report log: %v", err)
+		} else if latestLog != nil && latestLog.Success {
+			log.Printf("Yearly report for %d already sent successfully, skipping", year)
+			return nil
+		}
+	}
+
+	// 取得年度摘要（包含比較資料）
+	summary, err := m.cashFlowService.GetYearlySummaryWithComparison(year)
+	if err != nil {
+		return m.recordReportFailure(models.CashFlowReportTypeYearly, year, 0, err)
+	}
+
+	// 格式化 Discord 訊息
+	message := m.discordService.FormatYearlyCashFlowReport(summary)
+
+	// 發送訊息
+	if err := m.discordService.SendMessage(settings.Discord.WebhookURL, message); err != nil {
+		return m.recordReportFailure(models.CashFlowReportTypeYearly, year, 0, err)
+	}
+
+	// 記錄成功發送
+	return m.recordReportSuccess(models.CashFlowReportTypeYearly, year, 0)
+}
+
+// recordReportSuccess 記錄報告發送成功
+func (m *SchedulerManager) recordReportSuccess(reportType models.CashFlowReportType, year, month int) error {
+	if m.cashFlowReportLogRepo == nil {
+		return nil
+	}
+
+	input := &models.CreateCashFlowReportLogInput{
+		ReportType: reportType,
+		Year:       year,
+		Month:      &month,
+		Success:    true,
+		RetryCount: 0,
+	}
+
+	_, err := m.cashFlowReportLogRepo.Create(input)
+	if err != nil {
+		log.Printf("Warning: Failed to create report log: %v", err)
+	}
+
+	return nil
+}
+
+// recordReportFailure 記錄報告發送失敗
+func (m *SchedulerManager) recordReportFailure(reportType models.CashFlowReportType, year, month int, sendErr error) error {
+	if m.cashFlowReportLogRepo == nil {
+		return sendErr
+	}
+
+	errMsg := sendErr.Error()
+	input := &models.CreateCashFlowReportLogInput{
+		ReportType: reportType,
+		Year:       year,
+		Month:      &month,
+		Success:    false,
+		ErrorMsg:   &errMsg,
+		RetryCount: 0,
+	}
+
+	_, err := m.cashFlowReportLogRepo.Create(input)
+	if err != nil {
+		log.Printf("Warning: Failed to create report log: %v", err)
+	}
+
+	return sendErr
 }
