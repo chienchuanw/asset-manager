@@ -130,6 +130,7 @@ func main() {
 		discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
 		rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 		cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
+		cashFlowHandler.SetDiscordService(discordService) // 設定 Discord service 用於發送報告
 		categoryHandler := api.NewCategoryHandler(categoryService)
 		subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 		installmentHandler := api.NewInstallmentHandler(installmentService)
@@ -241,6 +242,7 @@ func main() {
 	discordHandler := api.NewDiscordHandler(discordService, settingsService, holdingService, rebalanceService)
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 	cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
+	cashFlowHandler.SetDiscordService(discordService) // 設定 Discord service 用於發送報告
 	categoryHandler := api.NewCategoryHandler(categoryService)
 	subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 	installmentHandler := api.NewInstallmentHandler(installmentService)
@@ -426,6 +428,10 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			cashFlows.POST("", cashFlowHandler.CreateCashFlow)
 			cashFlows.GET("", cashFlowHandler.ListCashFlows)
 			cashFlows.GET("/summary", cashFlowHandler.GetSummary)
+			cashFlows.GET("/monthly-summary", cashFlowHandler.GetMonthlySummary)
+			cashFlows.GET("/yearly-summary", cashFlowHandler.GetYearlySummary)
+			cashFlows.POST("/send-monthly-report", cashFlowHandler.SendMonthlyReport)
+			cashFlows.POST("/send-yearly-report", cashFlowHandler.SendYearlyReport)
 			cashFlows.GET("/:id", cashFlowHandler.GetCashFlow)
 			cashFlows.PUT("/:id", cashFlowHandler.UpdateCashFlow)
 			cashFlows.DELETE("/:id", cashFlowHandler.DeleteCashFlow)

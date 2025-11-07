@@ -14,12 +14,21 @@ import (
 
 // CashFlowHandler 現金流記錄 API handler
 type CashFlowHandler struct {
-	service service.CashFlowService
+	service        service.CashFlowService
+	discordService service.DiscordService
 }
 
 // NewCashFlowHandler 建立新的現金流記錄 handler
 func NewCashFlowHandler(service service.CashFlowService) *CashFlowHandler {
-	return &CashFlowHandler{service: service}
+	return &CashFlowHandler{
+		service:        service,
+		discordService: nil, // 預設為 nil，需要時再設定
+	}
+}
+
+// SetDiscordService 設定 Discord service（用於發送報告）
+func (h *CashFlowHandler) SetDiscordService(discordService service.DiscordService) {
+	h.discordService = discordService
 }
 
 // CreateCashFlow 建立新的現金流記錄
@@ -377,3 +386,332 @@ func (h *CashFlowHandler) GetSummary(c *gin.Context) {
 	})
 }
 
+// GetMonthlySummary 取得月度現金流摘要（包含比較）
+// @Summary 取得月度現金流摘要
+// @Description 取得指定月份的現金流摘要，包含與前一個月的比較
+// @Tags cash-flows
+// @Accept json
+// @Produce json
+// @Param year query int true "年份"
+// @Param month query int true "月份 (1-12)"
+// @Success 200 {object} APIResponse{data=models.MonthlyCashFlowSummary}
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 500 {object} APIResponse{error=APIError}
+// @Router /api/cash-flows/monthly-summary [get]
+func (h *CashFlowHandler) GetMonthlySummary(c *gin.Context) {
+	// 解析年份參數
+	yearStr := c.Query("year")
+	if yearStr == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_YEAR",
+				Message: "year parameter is required",
+			},
+		})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_YEAR",
+				Message: "year must be a valid integer",
+			},
+		})
+		return
+	}
+
+	// 解析月份參數
+	monthStr := c.Query("month")
+	if monthStr == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_MONTH",
+				Message: "month parameter is required",
+			},
+		})
+		return
+	}
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_MONTH",
+				Message: "month must be between 1 and 12",
+			},
+		})
+		return
+	}
+
+	// 呼叫 service 取得月度摘要
+	summary, err := h.service.GetMonthlySummaryWithComparison(year, month)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "MONTHLY_SUMMARY_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Data: summary,
+	})
+}
+
+// GetYearlySummary 取得年度現金流摘要（包含比較）
+// @Summary 取得年度現金流摘要
+// @Description 取得指定年度的現金流摘要，包含與前一年的比較
+// @Tags cash-flows
+// @Accept json
+// @Produce json
+// @Param year query int true "年份"
+// @Success 200 {object} APIResponse{data=models.YearlyCashFlowSummary}
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 500 {object} APIResponse{error=APIError}
+// @Router /api/cash-flows/yearly-summary [get]
+func (h *CashFlowHandler) GetYearlySummary(c *gin.Context) {
+	// 解析年份參數
+	yearStr := c.Query("year")
+	if yearStr == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_YEAR",
+				Message: "year parameter is required",
+			},
+		})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_YEAR",
+				Message: "year must be a valid integer",
+			},
+		})
+		return
+	}
+
+	// 呼叫 service 取得年度摘要
+	summary, err := h.service.GetYearlySummaryWithComparison(year)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "YEARLY_SUMMARY_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Data: summary,
+	})
+}
+
+// SendMonthlyReport 手動發送月度現金流報告到 Discord
+// @Summary 發送月度現金流報告
+// @Description 手動觸發發送指定月份的現金流報告到 Discord
+// @Tags cash-flows
+// @Accept json
+// @Produce json
+// @Param year query int true "年份"
+// @Param month query int true "月份 (1-12)"
+// @Success 200 {object} APIResponse{data=string}
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 500 {object} APIResponse{error=APIError}
+// @Router /api/cash-flows/send-monthly-report [post]
+func (h *CashFlowHandler) SendMonthlyReport(c *gin.Context) {
+	if h.discordService == nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "DISCORD_SERVICE_NOT_CONFIGURED",
+				Message: "Discord service is not configured",
+			},
+		})
+		return
+	}
+
+	// 解析年份參數
+	yearStr := c.Query("year")
+	if yearStr == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_YEAR",
+				Message: "year parameter is required",
+			},
+		})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_YEAR",
+				Message: "year must be a valid integer",
+			},
+		})
+		return
+	}
+
+	// 解析月份參數
+	monthStr := c.Query("month")
+	if monthStr == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_MONTH",
+				Message: "month parameter is required",
+			},
+		})
+		return
+	}
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_MONTH",
+				Message: "month must be between 1 and 12",
+			},
+		})
+		return
+	}
+
+	// 取得月度摘要
+	summary, err := h.service.GetMonthlySummaryWithComparison(year, month)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "MONTHLY_SUMMARY_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	// 格式化 Discord 訊息
+	message := h.discordService.FormatMonthlyCashFlowReport(summary)
+
+	// 取得設定（需要 webhook URL）
+	// 這裡簡化處理，實際應該從 settings service 取得
+	// 暫時使用環境變數或預設值
+	webhookURL := c.Query("webhook_url")
+	if webhookURL == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_WEBHOOK_URL",
+				Message: "webhook_url parameter is required",
+			},
+		})
+		return
+	}
+
+	// 發送訊息
+	if err := h.discordService.SendMessage(webhookURL, message); err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "SEND_MESSAGE_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Data: "Monthly report sent successfully",
+	})
+}
+
+// SendYearlyReport 手動發送年度現金流報告到 Discord
+// @Summary 發送年度現金流報告
+// @Description 手動觸發發送指定年度的現金流報告到 Discord
+// @Tags cash-flows
+// @Accept json
+// @Produce json
+// @Param year query int true "年份"
+// @Success 200 {object} APIResponse{data=string}
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 500 {object} APIResponse{error=APIError}
+// @Router /api/cash-flows/send-yearly-report [post]
+func (h *CashFlowHandler) SendYearlyReport(c *gin.Context) {
+	if h.discordService == nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "DISCORD_SERVICE_NOT_CONFIGURED",
+				Message: "Discord service is not configured",
+			},
+		})
+		return
+	}
+
+	// 解析年份參數
+	yearStr := c.Query("year")
+	if yearStr == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_YEAR",
+				Message: "year parameter is required",
+			},
+		})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_YEAR",
+				Message: "year must be a valid integer",
+			},
+		})
+		return
+	}
+
+	// 取得年度摘要
+	summary, err := h.service.GetYearlySummaryWithComparison(year)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "YEARLY_SUMMARY_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	// 格式化 Discord 訊息
+	message := h.discordService.FormatYearlyCashFlowReport(summary)
+
+	// 取得設定（需要 webhook URL）
+	webhookURL := c.Query("webhook_url")
+	if webhookURL == "" {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "MISSING_WEBHOOK_URL",
+				Message: "webhook_url parameter is required",
+			},
+		})
+		return
+	}
+
+	// 發送訊息
+	if err := h.discordService.SendMessage(webhookURL, message); err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "SEND_MESSAGE_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Data: "Yearly report sent successfully",
+	})
+}
