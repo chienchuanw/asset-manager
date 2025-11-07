@@ -24,10 +24,43 @@ func cleanupCategories(db *sql.DB) error {
 }
 
 // getTestCategory 取得測試用的分類 ID（使用系統預設分類）
+// 如果系統分類不存在，則建立一個
 func getTestCategory(db *sql.DB, flowType models.CashFlowType) (uuid.UUID, error) {
 	var categoryID uuid.UUID
 	query := `SELECT id FROM cash_flow_categories WHERE type = $1 AND is_system = true LIMIT 1`
 	err := db.QueryRow(query, flowType).Scan(&categoryID)
+
+	// 如果找不到系統分類，建立一個
+	if err == sql.ErrNoRows {
+		// 根據類型決定分類名稱
+		var categoryName string
+		switch flowType {
+		case models.CashFlowTypeIncome:
+			categoryName = "測試收入"
+		case models.CashFlowTypeExpense:
+			categoryName = "測試支出"
+		case models.CashFlowTypeTransferIn:
+			categoryName = "測試轉入"
+		case models.CashFlowTypeTransferOut:
+			categoryName = "測試轉出"
+		default:
+			categoryName = "測試分類"
+		}
+
+		// 插入系統分類
+		insertQuery := `
+			INSERT INTO cash_flow_categories (name, type, is_system)
+			VALUES ($1, $2, true)
+			ON CONFLICT (name, type) DO UPDATE SET is_system = true
+			RETURNING id
+		`
+		err = db.QueryRow(insertQuery, categoryName, flowType).Scan(&categoryID)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		return categoryID, nil
+	}
+
 	return categoryID, err
 }
 

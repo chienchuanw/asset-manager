@@ -3,6 +3,12 @@
 # 使用 zsh 作為 shell（確保能找到 go 指令）
 SHELL := /bin/zsh
 
+# 載入測試環境變數
+ifneq (,$(wildcard .env.test))
+    include .env.test
+    export
+endif
+
 # 顏色定義
 GREEN  := \033[0;32m
 RED    := \033[0;31m
@@ -59,6 +65,8 @@ install:
 
 # 執行所有測試（使用 gotestsum，彩色輸出）
 test:
+	@printf "\033[0;34mSeeding test database with system categories...\033[0m\n"
+	@PGPASSWORD=$(TEST_DB_PASSWORD) psql -h $(TEST_DB_HOST) -p $(TEST_DB_PORT) -U $(TEST_DB_USER) -d $(TEST_DB_NAME) -f scripts/seed_test_categories.sql > /dev/null 2>&1 || true
 	@printf "\033[0;34mRunning all tests...\033[0m\n"
 	@$(GOTESTSUM) --format testname -- -cover ./...
 

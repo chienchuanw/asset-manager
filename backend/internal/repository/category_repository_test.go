@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -8,6 +9,42 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// ensureSystemCategories 確保系統預設分類存在
+func ensureSystemCategories(db *sql.DB) {
+	// 收入分類
+	incomeCategories := []string{"薪資", "獎金", "利息", "其他收入"}
+	for _, name := range incomeCategories {
+		_, _ = db.Exec(`
+			INSERT INTO cash_flow_categories (name, type, is_system)
+			VALUES ($1, $2, true)
+			ON CONFLICT (name, type) DO NOTHING
+		`, name, models.CashFlowTypeIncome)
+	}
+
+	// 支出分類
+	expenseCategories := []string{"飲食", "交通", "娛樂", "醫療", "房租", "水電", "保險", "其他支出"}
+	for _, name := range expenseCategories {
+		_, _ = db.Exec(`
+			INSERT INTO cash_flow_categories (name, type, is_system)
+			VALUES ($1, $2, true)
+			ON CONFLICT (name, type) DO NOTHING
+		`, name, models.CashFlowTypeExpense)
+	}
+
+	// 轉帳分類
+	_, _ = db.Exec(`
+		INSERT INTO cash_flow_categories (name, type, is_system)
+		VALUES ($1, $2, true)
+		ON CONFLICT (name, type) DO NOTHING
+	`, "移轉", models.CashFlowTypeTransferIn)
+
+	_, _ = db.Exec(`
+		INSERT INTO cash_flow_categories (name, type, is_system)
+		VALUES ($1, $2, true)
+		ON CONFLICT (name, type) DO NOTHING
+	`, "移轉", models.CashFlowTypeTransferOut)
+}
 
 // TestCategoryRepository_Create 測試建立分類
 func TestCategoryRepository_Create(t *testing.T) {
@@ -96,6 +133,9 @@ func TestCategoryRepository_GetAll(t *testing.T) {
 	require.NoError(t, cleanupCategories(db))
 
 	repo := NewCategoryRepository(db)
+
+	// 確保系統預設分類存在
+	ensureSystemCategories(db)
 
 	// 建立測試資料
 	_, err = repo.Create(&models.CreateCategoryInput{
