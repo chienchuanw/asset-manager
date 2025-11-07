@@ -16,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -349,25 +356,31 @@ export default function SettingsPage() {
                   {discordSettings.monthly_report_enabled && (
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
                       <Label htmlFor="monthly-report-day">每月發送日期</Label>
-                      <select
-                        id="monthly-report-day"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        value={discordSettings.monthly_report_day}
-                        onChange={(e) =>
+                      <Select
+                        value={discordSettings.monthly_report_day.toString()}
+                        onValueChange={(value) =>
                           setDiscordSettings({
                             ...discordSettings,
-                            monthly_report_day: parseInt(e.target.value),
+                            monthly_report_day: parseInt(value),
                           })
                         }
                       >
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map(
-                          (day) => (
-                            <option key={day} value={day}>
-                              每月 {day} 號
-                            </option>
-                          )
-                        )}
-                      </select>
+                        <SelectTrigger
+                          id="monthly-report-day"
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="選擇日期" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                            (day) => (
+                              <SelectItem key={day} value={day.toString()}>
+                                每月 {day} 號
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
                       <p className="text-sm text-muted-foreground">
                         報告將於每月指定日期的 09:00 發送
                       </p>
@@ -404,48 +417,63 @@ export default function SettingsPage() {
                     <div className="space-y-4 pl-4 border-l-2 border-muted">
                       <div className="space-y-2">
                         <Label htmlFor="yearly-report-month">發送月份</Label>
-                        <select
-                          id="yearly-report-month"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={discordSettings.yearly_report_month}
-                          onChange={(e) =>
+                        <Select
+                          value={discordSettings.yearly_report_month.toString()}
+                          onValueChange={(value) =>
                             setDiscordSettings({
                               ...discordSettings,
-                              yearly_report_month: parseInt(e.target.value),
+                              yearly_report_month: parseInt(value),
                             })
                           }
                         >
-                          {Array.from({ length: 12 }, (_, i) => i + 1).map(
-                            (month) => (
-                              <option key={month} value={month}>
-                                {month} 月
-                              </option>
-                            )
-                          )}
-                        </select>
+                          <SelectTrigger
+                            id="yearly-report-month"
+                            className="w-full"
+                          >
+                            <SelectValue placeholder="選擇月份" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                              (month) => (
+                                <SelectItem
+                                  key={month}
+                                  value={month.toString()}
+                                >
+                                  {month} 月
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="yearly-report-day">發送日期</Label>
-                        <select
-                          id="yearly-report-day"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={discordSettings.yearly_report_day}
-                          onChange={(e) =>
+                        <Select
+                          value={discordSettings.yearly_report_day.toString()}
+                          onValueChange={(value) =>
                             setDiscordSettings({
                               ...discordSettings,
-                              yearly_report_day: parseInt(e.target.value),
+                              yearly_report_day: parseInt(value),
                             })
                           }
                         >
-                          {Array.from({ length: 10 }, (_, i) => i + 1).map(
-                            (day) => (
-                              <option key={day} value={day}>
-                                {day} 號
-                              </option>
-                            )
-                          )}
-                        </select>
+                          <SelectTrigger
+                            id="yearly-report-day"
+                            className="w-full"
+                          >
+                            <SelectValue placeholder="選擇日期" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                              (day) => (
+                                <SelectItem key={day} value={day.toString()}>
+                                  {day} 號
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <p className="text-sm text-muted-foreground">
