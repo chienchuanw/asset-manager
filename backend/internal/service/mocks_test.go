@@ -59,6 +59,38 @@ func (m *MockCashFlowRepository) GetSummary(startDate, endDate time.Time) (*repo
 	return args.Get(0).(*repository.CashFlowSummary), args.Error(1)
 }
 
+func (m *MockCashFlowRepository) GetMonthlySummary(year, month int) (*models.MonthlyCashFlowSummary, error) {
+	args := m.Called(year, month)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.MonthlyCashFlowSummary), args.Error(1)
+}
+
+func (m *MockCashFlowRepository) GetYearlySummary(year int) (*models.YearlyCashFlowSummary, error) {
+	args := m.Called(year)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.YearlyCashFlowSummary), args.Error(1)
+}
+
+func (m *MockCashFlowRepository) GetCategorySummary(startDate, endDate time.Time, cashFlowType models.CashFlowType) ([]*models.CategorySummary, error) {
+	args := m.Called(startDate, endDate, cashFlowType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CategorySummary), args.Error(1)
+}
+
+func (m *MockCashFlowRepository) GetTopExpenses(startDate, endDate time.Time, limit int) ([]*models.CashFlow, error) {
+	args := m.Called(startDate, endDate, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.CashFlow), args.Error(1)
+}
+
 // MockInstallmentRepository 分期 repository 的 mock
 type MockInstallmentRepository struct {
 	mock.Mock

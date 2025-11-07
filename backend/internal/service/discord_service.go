@@ -29,6 +29,12 @@ type DiscordService interface {
 
 	// SendCreditCardPaymentReminder 發送信用卡繳款提醒
 	SendCreditCardPaymentReminder(webhookURL string, creditCards []*models.CreditCard) error
+
+	// FormatMonthlyCashFlowReport 格式化月度現金流報告訊息
+	FormatMonthlyCashFlowReport(summary *models.MonthlyCashFlowSummary) *models.DiscordMessage
+
+	// FormatYearlyCashFlowReport 格式化年度現金流報告訊息
+	FormatYearlyCashFlowReport(summary *models.YearlyCashFlowSummary) *models.DiscordMessage
 }
 
 // discordService Discord 服務實作
@@ -590,3 +596,180 @@ func formatCurrency(amount float64) string {
 	}
 	return result
 }
+
+// FormatMonthlyCashFlowReport 格式化月度現金流報告訊息
+func (s *discordService) FormatMonthlyCashFlowReport(summary *models.MonthlyCashFlowSummary) *models.DiscordMessage {
+	// 建立標題
+	title := fmt.Sprintf("📊 【%d年%d月 現金流報告】", summary.Year, summary.Month)
+
+	// 建立內容
+	content := fmt.Sprintf("\n💰 收入：NT$ %s (%d筆)\n", formatCurrency(summary.TotalIncome), summary.IncomeCount)
+	content += fmt.Sprintf("💸 支出：NT$ %s (%d筆)\n", formatCurrency(summary.TotalExpense), summary.ExpenseCount)
+	content += fmt.Sprintf("📈 淨現金流：NT$ %s\n", formatCurrency(summary.NetCashFlow))
+
+	// 如果有與上月比較的資料
+	if summary.ComparisonToPrev != nil {
+		comp := summary.ComparisonToPrev
+		content += fmt.Sprintf("\n📊 與上月（%d年%d月）比較：\n", comp.PreviousYear, comp.PreviousMonth)
+
+		// 收入變化
+		incomeChangeSign := ""
+		if comp.IncomeChange > 0 {
+			incomeChangeSign = "+"
+		}
+		content += fmt.Sprintf("  收入：%sNT$ %s (%s%.1f%%)\n",
+			incomeChangeSign,
+			formatCurrency(comp.IncomeChange),
+			incomeChangeSign,
+			comp.IncomeChangePct)
+
+		// 支出變化
+		expenseChangeSign := ""
+		if comp.ExpenseChange > 0 {
+			expenseChangeSign = "+"
+		}
+		content += fmt.Sprintf("  支出：%sNT$ %s (%s%.1f%%)\n",
+			expenseChangeSign,
+			formatCurrency(comp.ExpenseChange),
+			expenseChangeSign,
+			comp.ExpenseChangePct)
+
+		// 淨現金流變化
+		netChangeSign := ""
+		if comp.NetCashFlowChange > 0 {
+			netChangeSign = "+"
+		}
+		content += fmt.Sprintf("  淨現金流：%sNT$ %s\n",
+			netChangeSign,
+			formatCurrency(comp.NetCashFlowChange))
+	}
+
+	// 收入分類
+	if len(summary.IncomeCategoryBreakdown) > 0 {
+		content += "\n💰 收入分類：\n"
+		for _, cat := range summary.IncomeCategoryBreakdown {
+			content += fmt.Sprintf("  • %s：NT$ %s (%d筆)\n",
+				cat.CategoryName,
+				formatCurrency(cat.Amount),
+				cat.Count)
+		}
+	}
+
+	// 支出分類
+	if len(summary.ExpenseCategoryBreakdown) > 0 {
+		content += "\n💸 支出分類：\n"
+		for _, cat := range summary.ExpenseCategoryBreakdown {
+			content += fmt.Sprintf("  • %s：NT$ %s (%d筆)\n",
+				cat.CategoryName,
+				formatCurrency(cat.Amount),
+				cat.Count)
+		}
+	}
+
+	// 前 5 大支出
+	if len(summary.TopExpenses) > 0 {
+		content += "\n🔝 前5大支出：\n"
+		maxCount := 5
+		if len(summary.TopExpenses) < maxCount {
+			maxCount = len(summary.TopExpenses)
+		}
+		for i := 0; i < maxCount; i++ {
+			expense := summary.TopExpenses[i]
+			content += fmt.Sprintf("  %d. %s - NT$ %s\n",
+				i+1,
+				expense.Description,
+				formatCurrency(expense.Amount))
+		}
+	}
+
+	return &models.DiscordMessage{
+		Content: title + content,
+	}
+}
+
+// FormatYearlyCashFlowReport 格式化年度現金流報告訊息
+func (s *discordService) FormatYearlyCashFlowReport(summary *models.YearlyCashFlowSummary) *models.DiscordMessage {
+	// 建立標題
+	title := fmt.Sprintf("📊 【%d年度 現金流報告】", summary.Year)
+
+	// 建立內容
+	content := fmt.Sprintf("\n💰 年度收入：NT$ %s (%d筆)\n", formatCurrency(summary.TotalIncome), summary.IncomeCount)
+	content += fmt.Sprintf("💸 年度支出：NT$ %s (%d筆)\n", formatCurrency(summary.TotalExpense), summary.ExpenseCount)
+	content += fmt.Sprintf("📈 年度淨現金流：NT$ %s\n", formatCurrency(summary.NetCashFlow))
+
+	// 如果有與去年比較的資料
+	if summary.ComparisonToPrev != nil {
+		comp := summary.ComparisonToPrev
+		content += fmt.Sprintf("\n📊 與去年（%d年）比較：\n", comp.PreviousYear)
+
+		// 收入變化
+		incomeChangeSign := ""
+		if comp.IncomeChange > 0 {
+			incomeChangeSign = "+"
+		}
+		content += fmt.Sprintf("  收入：%sNT$ %s (%s%.1f%%)\n",
+			incomeChangeSign,
+			formatCurrency(comp.IncomeChange),
+			incomeChangeSign,
+			comp.IncomeChangePct)
+
+		// 支出變化
+		expenseChangeSign := ""
+		if comp.ExpenseChange > 0 {
+			expenseChangeSign = "+"
+		}
+		content += fmt.Sprintf("  支出：%sNT$ %s (%s%.1f%%)\n",
+			expenseChangeSign,
+			formatCurrency(comp.ExpenseChange),
+			expenseChangeSign,
+			comp.ExpenseChangePct)
+
+		// 淨現金流變化
+		netChangeSign := ""
+		if comp.NetCashFlowChange > 0 {
+			netChangeSign = "+"
+		}
+		content += fmt.Sprintf("  淨現金流：%sNT$ %s\n",
+			netChangeSign,
+			formatCurrency(comp.NetCashFlowChange))
+	}
+
+	// 月度趨勢（只顯示前 6 個月和後 6 個月）
+	if len(summary.MonthlyBreakdown) > 0 {
+		content += "\n📅 月度趨勢：\n"
+		for _, breakdown := range summary.MonthlyBreakdown {
+			content += fmt.Sprintf("  %d月：收入 NT$ %s | 支出 NT$ %s | 淨 NT$ %s\n",
+				breakdown.Month,
+				formatCurrency(breakdown.Income),
+				formatCurrency(breakdown.Expense),
+				formatCurrency(breakdown.NetCashFlow))
+		}
+	}
+
+	// 年度收入分類
+	if len(summary.IncomeCategoryBreakdown) > 0 {
+		content += "\n💰 年度收入分類：\n"
+		for _, cat := range summary.IncomeCategoryBreakdown {
+			content += fmt.Sprintf("  • %s：NT$ %s (%d筆)\n",
+				cat.CategoryName,
+				formatCurrency(cat.Amount),
+				cat.Count)
+		}
+	}
+
+	// 年度支出分類
+	if len(summary.ExpenseCategoryBreakdown) > 0 {
+		content += "\n💸 年度支出分類：\n"
+		for _, cat := range summary.ExpenseCategoryBreakdown {
+			content += fmt.Sprintf("  • %s：NT$ %s (%d筆)\n",
+				cat.CategoryName,
+				formatCurrency(cat.Amount),
+				cat.Count)
+		}
+	}
+
+	return &models.DiscordMessage{
+		Content: title + content,
+	}
+}
+

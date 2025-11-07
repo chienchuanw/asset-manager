@@ -17,6 +17,8 @@ type CashFlowService interface {
 	UpdateCashFlow(id uuid.UUID, input *models.UpdateCashFlowInput) (*models.CashFlow, error)
 	DeleteCashFlow(id uuid.UUID) error
 	GetSummary(startDate, endDate time.Time) (*repository.CashFlowSummary, error)
+	GetMonthlySummaryWithComparison(year, month int) (*models.MonthlyCashFlowSummary, error)
+	GetYearlySummaryWithComparison(year int) (*models.YearlyCashFlowSummary, error)
 }
 
 // cashFlowService 現金流記錄業務邏輯實作
@@ -473,5 +475,95 @@ func (s *cashFlowService) revertPaymentMethodChange(original *models.CashFlow, i
 	if original.SourceType != nil && original.SourceID != nil {
 		s.validateAndUpdateBalance(original.Type, *original.SourceType, *original.SourceID, original.Amount)
 	}
+}
+
+// GetMonthlySummaryWithComparison 取得月度摘要（包含與前一個月的比較）
+func (s *cashFlowService) GetMonthlySummaryWithComparison(year, month int) (*models.MonthlyCashFlowSummary, error) {
+	// 取得當月摘要
+	summary, err := s.repo.GetMonthlySummary(year, month)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get monthly summary: %w", err)
+	}
+
+	// 計算前一個月的年份和月份
+	prevYear := year
+	prevMonth := month - 1
+	if prevMonth < 1 {
+		prevMonth = 12
+		prevYear = year - 1
+	}
+
+	// 取得前一個月摘要
+	prevSummary, err := s.repo.GetMonthlySummary(prevYear, prevMonth)
+	if err != nil {
+		// 如果前一個月沒有資料，不算錯誤，只是沒有比較資料
+		return summary, nil
+	}
+
+	// 計算比較資料
+	comparison := &models.MonthComparison{
+		PreviousMonth: prevMonth,
+		PreviousYear:  prevYear,
+	}
+
+	// 計算收入變化
+	comparison.IncomeChange = summary.TotalIncome - prevSummary.TotalIncome
+	if prevSummary.TotalIncome > 0 {
+		comparison.IncomeChangePct = (comparison.IncomeChange / prevSummary.TotalIncome) * 100
+	}
+
+	// 計算支出變化
+	comparison.ExpenseChange = summary.TotalExpense - prevSummary.TotalExpense
+	if prevSummary.TotalExpense > 0 {
+		comparison.ExpenseChangePct = (comparison.ExpenseChange / prevSummary.TotalExpense) * 100
+	}
+
+	// 計算淨現金流變化
+	comparison.NetCashFlowChange = summary.NetCashFlow - prevSummary.NetCashFlow
+
+	summary.ComparisonToPrev = comparison
+
+	return summary, nil
+}
+
+// GetYearlySummaryWithComparison 取得年度摘要（包含與前一年的比較）
+func (s *cashFlowService) GetYearlySummaryWithComparison(year int) (*models.YearlyCashFlowSummary, error) {
+	// 取得當年摘要
+	summary, err := s.repo.GetYearlySummary(year)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get yearly summary: %w", err)
+	}
+
+	// 取得前一年摘要
+	prevYear := year - 1
+	prevSummary, err := s.repo.GetYearlySummary(prevYear)
+	if err != nil {
+		// 如果前一年沒有資料，不算錯誤，只是沒有比較資料
+		return summary, nil
+	}
+
+	// 計算比較資料
+	comparison := &models.YearComparison{
+		PreviousYear: prevYear,
+	}
+
+	// 計算收入變化
+	comparison.IncomeChange = summary.TotalIncome - prevSummary.TotalIncome
+	if prevSummary.TotalIncome > 0 {
+		comparison.IncomeChangePct = (comparison.IncomeChange / prevSummary.TotalIncome) * 100
+	}
+
+	// 計算支出變化
+	comparison.ExpenseChange = summary.TotalExpense - prevSummary.TotalExpense
+	if prevSummary.TotalExpense > 0 {
+		comparison.ExpenseChangePct = (comparison.ExpenseChange / prevSummary.TotalExpense) * 100
+	}
+
+	// 計算淨現金流變化
+	comparison.NetCashFlowChange = summary.NetCashFlow - prevSummary.NetCashFlow
+
+	summary.ComparisonToPrev = comparison
+
+	return summary, nil
 }
 

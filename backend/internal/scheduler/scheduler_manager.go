@@ -15,27 +15,31 @@ import (
 // SchedulerManager 排程器管理器
 // 統一管理所有排程任務（快照、Discord 報告、每日扣款等）
 type SchedulerManager struct {
-	cron                   *cron.Cron
-	snapshotService        service.AssetSnapshotService
-	discordService         service.DiscordService
-	settingsService        service.SettingsService
-	holdingService         service.HoldingService
-	rebalanceService       service.RebalanceService
-	billingService         service.BillingService
-	exchangeRateService    service.ExchangeRateService
-	creditCardService      service.CreditCardService // 新增信用卡服務
-	schedulerLogRepo       repository.SchedulerLogRepository
-	enabled                bool
-	dailySnapshotTime      string // 格式: "HH:MM" (例如: "23:59")
-	discordReportTime      string // 格式: "HH:MM" (例如: "09:00")
-	dailyBillingTime       string // 格式: "HH:MM" (例如: "00:01")
-	creditCardReminderTime string // 格式: "HH:MM" (例如: "09:00")
-	discordEnabled         bool
-	mu                     sync.RWMutex
-	snapshotJobID          cron.EntryID
-	discordReportJobID     cron.EntryID
-	dailyBillingJobID      cron.EntryID
-	creditCardReminderJobID cron.EntryID // 新增信用卡提醒任務 ID
+	cron                     *cron.Cron
+	snapshotService          service.AssetSnapshotService
+	discordService           service.DiscordService
+	settingsService          service.SettingsService
+	holdingService           service.HoldingService
+	rebalanceService         service.RebalanceService
+	billingService           service.BillingService
+	exchangeRateService      service.ExchangeRateService
+	creditCardService        service.CreditCardService // 新增信用卡服務
+	cashFlowService          service.CashFlowService   // 新增現金流服務
+	cashFlowReportLogRepo    repository.CashFlowReportLogRepository
+	schedulerLogRepo         repository.SchedulerLogRepository
+	enabled                  bool
+	dailySnapshotTime        string // 格式: "HH:MM" (例如: "23:59")
+	discordReportTime        string // 格式: "HH:MM" (例如: "09:00")
+	dailyBillingTime         string // 格式: "HH:MM" (例如: "00:01")
+	creditCardReminderTime   string // 格式: "HH:MM" (例如: "09:00")
+	discordEnabled           bool
+	mu                       sync.RWMutex
+	snapshotJobID            cron.EntryID
+	discordReportJobID       cron.EntryID
+	dailyBillingJobID        cron.EntryID
+	creditCardReminderJobID  cron.EntryID // 新增信用卡提醒任務 ID
+	monthlyReportJobID       cron.EntryID // 月度現金流報告任務 ID
+	yearlyReportJobID        cron.EntryID // 年度現金流報告任務 ID
 }
 
 // SchedulerManagerConfig 排程器管理器配置
@@ -53,8 +57,10 @@ func NewSchedulerManager(
 	rebalanceService service.RebalanceService,
 	billingService service.BillingService,
 	exchangeRateService service.ExchangeRateService,
-	creditCardService service.CreditCardService, // 新增信用卡服務參數
+	creditCardService service.CreditCardService,
+	cashFlowService service.CashFlowService,
 	schedulerLogRepo repository.SchedulerLogRepository,
+	cashFlowReportLogRepo repository.CashFlowReportLogRepository,
 	config SchedulerManagerConfig,
 ) *SchedulerManager {
 	return &SchedulerManager{
@@ -66,12 +72,14 @@ func NewSchedulerManager(
 		rebalanceService:       rebalanceService,
 		billingService:         billingService,
 		exchangeRateService:    exchangeRateService,
-		creditCardService:      creditCardService, // 初始化信用卡服務
+		creditCardService:      creditCardService,
+		cashFlowService:        cashFlowService,
 		schedulerLogRepo:       schedulerLogRepo,
+		cashFlowReportLogRepo:  cashFlowReportLogRepo,
 		enabled:                config.Enabled,
 		dailySnapshotTime:      config.DailySnapshotTime,
-		dailyBillingTime:       "00:01",                  // 預設在每天 00:01 執行扣款
-		creditCardReminderTime: "09:00",                  // 預設在每天 09:00 執行信用卡提醒
+		dailyBillingTime:       "00:01", // 預設在每天 00:01 執行扣款
+		creditCardReminderTime: "09:00", // 預設在每天 09:00 執行信用卡提醒
 	}
 }
 
