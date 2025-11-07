@@ -30,9 +30,14 @@ type SettingsGroup struct {
 
 // DiscordSettings Discord 設定
 type DiscordSettings struct {
-	WebhookURL string `json:"webhook_url"`
-	Enabled    bool   `json:"enabled"`
-	ReportTime string `json:"report_time"` // HH:MM 格式
+	WebhookURL            string `json:"webhook_url"`
+	Enabled               bool   `json:"enabled"`
+	ReportTime            string `json:"report_time"`              // HH:MM 格式
+	MonthlyReportEnabled  bool   `json:"monthly_report_enabled"`   // 月度現金流報告開關
+	MonthlyReportDay      int    `json:"monthly_report_day"`       // 每月幾號發送 (1-10)
+	YearlyReportEnabled   bool   `json:"yearly_report_enabled"`    // 年度現金流報告開關
+	YearlyReportMonth     int    `json:"yearly_report_month"`      // 每年幾月發送 (1-12)
+	YearlyReportDay       int    `json:"yearly_report_day"`        // 每年幾號發送 (1-10)
 }
 
 // AllocationSettings 資產配置設定
