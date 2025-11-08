@@ -54,8 +54,7 @@ func (s *creditCardGroupService) CreateCreditCardGroup(input *models.CreateCredi
 	}
 
 	// 驗證所有卡片存在且符合條件
-	cards, err := s.validateCardsForGroup(cardIDs, input.IssuingBank, input.SharedCreditLimit)
-	if err != nil {
+	if _, err := s.validateCardsForGroup(cardIDs, input.IssuingBank, input.SharedCreditLimit); err != nil {
 		return nil, err
 	}
 
