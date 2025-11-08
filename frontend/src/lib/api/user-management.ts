@@ -284,9 +284,7 @@ export const creditCardGroupsAPI = {
   ): Promise<void> => {
     return apiClient.delete<void>(
       CREDIT_CARD_GROUP_ENDPOINTS.REMOVE_CARDS(id),
-      {
-        data,
-      }
+      data
     );
   },
 };

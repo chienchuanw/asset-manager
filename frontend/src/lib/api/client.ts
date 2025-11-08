@@ -187,8 +187,12 @@ export const apiClient = {
   /**
    * DELETE 請求
    */
-  delete: <T>(path: string, options?: FetchOptions) =>
-    apiCall<T>(path, { ...options, method: "DELETE" }),
+  delete: <T>(path: string, body?: unknown, options?: FetchOptions) =>
+    apiCall<T>(path, {
+      ...options,
+      method: "DELETE",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 };
 
 /**
