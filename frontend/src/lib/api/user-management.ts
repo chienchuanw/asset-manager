@@ -8,6 +8,12 @@ import type {
   CreateCreditCardInput,
   UpdateCreditCardInput,
   CreditCardQueryParams,
+  CreditCardGroup,
+  CreditCardGroupWithCards,
+  CreateCreditCardGroupInput,
+  UpdateCreditCardGroupInput,
+  AddCardsToGroupInput,
+  RemoveCardsFromGroupInput,
 } from "@/types/user-management";
 
 /**
@@ -29,6 +35,16 @@ const CREDIT_CARD_ENDPOINTS = {
 } as const;
 
 /**
+ * 信用卡群組 API 端點
+ */
+const CREDIT_CARD_GROUP_ENDPOINTS = {
+  CREDIT_CARD_GROUPS: "/api/credit-card-groups",
+  CREDIT_CARD_GROUP_BY_ID: (id: string) => `/api/credit-card-groups/${id}`,
+  ADD_CARDS: (id: string) => `/api/credit-card-groups/${id}/cards`,
+  REMOVE_CARDS: (id: string) => `/api/credit-card-groups/${id}/cards`,
+} as const;
+
+/**
  * 銀行帳戶 API
  */
 export const bankAccountsAPI = {
@@ -38,12 +54,9 @@ export const bankAccountsAPI = {
    * @returns 銀行帳戶陣列
    */
   getAll: async (filters?: BankAccountFilters): Promise<BankAccount[]> => {
-    return apiClient.get<BankAccount[]>(
-      BANK_ACCOUNT_ENDPOINTS.BANK_ACCOUNTS,
-      {
-        params: filters,
-      }
-    );
+    return apiClient.get<BankAccount[]>(BANK_ACCOUNT_ENDPOINTS.BANK_ACCOUNTS, {
+      params: filters,
+    });
   },
 
   /**
@@ -128,12 +141,9 @@ export const creditCardsAPI = {
   getUpcomingBilling: async (
     params?: CreditCardQueryParams
   ): Promise<CreditCard[]> => {
-    return apiClient.get<CreditCard[]>(
-      CREDIT_CARD_ENDPOINTS.UPCOMING_BILLING,
-      {
-        params,
-      }
-    );
+    return apiClient.get<CreditCard[]>(CREDIT_CARD_ENDPOINTS.UPCOMING_BILLING, {
+      params,
+    });
   },
 
   /**
@@ -144,12 +154,9 @@ export const creditCardsAPI = {
   getUpcomingPayment: async (
     params?: CreditCardQueryParams
   ): Promise<CreditCard[]> => {
-    return apiClient.get<CreditCard[]>(
-      CREDIT_CARD_ENDPOINTS.UPCOMING_PAYMENT,
-      {
-        params,
-      }
-    );
+    return apiClient.get<CreditCard[]>(CREDIT_CARD_ENDPOINTS.UPCOMING_PAYMENT, {
+      params,
+    });
   },
 
   /**
@@ -158,10 +165,7 @@ export const creditCardsAPI = {
    * @returns 建立的信用卡
    */
   create: async (data: CreateCreditCardInput): Promise<CreditCard> => {
-    return apiClient.post<CreditCard>(
-      CREDIT_CARD_ENDPOINTS.CREDIT_CARDS,
-      data
-    );
+    return apiClient.post<CreditCard>(CREDIT_CARD_ENDPOINTS.CREDIT_CARDS, data);
   },
 
   /**
@@ -186,9 +190,103 @@ export const creditCardsAPI = {
    * @returns void
    */
   delete: async (id: string): Promise<void> => {
+    return apiClient.delete<void>(CREDIT_CARD_ENDPOINTS.CREDIT_CARD_BY_ID(id));
+  },
+};
+/**
+ * 信用卡群組 API
+ */
+export const creditCardGroupsAPI = {
+  /**
+   * 取得所有信用卡群組
+   * @returns 信用卡群組陣列（包含卡片列表）
+   */
+  getAll: async (): Promise<CreditCardGroupWithCards[]> => {
+    return apiClient.get<CreditCardGroupWithCards[]>(
+      CREDIT_CARD_GROUP_ENDPOINTS.CREDIT_CARD_GROUPS
+    );
+  },
+
+  /**
+   * 取得單筆信用卡群組
+   * @param id 信用卡群組 ID
+   * @returns 信用卡群組（包含卡片列表）
+   */
+  getById: async (id: string): Promise<CreditCardGroupWithCards> => {
+    return apiClient.get<CreditCardGroupWithCards>(
+      CREDIT_CARD_GROUP_ENDPOINTS.CREDIT_CARD_GROUP_BY_ID(id)
+    );
+  },
+
+  /**
+   * 建立信用卡群組
+   * @param data 信用卡群組資料
+   * @returns 建立的信用卡群組（包含卡片列表）
+   */
+  create: async (
+    data: CreateCreditCardGroupInput
+  ): Promise<CreditCardGroupWithCards> => {
+    return apiClient.post<CreditCardGroupWithCards>(
+      CREDIT_CARD_GROUP_ENDPOINTS.CREDIT_CARD_GROUPS,
+      data
+    );
+  },
+
+  /**
+   * 更新信用卡群組
+   * @param id 信用卡群組 ID
+   * @param data 更新的信用卡群組資料
+   * @returns 更新後的信用卡群組
+   */
+  update: async (
+    id: string,
+    data: UpdateCreditCardGroupInput
+  ): Promise<CreditCardGroup> => {
+    return apiClient.put<CreditCardGroup>(
+      CREDIT_CARD_GROUP_ENDPOINTS.CREDIT_CARD_GROUP_BY_ID(id),
+      data
+    );
+  },
+
+  /**
+   * 刪除信用卡群組
+   * @param id 信用卡群組 ID
+   * @returns void
+   */
+  delete: async (id: string): Promise<void> => {
     return apiClient.delete<void>(
-      CREDIT_CARD_ENDPOINTS.CREDIT_CARD_BY_ID(id)
+      CREDIT_CARD_GROUP_ENDPOINTS.CREDIT_CARD_GROUP_BY_ID(id)
+    );
+  },
+
+  /**
+   * 新增卡片到群組
+   * @param id 信用卡群組 ID
+   * @param data 要新增的卡片 ID 列表
+   * @returns void
+   */
+  addCards: async (id: string, data: AddCardsToGroupInput): Promise<void> => {
+    return apiClient.post<void>(
+      CREDIT_CARD_GROUP_ENDPOINTS.ADD_CARDS(id),
+      data
+    );
+  },
+
+  /**
+   * 從群組移除卡片
+   * @param id 信用卡群組 ID
+   * @param data 要移除的卡片 ID 列表
+   * @returns void
+   */
+  removeCards: async (
+    id: string,
+    data: RemoveCardsFromGroupInput
+  ): Promise<void> => {
+    return apiClient.delete<void>(
+      CREDIT_CARD_GROUP_ENDPOINTS.REMOVE_CARDS(id),
+      {
+        data,
+      }
     );
   },
 };
-

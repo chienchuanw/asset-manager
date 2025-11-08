@@ -59,6 +59,7 @@ export interface CreditCard {
   payment_due_day: number;
   credit_limit: number;
   used_credit: number;
+  group_id?: string;
   note?: string;
   created_at: string;
   updated_at: string;
@@ -98,4 +99,59 @@ export interface UpdateCreditCardInput {
 export interface CreditCardQueryParams
   extends Record<string, string | number | boolean | undefined | null> {
   days_ahead?: number;
+}
+
+/**
+ * 信用卡群組資料結構
+ */
+export interface CreditCardGroup {
+  id: string;
+  name: string;
+  issuing_bank: string;
+  shared_credit_limit: number;
+  note?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 信用卡群組（包含卡片列表）
+ */
+export interface CreditCardGroupWithCards extends CreditCardGroup {
+  cards: CreditCard[];
+  total_used_credit: number;
+}
+
+/**
+ * 建立信用卡群組的輸入資料
+ */
+export interface CreateCreditCardGroupInput {
+  name: string;
+  issuing_bank: string;
+  shared_credit_limit: number;
+  card_ids: string[];
+  note?: string;
+}
+
+/**
+ * 更新信用卡群組的輸入資料
+ */
+export interface UpdateCreditCardGroupInput {
+  name?: string;
+  shared_credit_limit?: number;
+  note?: string;
+}
+
+/**
+ * 新增卡片到群組的輸入資料
+ */
+export interface AddCardsToGroupInput {
+  card_ids: string[];
+}
+
+/**
+ * 從群組移除卡片的輸入資料
+ */
+export interface RemoveCardsFromGroupInput {
+  card_ids: string[];
 }
