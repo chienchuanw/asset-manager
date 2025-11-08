@@ -18,11 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+
 import {
   MoreHorizontalIcon,
   PencilIcon,
@@ -199,19 +195,22 @@ function CreditCardGroupRow({
   const availableCredit = group.shared_credit_limit - group.total_used_credit;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <>
       {/* 群組標題行 */}
       <TableRow className="bg-muted/50 hover:bg-muted/70">
         <TableCell>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              {isOpen ? (
-                <ChevronDownIcon className="h-4 w-4" />
-              ) : (
-                <ChevronRightIcon className="h-4 w-4" />
-              )}
-            </Button>
-          </CollapsibleTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? (
+              <ChevronDownIcon className="h-4 w-4" />
+            ) : (
+              <ChevronRightIcon className="h-4 w-4" />
+            )}
+          </Button>
         </TableCell>
         <TableCell colSpan={2} className="font-medium">
           <div className="flex items-center gap-2">
@@ -291,22 +290,19 @@ function CreditCardGroupRow({
       </TableRow>
 
       {/* 群組內的卡片 */}
-      <CollapsibleContent asChild>
-        <>
-          {group.cards.map((card) => (
-            <CreditCardRow
-              key={card.id}
-              card={card}
-              isInGroup={true}
-              groupId={group.id}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onRemoveFromGroup={onRemoveCardFromGroup}
-            />
-          ))}
-        </>
-      </CollapsibleContent>
-    </Collapsible>
+      {isOpen &&
+        group.cards.map((card) => (
+          <CreditCardRow
+            key={card.id}
+            card={card}
+            isInGroup={true}
+            groupId={group.id}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onRemoveFromGroup={onRemoveCardFromGroup}
+          />
+        ))}
+    </>
   );
 }
 
