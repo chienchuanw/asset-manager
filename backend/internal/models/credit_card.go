@@ -9,17 +9,18 @@ import (
 
 // CreditCard 信用卡模型
 type CreditCard struct {
-	ID               uuid.UUID `json:"id" db:"id"`
-	IssuingBank      string    `json:"issuing_bank" db:"issuing_bank"`
-	CardName         string    `json:"card_name" db:"card_name"`
-	CardNumberLast4  string    `json:"card_number_last4" db:"card_number_last4"`
-	BillingDay       int       `json:"billing_day" db:"billing_day"`
-	PaymentDueDay    int       `json:"payment_due_day" db:"payment_due_day"`
-	CreditLimit      float64   `json:"credit_limit" db:"credit_limit"`
-	UsedCredit       float64   `json:"used_credit" db:"used_credit"`
-	Note             *string   `json:"note,omitempty" db:"note"`
-	CreatedAt        time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
+	ID               uuid.UUID  `json:"id" db:"id"`
+	IssuingBank      string     `json:"issuing_bank" db:"issuing_bank"`
+	CardName         string     `json:"card_name" db:"card_name"`
+	CardNumberLast4  string     `json:"card_number_last4" db:"card_number_last4"`
+	BillingDay       int        `json:"billing_day" db:"billing_day"`
+	PaymentDueDay    int        `json:"payment_due_day" db:"payment_due_day"`
+	CreditLimit      float64    `json:"credit_limit" db:"credit_limit"`
+	UsedCredit       float64    `json:"used_credit" db:"used_credit"`
+	GroupID          *uuid.UUID `json:"group_id,omitempty" db:"group_id"`
+	Note             *string    `json:"note,omitempty" db:"note"`
+	CreatedAt        time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // CreateCreditCardInput 建立信用卡的輸入資料

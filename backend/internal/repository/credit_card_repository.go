@@ -39,7 +39,7 @@ func (r *creditCardRepository) Create(input *models.CreateCreditCardInput) (*mod
 	query := `
 		INSERT INTO credit_cards (issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 	`
 
 	card := &models.CreditCard{}
@@ -62,6 +62,7 @@ func (r *creditCardRepository) Create(input *models.CreateCreditCardInput) (*mod
 		&card.PaymentDueDay,
 		&card.CreditLimit,
 		&card.UsedCredit,
+		&card.GroupID,
 		&card.Note,
 		&card.CreatedAt,
 		&card.UpdatedAt,
@@ -77,7 +78,7 @@ func (r *creditCardRepository) Create(input *models.CreateCreditCardInput) (*mod
 // GetByID 根據 ID 取得信用卡
 func (r *creditCardRepository) GetByID(id uuid.UUID) (*models.CreditCard, error) {
 	query := `
-		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 		FROM credit_cards
 		WHERE id = $1
 	`
@@ -92,6 +93,7 @@ func (r *creditCardRepository) GetByID(id uuid.UUID) (*models.CreditCard, error)
 		&card.PaymentDueDay,
 		&card.CreditLimit,
 		&card.UsedCredit,
+		&card.GroupID,
 		&card.Note,
 		&card.CreatedAt,
 		&card.UpdatedAt,
@@ -110,7 +112,7 @@ func (r *creditCardRepository) GetByID(id uuid.UUID) (*models.CreditCard, error)
 // GetAll 取得所有信用卡
 func (r *creditCardRepository) GetAll() ([]*models.CreditCard, error) {
 	query := `
-		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 		FROM credit_cards
 		ORDER BY created_at DESC
 	`
@@ -133,6 +135,7 @@ func (r *creditCardRepository) GetAll() ([]*models.CreditCard, error) {
 			&card.PaymentDueDay,
 			&card.CreditLimit,
 			&card.UsedCredit,
+			&card.GroupID,
 			&card.Note,
 			&card.CreatedAt,
 			&card.UpdatedAt,
@@ -153,7 +156,7 @@ func (r *creditCardRepository) GetAll() ([]*models.CreditCard, error) {
 // GetByBillingDay 根據帳單日取得信用卡
 func (r *creditCardRepository) GetByBillingDay(day int) ([]*models.CreditCard, error) {
 	query := `
-		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 		FROM credit_cards
 		WHERE billing_day = $1
 		ORDER BY created_at DESC
@@ -177,6 +180,7 @@ func (r *creditCardRepository) GetByBillingDay(day int) ([]*models.CreditCard, e
 			&card.PaymentDueDay,
 			&card.CreditLimit,
 			&card.UsedCredit,
+			&card.GroupID,
 			&card.Note,
 			&card.CreatedAt,
 			&card.UpdatedAt,
@@ -197,7 +201,7 @@ func (r *creditCardRepository) GetByBillingDay(day int) ([]*models.CreditCard, e
 // GetByPaymentDueDay 根據繳款截止日取得信用卡
 func (r *creditCardRepository) GetByPaymentDueDay(day int) ([]*models.CreditCard, error) {
 	query := `
-		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 		FROM credit_cards
 		WHERE payment_due_day = $1
 		ORDER BY created_at DESC
@@ -221,6 +225,7 @@ func (r *creditCardRepository) GetByPaymentDueDay(day int) ([]*models.CreditCard
 			&card.PaymentDueDay,
 			&card.CreditLimit,
 			&card.UsedCredit,
+			&card.GroupID,
 			&card.Note,
 			&card.CreatedAt,
 			&card.UpdatedAt,
@@ -307,7 +312,7 @@ func (r *creditCardRepository) GetUpcomingPayment(daysAhead int) ([]*models.Cred
 // getCardsByDayRange 根據帳單日範圍取得信用卡（輔助函式）
 func (r *creditCardRepository) getCardsByDayRange(startDay, endDay int) ([]*models.CreditCard, error) {
 	query := `
-		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 		FROM credit_cards
 		WHERE billing_day >= $1 AND billing_day <= $2
 		ORDER BY billing_day ASC
@@ -325,7 +330,7 @@ func (r *creditCardRepository) getCardsByDayRange(startDay, endDay int) ([]*mode
 // getCardsByPaymentDayRange 根據繳款截止日範圍取得信用卡（輔助函式）
 func (r *creditCardRepository) getCardsByPaymentDayRange(startDay, endDay int) ([]*models.CreditCard, error) {
 	query := `
-		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		SELECT id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 		FROM credit_cards
 		WHERE payment_due_day >= $1 AND payment_due_day <= $2
 		ORDER BY payment_due_day ASC
@@ -354,6 +359,7 @@ func (r *creditCardRepository) scanCards(rows *sql.Rows) ([]*models.CreditCard, 
 			&card.PaymentDueDay,
 			&card.CreditLimit,
 			&card.UsedCredit,
+			&card.GroupID,
 			&card.Note,
 			&card.CreatedAt,
 			&card.UpdatedAt,
@@ -431,7 +437,7 @@ func (r *creditCardRepository) Update(id uuid.UUID, input *models.UpdateCreditCa
 		UPDATE credit_cards
 		SET %s
 		WHERE id = $%d
-		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 	`, strings.Join(setClauses, ", "), argPosition)
 
 	card := &models.CreditCard{}
@@ -444,6 +450,7 @@ func (r *creditCardRepository) Update(id uuid.UUID, input *models.UpdateCreditCa
 		&card.PaymentDueDay,
 		&card.CreditLimit,
 		&card.UsedCredit,
+		&card.GroupID,
 		&card.Note,
 		&card.CreatedAt,
 		&card.UpdatedAt,
@@ -465,7 +472,7 @@ func (r *creditCardRepository) UpdateUsedCredit(id uuid.UUID, amount float64) (*
 		UPDATE credit_cards
 		SET used_credit = used_credit + $1, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $2
-		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, note, created_at, updated_at
+		RETURNING id, issuing_bank, card_name, card_number_last4, billing_day, payment_due_day, credit_limit, used_credit, group_id, note, created_at, updated_at
 	`
 
 	card := &models.CreditCard{}
@@ -478,6 +485,7 @@ func (r *creditCardRepository) UpdateUsedCredit(id uuid.UUID, amount float64) (*
 		&card.PaymentDueDay,
 		&card.CreditLimit,
 		&card.UsedCredit,
+		&card.GroupID,
 		&card.Note,
 		&card.CreatedAt,
 		&card.UpdatedAt,
