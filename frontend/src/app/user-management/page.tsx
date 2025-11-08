@@ -311,7 +311,12 @@ export default function UserManagementPage() {
 
   // 取得可用於建立群組的卡片（不在任何群組中的卡片）
   const getAvailableCards = () => {
-    if (!creditCards || !groups) return [];
+    if (!creditCards) return [];
+
+    // 如果沒有群組資料，返回所有信用卡
+    if (!groups || groups.length === 0) return creditCards;
+
+    // 過濾掉已在群組中的卡片
     const cardsInGroups = new Set(
       groups.flatMap((group) => group.cards.map((card) => card.id))
     );
