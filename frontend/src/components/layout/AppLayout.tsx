@@ -95,13 +95,13 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
   // 工具區項目
   const toolItems = [
     { id: "settings", label: "設定", icon: SettingsIcon, href: "/settings" },
-    { id: "help", label: "幫助", icon: HelpCircleIcon, href: "#" },
     {
       id: "user",
       label: "使用者管理",
       icon: UserIcon,
       href: "/user-management",
     },
+    // { id: "help", label: "幫助", icon: HelpCircleIcon, href: "#" },
   ];
 
   return (
