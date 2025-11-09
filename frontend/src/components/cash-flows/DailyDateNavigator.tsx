@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -78,7 +78,6 @@ export function DailyDateNavigator({
             variant="outline"
             className="min-w-[180px] justify-center font-semibold text-lg"
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
             {formatDate(date)}
           </Button>
         </PopoverTrigger>
