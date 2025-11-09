@@ -70,10 +70,10 @@ export function CashFlowSummaryCard({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">總支出</CardTitle>
-          <TrendingDown className="h-4 w-4 text-green-600" />
+          <TrendingDown className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-red-600">
             ${formatAmount(summary.total_expense)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">期間內的所有支出</p>
@@ -88,7 +88,7 @@ export function CashFlowSummaryCard({
         <CardContent>
           <div
             className={`text-2xl font-bold ${
-              netCashFlowIsPositive ? "text-red-600" : "text-green-600"
+              netCashFlowIsPositive ? "text-green-600" : "text-red-600"
             }`}
           >
             {netCashFlowIsPositive ? "+" : ""}$

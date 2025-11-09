@@ -98,7 +98,7 @@ export function formatPercentage(value: number): string {
  * @returns Tailwind CSS 類別名稱
  */
 export function getProfitLossColor(value: number): string {
-  return value >= 0 ? "text-red-600" : "text-green-600";
+  return value >= 0 ? "text-green-600" : "text-red-600";
 }
 
 /**

@@ -44,16 +44,16 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                   className="flex items-start justify-between pb-4 border-b last:border-0 last:pb-0"
                 >
                   <div className="flex items-start gap-3">
-                    {/* 買賣圖示（台灣習慣：紅漲綠跌） */}
+                    {/* 買賣圖示 */}
                     <div
                       className={`mt-0.5 p-1 rounded-full ${
                         isBuy ? "bg-red-100" : "bg-green-100"
                       }`}
                     >
                       {isBuy ? (
-                        <ArrowDownIcon className="h-3 w-3 text-red-600" />
+                        <ArrowDownIcon className="h-3 w-3 text-green-600" />
                       ) : (
-                        <ArrowUpIcon className="h-3 w-3 text-green-600" />
+                        <ArrowUpIcon className="h-3 w-3 text-red-600" />
                       )}
                     </div>
 

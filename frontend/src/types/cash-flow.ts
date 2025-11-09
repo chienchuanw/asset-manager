@@ -373,8 +373,8 @@ export function getCashFlowTypeLabel(cashFlowType: CashFlowType): string {
  */
 export function getCashFlowTypeColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
-    [CashFlowType.INCOME]: "text-red-600",
-    [CashFlowType.EXPENSE]: "text-green-600",
+    [CashFlowType.INCOME]: "text-green-600",
+    [CashFlowType.EXPENSE]: "text-red-600",
     [CashFlowType.TRANSFER_IN]: "text-gray-600",
     [CashFlowType.TRANSFER_OUT]: "text-gray-600",
   };

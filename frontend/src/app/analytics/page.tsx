@@ -160,8 +160,8 @@ export default function AnalyticsPage() {
                               isPositive(
                                 realizedData.summary.data.total_realized_pl
                               )
-                                ? "text-red-600"
-                                : "text-green-600"
+                                ? "text-green-600"
+                                : "text-red-600"
                             }`}
                           >
                             {formatCurrency(
@@ -185,8 +185,8 @@ export default function AnalyticsPage() {
                               isPositive(
                                 realizedData.summary.data.total_realized_pl_pct
                               )
-                                ? "text-red-600"
-                                : "text-green-600"
+                                ? "text-green-600"
+                                : "text-red-600"
                             }`}
                           >
                             {formatPercentage(
@@ -322,8 +322,8 @@ export default function AnalyticsPage() {
                                     <span
                                       className={`text-sm font-medium tabular-nums ${
                                         isPositive(item.realized_pl)
-                                          ? "text-red-600"
-                                          : "text-green-600"
+                                          ? "text-green-600"
+                                          : "text-red-600"
                                       }`}
                                     >
                                       {formatPercentage(item.realized_pl_pct)}
@@ -331,8 +331,8 @@ export default function AnalyticsPage() {
                                     <span
                                       className={`text-sm font-medium tabular-nums w-32 text-right ${
                                         isPositive(item.realized_pl)
-                                          ? "text-red-600"
-                                          : "text-green-600"
+                                          ? "text-green-600"
+                                          : "text-red-600"
                                       }`}
                                     >
                                       {formatCurrency(item.realized_pl, "TWD")}
@@ -410,8 +410,8 @@ export default function AnalyticsPage() {
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
                                       isPositive(asset.realized_pl)
-                                        ? "text-red-600"
-                                        : "text-green-600"
+                                        ? "text-green-600"
+                                        : "text-red-600"
                                     }`}
                                   >
                                     {formatCurrency(asset.realized_pl, "TWD")}
@@ -419,8 +419,8 @@ export default function AnalyticsPage() {
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
                                       isPositive(asset.realized_pl_pct)
-                                        ? "text-red-600"
-                                        : "text-green-600"
+                                        ? "text-green-600"
+                                        : "text-red-600"
                                     }`}
                                   >
                                     {formatPercentage(asset.realized_pl_pct)}
@@ -510,8 +510,8 @@ export default function AnalyticsPage() {
                               isPositive(
                                 unrealizedData.summary.data.total_unrealized_pl
                               )
-                                ? "text-red-600"
-                                : "text-green-600"
+                                ? "text-green-600"
+                                : "text-red-600"
                             }`}
                           >
                             {formatCurrency(
@@ -535,8 +535,8 @@ export default function AnalyticsPage() {
                               isPositive(
                                 unrealizedData.summary.data.total_unrealized_pct
                               )
-                                ? "text-red-600"
-                                : "text-green-600"
+                                ? "text-green-600"
+                                : "text-red-600"
                             }`}
                           >
                             {formatPercentage(
@@ -654,8 +654,8 @@ export default function AnalyticsPage() {
                                     <span
                                       className={`text-sm font-medium tabular-nums ${
                                         isPositive(item.unrealized_pl)
-                                          ? "text-red-600"
-                                          : "text-green-600"
+                                          ? "text-green-600"
+                                          : "text-red-600"
                                       }`}
                                     >
                                       {formatPercentage(item.unrealized_pct)}
@@ -663,8 +663,8 @@ export default function AnalyticsPage() {
                                     <span
                                       className={`text-sm font-medium tabular-nums w-32 text-right ${
                                         isPositive(item.unrealized_pl)
-                                          ? "text-red-600"
-                                          : "text-green-600"
+                                          ? "text-green-600"
+                                          : "text-red-600"
                                       }`}
                                     >
                                       {formatCurrency(
@@ -751,8 +751,8 @@ export default function AnalyticsPage() {
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
                                       isPositive(asset.unrealized_pl)
-                                        ? "text-red-600"
-                                        : "text-green-600"
+                                        ? "text-green-600"
+                                        : "text-red-600"
                                     }`}
                                   >
                                     {formatCurrency(asset.unrealized_pl, "TWD")}
@@ -760,8 +760,8 @@ export default function AnalyticsPage() {
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
                                       isPositive(asset.unrealized_pct)
-                                        ? "text-red-600"
-                                        : "text-green-600"
+                                        ? "text-green-600"
+                                        : "text-red-600"
                                     }`}
                                   >
                                     {formatPercentage(asset.unrealized_pct)}
