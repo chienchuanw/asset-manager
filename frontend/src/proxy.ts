@@ -49,11 +49,14 @@ export const config = {
      * 明確指定需要保護的路徑
      */
     "/",
+    "/login",
     "/dashboard/:path*",
     "/holdings/:path*",
     "/transactions/:path*",
     "/analytics/:path*",
     "/settings/:path*",
-    "/login",
+    "/cash-flows/:path*",
+    "/recurring/:path*",
+    "/user-management/:path*",
   ],
 };
