@@ -75,7 +75,6 @@ export function CashFlowList({ filters }: CashFlowListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>日期</TableHead>
             <TableHead>類型</TableHead>
             <TableHead>分類</TableHead>
             <TableHead>付款方式</TableHead>
@@ -89,9 +88,6 @@ export function CashFlowList({ filters }: CashFlowListProps) {
             // 載入中骨架屏
             Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
                 <TableCell>
                   <Skeleton className="h-4 w-16" />
                 </TableCell>
@@ -150,18 +146,9 @@ export function CashFlowList({ filters }: CashFlowListProps) {
 
               return (
                 <TableRow key={cashFlow.id}>
-                  <TableCell className="text-sm">
-                    {new Date(cashFlow.date).toLocaleDateString("zh-TW")}
-                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <TypeIcon className={`h-4 w-4 ${typeColor}`} />
-                      <Badge
-                        variant="outline"
-                        className={`${typeColor} border-current`}
-                      >
-                        {getCashFlowTypeLabel(cashFlow.type)}
-                      </Badge>
                     </div>
                   </TableCell>
                   <TableCell>
