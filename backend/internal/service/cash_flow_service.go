@@ -343,14 +343,21 @@ func (s *cashFlowService) updateCreditCardBalance(cashFlowType models.CashFlowTy
 func (s *cashFlowService) validateAndUpdateTarget(targetType models.SourceType, targetID uuid.UUID, amount float64) error {
 	switch targetType {
 	case models.SourceTypeCreditCard:
-		// 驗證信用卡是否存在
-		_, err := s.creditCardRepo.GetByID(targetID)
+		// 驗證信用卡是否存在並取得目前的已使用額度
+		card, err := s.creditCardRepo.GetByID(targetID)
 		if err != nil {
 			return fmt.Errorf("credit card not found: %w", err)
 		}
 
+		// 計算實際應減少的金額（防止 used_credit 變成負數）
+		// 如果繳款金額超過已使用額度，只減少到 0
+		actualDeduction := amount
+		if amount > card.UsedCredit {
+			actualDeduction = card.UsedCredit
+		}
+
 		// 繳款給信用卡 → 減少已使用額度
-		_, err = s.creditCardRepo.UpdateUsedCredit(targetID, -amount)
+		_, err = s.creditCardRepo.UpdateUsedCredit(targetID, -actualDeduction)
 		if err != nil {
 			return fmt.Errorf("failed to update credit card used credit: %w", err)
 		}

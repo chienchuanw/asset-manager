@@ -224,7 +224,7 @@ export function CreditCardForm({
             )}
           />
 
-          {/* 已使用額度（唯讀顯示） */}
+          {/* 已使用額度（可手動編輯） */}
           {creditCard && (
             <FormField
               control={form.control}
@@ -233,16 +233,10 @@ export function CreditCardForm({
                 <FormItem>
                   <FormLabel>已使用額度</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      {...field}
-                      disabled
-                      className="bg-muted cursor-not-allowed"
-                    />
+                    <Input type="number" step="0.01" {...field} />
                   </FormControl>
                   <FormDescription>
-                    此欄位由系統自動計算，無法手動修改
+                    可手動編輯以覆蓋系統自動計算的值
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
