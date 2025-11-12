@@ -37,17 +37,26 @@ export function CategoryManagement() {
 
   // 取得收入分類
   const {
-    data: incomeCategories,
+    data: incomeCategoriesData,
     isLoading: isLoadingIncome,
     error: incomeError,
   } = useCategories(CashFlowType.INCOME);
 
   // 取得支出分類
   const {
-    data: expenseCategories,
+    data: expenseCategoriesData,
     isLoading: isLoadingExpense,
     error: expenseError,
   } = useCategories(CashFlowType.EXPENSE);
+
+  // 依照 created_at 排序分類（由舊到新）
+  const incomeCategories = incomeCategoriesData?.slice().sort((a, b) => {
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+
+  const expenseCategories = expenseCategoriesData?.slice().sort((a, b) => {
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
 
   // 處理編輯
   const handleEdit = (category: CashFlowCategory) => {
