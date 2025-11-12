@@ -24,6 +24,7 @@ import {
   CashFlowFilterDrawer,
   DailyDateNavigator,
   DailySummaryCards,
+  CategoryManagement,
 } from "@/components/cash-flows";
 import { calculateDateRange } from "@/components/common/DateRangeTabs";
 import { WeekMonthTabs } from "@/components/common/WeekMonthTabs";
@@ -288,6 +289,9 @@ export default function CashFlowsPage() {
                   </p>
                 </CardContent>
               </Card>
+
+              {/* 分類管理 */}
+              <CategoryManagement />
             </div>
           </div>
         </div>

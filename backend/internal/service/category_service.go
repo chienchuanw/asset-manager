@@ -41,8 +41,8 @@ func (s *categoryService) CreateCategory(input *models.CreateCategoryInput) (*mo
 		return nil, fmt.Errorf("category name is required")
 	}
 
-	if len(input.Name) > 100 {
-		return nil, fmt.Errorf("category name must not exceed 100 characters")
+	if len(input.Name) > 20 {
+		return nil, fmt.Errorf("category name must not exceed 20 characters")
 	}
 
 	// 呼叫 repository 建立分類
@@ -76,8 +76,8 @@ func (s *categoryService) UpdateCategory(id uuid.UUID, input *models.UpdateCateg
 		return nil, fmt.Errorf("category name is required")
 	}
 
-	if len(input.Name) > 100 {
-		return nil, fmt.Errorf("category name must not exceed 100 characters")
+	if len(input.Name) > 20 {
+		return nil, fmt.Errorf("category name must not exceed 20 characters")
 	}
 
 	// 呼叫 repository 更新分類
@@ -91,13 +91,22 @@ func (s *categoryService) UpdateCategory(id uuid.UUID, input *models.UpdateCateg
 
 // DeleteCategory 刪除分類
 func (s *categoryService) DeleteCategory(id uuid.UUID) error {
+	// 檢查分類是否被使用
+	inUse, err := s.repo.IsInUse(id)
+	if err != nil {
+		return fmt.Errorf("failed to check if category is in use: %w", err)
+	}
+
+	if inUse {
+		return fmt.Errorf("cannot delete category: it is being used by existing cash flow records")
+	}
+
 	// 呼叫 repository 刪除分類
 	// Repository 層會檢查是否為系統分類
-	err := s.repo.Delete(id)
+	err = s.repo.Delete(id)
 	if err != nil {
 		return fmt.Errorf("failed to delete category: %w", err)
 	}
 
 	return nil
 }
-

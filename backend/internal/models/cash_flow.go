@@ -87,13 +87,13 @@ type UpdateCashFlowInput struct {
 
 // CreateCategoryInput 建立分類的輸入資料
 type CreateCategoryInput struct {
-	Name string       `json:"name" binding:"required,max=100"`
+	Name string       `json:"name" binding:"required,max=20"`
 	Type CashFlowType `json:"type" binding:"required"`
 }
 
 // UpdateCategoryInput 更新分類的輸入資料
 type UpdateCategoryInput struct {
-	Name string `json:"name" binding:"required,max=100"`
+	Name string `json:"name" binding:"required,max=20"`
 }
 
 // Validate 驗證 CashFlowType 是否有效

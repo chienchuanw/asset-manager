@@ -81,6 +81,26 @@ func TestCreateCategory_EmptyName(t *testing.T) {
 	assert.Contains(t, err.Error(), "name is required")
 }
 
+// TestCreateCategory_NameTooLong 測試分類名稱過長
+func TestCreateCategory_NameTooLong(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	input := &models.CreateCategoryInput{
+		Name: "這是一個超過二十個字元的分類名稱測試",
+		Type: models.CashFlowTypeIncome,
+	}
+
+	// Act
+	result, err := service.CreateCategory(input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "must not exceed 20 characters")
+}
+
 // TestGetCategory_Success 測試成功取得分類
 func TestGetCategory_Success(t *testing.T) {
 	// Arrange
@@ -198,7 +218,7 @@ func TestUpdateCategory_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// TestUpdateCategory_EmptyName 測試空白分類名稱
+// TestUpdateCategory_EmptyName 測試更新為空白名稱
 func TestUpdateCategory_EmptyName(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCategoryRepository)
@@ -218,6 +238,26 @@ func TestUpdateCategory_EmptyName(t *testing.T) {
 	assert.Contains(t, err.Error(), "name is required")
 }
 
+// TestUpdateCategory_NameTooLong 測試更新名稱過長
+func TestUpdateCategory_NameTooLong(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	categoryID := uuid.New()
+	input := &models.UpdateCategoryInput{
+		Name: "這是一個超過二十個字元的分類名稱測試",
+	}
+
+	// Act
+	result, err := service.UpdateCategory(categoryID, input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "must not exceed 20 characters")
+}
+
 // TestDeleteCategory_Success 測試成功刪除分類
 func TestDeleteCategory_Success(t *testing.T) {
 	// Arrange
@@ -225,6 +265,7 @@ func TestDeleteCategory_Success(t *testing.T) {
 	service := NewCategoryService(mockRepo)
 
 	categoryID := uuid.New()
+	mockRepo.On("IsInUse", categoryID).Return(false, nil)
 	mockRepo.On("Delete", categoryID).Return(nil)
 
 	// Act
@@ -235,6 +276,24 @@ func TestDeleteCategory_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+// TestDeleteCategory_InUse 測試刪除正在使用的分類（應該失敗）
+func TestDeleteCategory_InUse(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	categoryID := uuid.New()
+	mockRepo.On("IsInUse", categoryID).Return(true, nil)
+
+	// Act
+	err := service.DeleteCategory(categoryID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "being used by existing cash flow records")
+	mockRepo.AssertExpectations(t)
+}
+
 // TestDeleteCategory_SystemCategory 測試刪除系統分類（應該失敗）
 func TestDeleteCategory_SystemCategory(t *testing.T) {
 	// Arrange
@@ -242,6 +301,7 @@ func TestDeleteCategory_SystemCategory(t *testing.T) {
 	service := NewCategoryService(mockRepo)
 
 	categoryID := uuid.New()
+	mockRepo.On("IsInUse", categoryID).Return(false, nil)
 	mockRepo.On("Delete", categoryID).Return(fmt.Errorf("category not found or is a system category"))
 
 	// Act
@@ -253,3 +313,20 @@ func TestDeleteCategory_SystemCategory(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+// TestDeleteCategory_CheckInUseFailed 測試檢查分類使用狀態失敗
+func TestDeleteCategory_CheckInUseFailed(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	categoryID := uuid.New()
+	mockRepo.On("IsInUse", categoryID).Return(false, fmt.Errorf("database error"))
+
+	// Act
+	err := service.DeleteCategory(categoryID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to check if category is in use")
+	mockRepo.AssertExpectations(t)
+}

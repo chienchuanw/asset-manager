@@ -14,3 +14,8 @@ export { CashFlowCard } from "./CashFlowCard";
 export { CashFlowFilterDrawer } from "./CashFlowFilterDrawer";
 export { DailyDateNavigator } from "./DailyDateNavigator";
 export { DailySummaryCards } from "./DailySummaryCards";
+export { CategoryManagement } from "./CategoryManagement";
+export { CategoryItem } from "./CategoryItem";
+export { AddCategoryForm } from "./AddCategoryForm";
+export { EditCategoryDialog } from "./EditCategoryDialog";
+export { DeleteCategoryDialog } from "./DeleteCategoryDialog";

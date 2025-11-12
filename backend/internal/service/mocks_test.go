@@ -191,3 +191,7 @@ func (m *MockCategoryRepository) Delete(id uuid.UUID) error {
 	return args.Error(0)
 }
 
+func (m *MockCategoryRepository) IsInUse(id uuid.UUID) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}

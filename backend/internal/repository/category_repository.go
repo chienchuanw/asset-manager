@@ -15,6 +15,7 @@ type CategoryRepository interface {
 	GetAll(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error)
 	Update(id uuid.UUID, input *models.UpdateCategoryInput) (*models.CashFlowCategory, error)
 	Delete(id uuid.UUID) error
+	IsInUse(id uuid.UUID) (bool, error)
 }
 
 // categoryRepository 現金流分類資料存取實作
@@ -183,3 +184,19 @@ func (r *categoryRepository) Delete(id uuid.UUID) error {
 	return nil
 }
 
+// IsInUse 檢查分類是否被現金流記錄使用
+func (r *categoryRepository) IsInUse(id uuid.UUID) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM cash_flows WHERE category_id = $1
+		)
+	`
+
+	var exists bool
+	err := r.db.QueryRow(query, id).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if category is in use: %w", err)
+	}
+
+	return exists, nil
+}

@@ -325,10 +325,7 @@ export type UpdateCashFlowFormData = z.infer<typeof updateCashFlowSchema>;
  * 建立分類的表單 Schema
  */
 export const createCategorySchema = z.object({
-  name: z
-    .string()
-    .min(1, "分類名稱為必填")
-    .max(100, "分類名稱不可超過 100 字元"),
+  name: z.string().min(1, "分類名稱為必填").max(20, "分類名稱不可超過 20 字元"),
   type: cashFlowTypeSchema,
 });
 
@@ -341,10 +338,7 @@ export type CreateCategoryFormData = z.infer<typeof createCategorySchema>;
  * 更新分類的表單 Schema
  */
 export const updateCategorySchema = z.object({
-  name: z
-    .string()
-    .min(1, "分類名稱為必填")
-    .max(100, "分類名稱不可超過 100 字元"),
+  name: z.string().min(1, "分類名稱為必填").max(20, "分類名稱不可超過 20 字元"),
 });
 
 /**
