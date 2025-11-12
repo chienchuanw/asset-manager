@@ -376,8 +376,8 @@ export function useCreateCategory(
   return useMutation<CashFlowCategory, APIError, CreateCategoryInput>({
     mutationFn: categoriesAPI.create,
     onSuccess: async () => {
-      // 使所有分類列表的快取失效
-      await queryClient.invalidateQueries({
+      // 立即重新取得所有分類列表
+      await queryClient.refetchQueries({
         queryKey: categoryKeys.lists(),
       });
     },
@@ -421,8 +421,8 @@ export function useUpdateCategory(
   >({
     mutationFn: ({ id, data }) => categoriesAPI.update(id, data),
     onSuccess: async (_data, variables) => {
-      // 使所有分類列表的快取失效
-      await queryClient.invalidateQueries({
+      // 立即重新取得所有分類列表
+      await queryClient.refetchQueries({
         queryKey: categoryKeys.lists(),
       });
       // 使該筆分類的快取失效
@@ -459,8 +459,8 @@ export function useDeleteCategory(
   return useMutation<void, APIError, string>({
     mutationFn: categoriesAPI.delete,
     onSuccess: async (_data, variables) => {
-      // 使所有分類列表的快取失效
-      await queryClient.invalidateQueries({
+      // 立即重新取得所有分類列表
+      await queryClient.refetchQueries({
         queryKey: categoryKeys.lists(),
       });
       // 移除該筆分類的快取

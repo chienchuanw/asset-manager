@@ -151,7 +151,10 @@ export default function CashFlowsPage() {
   return (
     <AppLayout title="現金流記錄" description="追蹤和管理您的收入與支出">
       {/* Main Content */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
+        {/* 分類管理 - 置於頁面最上方 */}
+        <CategoryManagement />
+
         {/* 左右分欄佈局 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左側：今日內容 */}
@@ -289,9 +292,6 @@ export default function CashFlowsPage() {
                   </p>
                 </CardContent>
               </Card>
-
-              {/* 分類管理 */}
-              <CategoryManagement />
             </div>
           </div>
         </div>

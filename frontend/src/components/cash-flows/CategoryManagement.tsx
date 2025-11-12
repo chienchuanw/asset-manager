@@ -1,6 +1,6 @@
 /**
  * 分類管理元件
- * 包含收入/支出分頁、列表顯示、新增表單
+ * 使用 Badge 顯示分類，提供簡約的管理介面
  */
 
 import { useState } from "react";
@@ -11,18 +11,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/hooks";
 import { CashFlowType, type CashFlowCategory } from "@/types/cash-flow";
-import { CategoryItem } from "./CategoryItem";
-import { AddCategoryForm } from "./AddCategoryForm";
 import { EditCategoryDialog } from "./EditCategoryDialog";
 import { DeleteCategoryDialog } from "./DeleteCategoryDialog";
+import { AddCategoryDialog } from "./AddCategoryDialog";
+import { Lock, Pencil, Trash2, Plus } from "lucide-react";
 
 /**
  * 分類管理元件
- * 
+ *
  * 提供收入和支出分類的管理介面
  */
 export function CategoryManagement() {
@@ -30,6 +32,8 @@ export function CategoryManagement() {
     useState<CashFlowCategory | null>(null);
   const [deletingCategory, setDeletingCategory] =
     useState<CashFlowCategory | null>(null);
+  const [showAddIncome, setShowAddIncome] = useState(false);
+  const [showAddExpense, setShowAddExpense] = useState(false);
 
   // 取得收入分類
   const {
@@ -72,12 +76,12 @@ export function CategoryManagement() {
             </TabsList>
 
             {/* 收入分類 */}
-            <TabsContent value="income" className="space-y-4">
+            <TabsContent value="income" className="space-y-3">
               {isLoadingIncome ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-7 w-20" />
+                  <Skeleton className="h-7 w-24" />
+                  <Skeleton className="h-7 w-16" />
                 </div>
               ) : incomeError ? (
                 <div className="text-sm text-destructive">
@@ -85,28 +89,63 @@ export function CategoryManagement() {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-1">
+                  <div className="flex flex-wrap gap-2">
                     {incomeCategories?.map((category) => (
-                      <CategoryItem
+                      <Badge
                         key={category.id}
-                        category={category}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
+                        variant={category.is_system ? "secondary" : "outline"}
+                        className={
+                          category.is_system
+                            ? ""
+                            : "group relative pr-2 hover:pr-16 transition-all cursor-pointer"
+                        }
+                      >
+                        {category.is_system && (
+                          <Lock className="mr-1 h-2.5 w-2.5" />
+                        )}
+                        {category.name}
+                        {!category.is_system && (
+                          <div className="absolute right-1 hidden group-hover:flex gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => handleEdit(category)}
+                            >
+                              <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 text-destructive"
+                              onClick={() => handleDelete(category)}
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </Badge>
                     ))}
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => setShowAddIncome(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      新增收入分類
+                    </Badge>
                   </div>
-                  <AddCategoryForm type={CashFlowType.INCOME} />
                 </>
               )}
             </TabsContent>
 
             {/* 支出分類 */}
-            <TabsContent value="expense" className="space-y-4">
+            <TabsContent value="expense" className="space-y-3">
               {isLoadingExpense ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-7 w-20" />
+                  <Skeleton className="h-7 w-24" />
+                  <Skeleton className="h-7 w-16" />
                 </div>
               ) : expenseError ? (
                 <div className="text-sm text-destructive">
@@ -114,23 +153,72 @@ export function CategoryManagement() {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-1">
+                  <div className="flex flex-wrap gap-2">
                     {expenseCategories?.map((category) => (
-                      <CategoryItem
+                      <Badge
                         key={category.id}
-                        category={category}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
+                        variant={category.is_system ? "secondary" : "outline"}
+                        className={
+                          category.is_system
+                            ? ""
+                            : "group relative pr-2 hover:pr-16 transition-all cursor-pointer"
+                        }
+                      >
+                        {category.is_system && (
+                          <Lock className="mr-1 h-2.5 w-2.5" />
+                        )}
+                        {category.name}
+                        {!category.is_system && (
+                          <div className="absolute right-1 hidden group-hover:flex gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => handleEdit(category)}
+                            >
+                              <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 text-destructive"
+                              onClick={() => handleDelete(category)}
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </Badge>
                     ))}
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => setShowAddExpense(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      新增支出分類
+                    </Badge>
                   </div>
-                  <AddCategoryForm type={CashFlowType.EXPENSE} />
                 </>
               )}
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* 新增對話框 - 收入 */}
+      <AddCategoryDialog
+        type={CashFlowType.INCOME}
+        open={showAddIncome}
+        onOpenChange={setShowAddIncome}
+      />
+
+      {/* 新增對話框 - 支出 */}
+      <AddCategoryDialog
+        type={CashFlowType.EXPENSE}
+        open={showAddExpense}
+        onOpenChange={setShowAddExpense}
+      />
 
       {/* 編輯對話框 */}
       <EditCategoryDialog
@@ -148,4 +236,3 @@ export function CategoryManagement() {
     </>
   );
 }
-

@@ -26,14 +26,20 @@ import { toast } from "sonner";
 
 interface AddCategoryFormProps {
   type: CashFlowType;
+  onCancel?: () => void;
+  onSuccess?: () => void;
 }
 
 /**
  * 新增分類表單元件
- * 
+ *
  * 提供 inline 表單讓使用者快速新增分類
  */
-export function AddCategoryForm({ type }: AddCategoryFormProps) {
+export function AddCategoryForm({
+  type,
+  onCancel,
+  onSuccess,
+}: AddCategoryFormProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   // 表單設定
@@ -51,6 +57,7 @@ export function AddCategoryForm({ type }: AddCategoryFormProps) {
       toast.success("分類建立成功");
       form.reset({ name: "", type });
       setIsAdding(false);
+      onSuccess?.();
     },
     onError: (error) => {
       toast.error(error.message || "建立失敗");
@@ -66,6 +73,7 @@ export function AddCategoryForm({ type }: AddCategoryFormProps) {
   const handleCancel = () => {
     form.reset({ name: "", type });
     setIsAdding(false);
+    onCancel?.();
   };
 
   if (!isAdding) {
@@ -127,4 +135,3 @@ export function AddCategoryForm({ type }: AddCategoryFormProps) {
     </Form>
   );
 }
-
