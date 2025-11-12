@@ -373,15 +373,24 @@ export function useCreateCategory(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess: userOnSuccess, ...restOptions } = options || {};
+
   return useMutation<CashFlowCategory, APIError, CreateCategoryInput>({
     mutationFn: categoriesAPI.create,
-    onSuccess: async () => {
-      // 立即重新取得所有分類列表
+    onSuccess: async (data, variables) => {
+      // 立即重新取得所有分類列表（包含所有 type 的變體）
       await queryClient.refetchQueries({
         queryKey: categoryKeys.lists(),
+        type: "active", // 只 refetch 目前正在使用的 queries
       });
+
+      // 等待 refetch 完成後，再執行使用者傳入的 onSuccess
+      if (userOnSuccess) {
+        // @ts-expect-error - React Query v5 類型定義問題，onSuccess 實際上接受 3 個參數
+        userOnSuccess(data, variables, undefined);
+      }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -414,23 +423,32 @@ export function useUpdateCategory(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess: userOnSuccess, ...restOptions } = options || {};
+
   return useMutation<
     CashFlowCategory,
     APIError,
     { id: string; data: UpdateCategoryInput }
   >({
     mutationFn: ({ id, data }) => categoriesAPI.update(id, data),
-    onSuccess: async (_data, variables) => {
-      // 立即重新取得所有分類列表
+    onSuccess: async (data, variables) => {
+      // 立即重新取得所有分類列表（包含所有 type 的變體）
       await queryClient.refetchQueries({
         queryKey: categoryKeys.lists(),
+        type: "active", // 只 refetch 目前正在使用的 queries
       });
       // 使該筆分類的快取失效
       await queryClient.invalidateQueries({
         queryKey: categoryKeys.detail(variables.id),
       });
+
+      // 等待 refetch 完成後，再執行使用者傳入的 onSuccess
+      if (userOnSuccess) {
+        // @ts-expect-error - React Query v5 類型定義問題，onSuccess 實際上接受 3 個參數
+        userOnSuccess(data, variables, undefined);
+      }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -456,18 +474,27 @@ export function useDeleteCategory(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess: userOnSuccess, ...restOptions } = options || {};
+
   return useMutation<void, APIError, string>({
     mutationFn: categoriesAPI.delete,
-    onSuccess: async (_data, variables) => {
-      // 立即重新取得所有分類列表
+    onSuccess: async (data, variables) => {
+      // 立即重新取得所有分類列表（包含所有 type 的變體）
       await queryClient.refetchQueries({
         queryKey: categoryKeys.lists(),
+        type: "active", // 只 refetch 目前正在使用的 queries
       });
       // 移除該筆分類的快取
       queryClient.removeQueries({
         queryKey: categoryKeys.detail(variables),
       });
+
+      // 等待 refetch 完成後，再執行使用者傳入的 onSuccess
+      if (userOnSuccess) {
+        // @ts-expect-error - React Query v5 類型定義問題，onSuccess 實際上接受 3 個參數
+        userOnSuccess(data, variables, undefined);
+      }
     },
-    ...options,
+    ...restOptions,
   });
 }
