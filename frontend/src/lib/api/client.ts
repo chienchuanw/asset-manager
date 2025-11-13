@@ -1,4 +1,4 @@
-import type { APIResponse } from "@/types/transaction";
+import type { APIResponse, APIWarning } from "@/types/transaction";
 
 /**
  * API 基礎 URL
@@ -13,6 +13,14 @@ export class APIError extends Error {
     super(message);
     this.name = "APIError";
   }
+}
+
+/**
+ * API 回應（包含 warnings）
+ */
+export interface APIResponseWithWarnings<T> {
+  data: T;
+  warnings: APIWarning[];
 }
 
 /**
@@ -108,6 +116,82 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 /**
+ * 處理 API 回應（包含 warnings）
+ */
+async function handleResponseWithWarnings<T>(
+  response: Response
+): Promise<APIResponseWithWarnings<T>> {
+  // 檢查回應狀態
+  if (!response.ok) {
+    // 嘗試解析錯誤訊息
+    try {
+      const contentType = response.headers.get("content-type");
+      const isJSON = contentType?.includes("application/json");
+
+      if (isJSON) {
+        const errorData: APIResponse<T> = await response.json();
+        throw new APIError(
+          errorData.error?.code || "UNKNOWN_ERROR",
+          errorData.error?.message || "未知錯誤",
+          response.status
+        );
+      }
+    } catch (parseError) {
+      // 如果無法解析錯誤訊息，使用預設錯誤
+    }
+
+    throw new APIError(
+      "HTTP_ERROR",
+      `HTTP ${response.status} 錯誤`,
+      response.status
+    );
+  }
+
+  // 處理 204 No Content 回應
+  if (response.status === 204) {
+    return {
+      data: undefined as T,
+      warnings: [],
+    };
+  }
+
+  // 檢查 Content-Type
+  const contentType = response.headers.get("content-type");
+  const isJSON = contentType?.includes("application/json");
+
+  // 如果不是 JSON，拋出錯誤
+  if (!isJSON) {
+    throw new APIError(
+      "INVALID_RESPONSE",
+      "伺服器回應格式錯誤",
+      response.status
+    );
+  }
+
+  // 解析 JSON
+  const data: APIResponse<T> = await response.json();
+
+  // 檢查是否有錯誤
+  if (data.error) {
+    throw new APIError(
+      data.error.code || "UNKNOWN_ERROR",
+      data.error.message || "未知錯誤",
+      response.status
+    );
+  }
+
+  // 回傳資料
+  if (data.data === null) {
+    throw new APIError("NO_DATA", "伺服器未回傳資料", response.status);
+  }
+
+  return {
+    data: data.data,
+    warnings: data.warnings || [],
+  };
+}
+
+/**
  * 基礎 API 呼叫函式
  */
 async function apiCall<T>(
@@ -135,6 +219,53 @@ async function apiCall<T>(
 
     // 處理回應
     return await handleResponse<T>(response);
+  } catch (error) {
+    // 如果是 APIError，直接拋出
+    if (error instanceof APIError) {
+      throw error;
+    }
+
+    // 網路錯誤或其他錯誤
+    if (error instanceof TypeError) {
+      throw new APIError("NETWORK_ERROR", "網路連線失敗");
+    }
+
+    // 其他未知錯誤
+    throw new APIError(
+      "UNKNOWN_ERROR",
+      error instanceof Error ? error.message : "未知錯誤"
+    );
+  }
+}
+
+/**
+ * 基礎 API 呼叫函式（包含 warnings）
+ */
+async function apiCallWithWarnings<T>(
+  path: string,
+  options: FetchOptions = {}
+): Promise<APIResponseWithWarnings<T>> {
+  const { params, ...fetchOptions } = options;
+
+  // 建立完整 URL
+  const url = buildURL(path, params);
+
+  // 設定預設 headers
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...fetchOptions.headers,
+  };
+
+  try {
+    // 發送請求
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      credentials: fetchOptions.credentials || "include", // 預設包含 cookies
+    });
+
+    // 處理回應
+    return await handleResponseWithWarnings<T>(response);
   } catch (error) {
     // 如果是 APIError，直接拋出
     if (error instanceof APIError) {
@@ -191,6 +322,22 @@ export const apiClient = {
     apiCall<T>(path, {
       ...options,
       method: "DELETE",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
+
+  /**
+   * GET 請求（包含 warnings）
+   */
+  getWithWarnings: <T>(path: string, options?: FetchOptions) =>
+    apiCallWithWarnings<T>(path, { ...options, method: "GET" }),
+
+  /**
+   * POST 請求（包含 warnings）
+   */
+  postWithWarnings: <T>(path: string, body?: unknown, options?: FetchOptions) =>
+    apiCallWithWarnings<T>(path, {
+      ...options,
+      method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     }),
 };

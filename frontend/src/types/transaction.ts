@@ -129,11 +129,26 @@ export interface APIError {
 }
 
 /**
+ * API 警告回應
+ */
+export interface APIWarning {
+  code: string;
+  symbol: string;
+  message: string;
+  details?: {
+    required?: number;
+    available?: number;
+    missing?: number;
+  };
+}
+
+/**
  * API 回應（泛型）
  */
 export interface APIResponse<T> {
   data: T | null;
   error: APIError | null;
+  warnings?: APIWarning[];
 }
 
 // ==================== Zod Schema（用於表單驗證）====================

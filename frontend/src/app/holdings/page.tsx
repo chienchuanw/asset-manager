@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Card,
@@ -42,6 +42,10 @@ import {
   getConvertedStyle,
 } from "@/types/holding";
 import type { Holding } from "@/types/holding";
+import { InsufficientQuantityDialog } from "@/components/holdings/InsufficientQuantityDialog";
+import { holdingsAPI } from "@/lib/api/holdings";
+import { toast } from "sonner";
+import type { APIWarning } from "@/types/transaction";
 
 /**
  * 持倉卡片元件
@@ -203,6 +207,10 @@ export default function HoldingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showInTWD, setShowInTWD] = useState(false);
 
+  // Dialog 狀態
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentWarning, setCurrentWarning] = useState<APIWarning | null>(null);
+
   // 每個資產類別獨立的排序狀態
   const [twStockSort, setTwStockSort] = useState<{
     by: "market_value" | "unrealized_pl" | "quantity";
@@ -219,14 +227,55 @@ export default function HoldingsPage() {
     order: "asc" | "desc";
   }>({ by: "market_value", order: "desc" });
 
-  // 從 API 取得所有持倉資料
+  // 從 API 取得所有持倉資料（包含 warnings）
   const {
-    data: holdings,
+    data: holdingsResponse,
     isLoading,
     error,
     refetch,
     isFetching,
   } = useHoldings();
+
+  // 解構 holdings 和 warnings
+  const holdings = holdingsResponse?.data || [];
+  const warnings = holdingsResponse?.warnings || [];
+
+  // 當有 warnings 時，自動顯示第一個 warning 的 dialog
+  useEffect(() => {
+    if (warnings.length > 0 && !dialogOpen) {
+      const insufficientQuantityWarning = warnings.find(
+        (w) => w.code === "INSUFFICIENT_QUANTITY"
+      );
+      if (insufficientQuantityWarning) {
+        setCurrentWarning(insufficientQuantityWarning);
+        setDialogOpen(true);
+      }
+    }
+  }, [warnings, dialogOpen]);
+
+  // 處理修復不足數量
+  const handleFixInsufficientQuantity = async (data: {
+    symbol: string;
+    currentHolding: number;
+    estimatedCost?: number;
+  }) => {
+    try {
+      await holdingsAPI.fixInsufficientQuantity({
+        symbol: data.symbol,
+        current_holding: data.currentHolding,
+        estimated_cost: data.estimatedCost,
+      });
+
+      // 顯示成功訊息
+      toast.success("成功修復資料不一致問題");
+
+      // 重新載入資料
+      await refetch();
+    } catch (error) {
+      // 錯誤會在 dialog 中顯示
+      throw error;
+    }
+  };
 
   // 按資產類別分組並排序（使用 useMemo 優化效能）
   const holdingsByType = useMemo(() => {
@@ -539,6 +588,14 @@ export default function HoldingsPage() {
           </div>
         </div>
       </div>
+
+      {/* 不足數量修復對話框 */}
+      <InsufficientQuantityDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        warning={currentWarning}
+        onFix={handleFixInsufficientQuantity}
+      />
     </AppLayout>
   );
 }
