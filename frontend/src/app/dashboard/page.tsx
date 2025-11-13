@@ -25,12 +25,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 
 export default function DashboardPage() {
-  // 取得持倉資料
+  // 取得持倉資料（包含 warnings）
   const {
-    data: holdings,
+    data: holdingsResponse,
     isLoading: holdingsLoading,
     error: holdingsError,
   } = useHoldings();
+
+  // 解構 holdings
+  const holdings = holdingsResponse?.data || [];
 
   // 取得交易資料
   const {

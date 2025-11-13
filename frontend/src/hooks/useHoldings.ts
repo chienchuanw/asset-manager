@@ -91,52 +91,67 @@ export function useHolding(
 }
 
 /**
- * 取得台股持倉
+ * 取得台股持倉（包含 warnings）
  *
  * @param options React Query 選項
- * @returns 台股持倉列表
+ * @returns 台股持倉列表（包含 warnings）
  *
  * @example
  * ```tsx
- * const { data: twStocks } = useTWStockHoldings();
+ * const { data } = useTWStockHoldings();
+ * // data.data 是台股持倉陣列
+ * // data.warnings 是警告陣列
  * ```
  */
 export function useTWStockHoldings(
-  options?: Omit<UseQueryOptions<Holding[], APIError>, "queryKey" | "queryFn">
+  options?: Omit<
+    UseQueryOptions<APIResponseWithWarnings<Holding[]>, APIError>,
+    "queryKey" | "queryFn"
+  >
 ) {
   return useHoldings({ asset_type: "tw-stock" }, options);
 }
 
 /**
- * 取得美股持倉
+ * 取得美股持倉（包含 warnings）
  *
  * @param options React Query 選項
- * @returns 美股持倉列表
+ * @returns 美股持倉列表（包含 warnings）
  *
  * @example
  * ```tsx
- * const { data: usStocks } = useUSStockHoldings();
+ * const { data } = useUSStockHoldings();
+ * // data.data 是美股持倉陣列
+ * // data.warnings 是警告陣列
  * ```
  */
 export function useUSStockHoldings(
-  options?: Omit<UseQueryOptions<Holding[], APIError>, "queryKey" | "queryFn">
+  options?: Omit<
+    UseQueryOptions<APIResponseWithWarnings<Holding[]>, APIError>,
+    "queryKey" | "queryFn"
+  >
 ) {
   return useHoldings({ asset_type: "us-stock" }, options);
 }
 
 /**
- * 取得加密貨幣持倉
+ * 取得加密貨幣持倉（包含 warnings）
  *
  * @param options React Query 選項
- * @returns 加密貨幣持倉列表
+ * @returns 加密貨幣持倉列表（包含 warnings）
  *
  * @example
  * ```tsx
- * const { data: cryptos } = useCryptoHoldings();
+ * const { data } = useCryptoHoldings();
+ * // data.data 是加密貨幣持倉陣列
+ * // data.warnings 是警告陣列
  * ```
  */
 export function useCryptoHoldings(
-  options?: Omit<UseQueryOptions<Holding[], APIError>, "queryKey" | "queryFn">
+  options?: Omit<
+    UseQueryOptions<APIResponseWithWarnings<Holding[]>, APIError>,
+    "queryKey" | "queryFn"
+  >
 ) {
   return useHoldings({ asset_type: "crypto" }, options);
 }
