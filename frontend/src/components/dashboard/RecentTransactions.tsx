@@ -51,9 +51,9 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                       }`}
                     >
                       {isBuy ? (
-                        <ArrowDownIcon className="h-3 w-3 text-green-600" />
+                        <ArrowDownIcon className="h-3 w-3 text-red-600" />
                       ) : (
-                        <ArrowUpIcon className="h-3 w-3 text-red-600" />
+                        <ArrowUpIcon className="h-3 w-3 text-green-600" />
                       )}
                     </div>
 

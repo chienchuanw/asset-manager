@@ -186,12 +186,9 @@ func (s *assetSnapshotService) CreateDailySnapshots() error {
 	var cryptoValueTWD float64
 
 	for _, holding := range holdings {
-		// 將所有價值轉換為 TWD
+		// holding.MarketValue 已經在 holding_service 中轉換為 TWD
+		// 這裡直接使用即可，不需要再次轉換
 		valueTWD := holding.MarketValue
-		if holding.Currency == "USD" {
-			// 這裡應該使用匯率服務轉換,暫時使用固定匯率 31.5
-			valueTWD = holding.MarketValue * 31.5
-		}
 
 		totalValueTWD += valueTWD
 

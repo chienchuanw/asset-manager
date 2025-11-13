@@ -274,3 +274,94 @@ func TestAssetSnapshotService_GetLatestSnapshot(t *testing.T) {
 	assert.Equal(t, 1000000.00, snapshot.ValueTWD)
 }
 
+// TestAssetSnapshotService_CreateDailySnapshots_NoDoubleCurrencyConversion 測試建立每日快照時不會重複轉換台幣
+// 這個測試驗證美股和加密貨幣的 MarketValue（已經是 TWD）不會被二次轉換
+func TestAssetSnapshotService_CreateDailySnapshots_NoDoubleCurrencyConversion(t *testing.T) {
+	db, err := setupTestDB()
+	require.NoError(t, err)
+	defer db.Close()
+
+	// 清理測試資料
+	_, err = db.Exec("DELETE FROM asset_snapshots")
+	require.NoError(t, err)
+
+	// 建立 mock HoldingService
+	mockHoldingService := new(MockHoldingService)
+
+	// 建立 repository 和 service
+	assetSnapshotRepo := repository.NewAssetSnapshotRepository(db)
+	service := NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, mockHoldingService)
+
+	// 準備測試資料：模擬三種資產類型的持倉
+	// 重點：MarketValue 已經是 TWD，不應該再被轉換
+	testHoldings := []*models.Holding{
+		{
+			Symbol:      "2330.TW",
+			AssetType:   models.AssetTypeTWStock,
+			Quantity:    100,
+			TotalCost:   50000.0,  // TWD
+			MarketValue: 60000.0,  // TWD (已轉換)
+			Currency:    models.CurrencyTWD,
+		},
+		{
+			Symbol:      "AAPL",
+			AssetType:   models.AssetTypeUSStock,
+			Quantity:    10,
+			TotalCost:   50000.0,  // TWD (已轉換)
+			MarketValue: 63000.0,  // TWD (已轉換，原本 USD 2000 * 31.5 = 63000)
+			Currency:    models.CurrencyUSD, // 注意：這裡標記為 USD，但 MarketValue 已經是 TWD
+		},
+		{
+			Symbol:      "BTC",
+			AssetType:   models.AssetTypeCrypto,
+			Quantity:    0.5,
+			TotalCost:   500000.0, // TWD (已轉換)
+			MarketValue: 630000.0, // TWD (已轉換，原本 USD 20000 * 31.5 = 630000)
+			Currency:    models.CurrencyUSD, // 注意：這裡標記為 USD，但 MarketValue 已經是 TWD
+		},
+	}
+
+	// 設定 mock 回傳值
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(testHoldings, nil)
+
+	// 執行建立每日快照
+	err = service.CreateDailySnapshots()
+	require.NoError(t, err)
+
+	// 驗證快照是否正確建立
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// 驗證總資產快照
+	totalSnapshot, err := service.GetSnapshotByDate(today, models.SnapshotAssetTypeTotal)
+	require.NoError(t, err)
+	assert.NotNil(t, totalSnapshot)
+	// 預期值：60000 + 63000 + 630000 = 753000 TWD
+	// 如果有二次轉換的 bug，會是：60000 + (63000 * 31.5) + (630000 * 31.5) = 21,904,500 TWD
+	assert.Equal(t, 753000.0, totalSnapshot.ValueTWD, "總資產應該是 753000 TWD，不應該有二次轉換")
+
+	// 驗證台股快照
+	twStockSnapshot, err := service.GetSnapshotByDate(today, models.SnapshotAssetTypeTWStock)
+	require.NoError(t, err)
+	assert.NotNil(t, twStockSnapshot)
+	assert.Equal(t, 60000.0, twStockSnapshot.ValueTWD, "台股應該是 60000 TWD")
+
+	// 驗證美股快照
+	usStockSnapshot, err := service.GetSnapshotByDate(today, models.SnapshotAssetTypeUSStock)
+	require.NoError(t, err)
+	assert.NotNil(t, usStockSnapshot)
+	// 預期值：63000 TWD（已轉換）
+	// 如果有二次轉換的 bug，會是：63000 * 31.5 = 1,984,500 TWD
+	assert.Equal(t, 63000.0, usStockSnapshot.ValueTWD, "美股應該是 63000 TWD，不應該有二次轉換")
+
+	// 驗證加密貨幣快照
+	cryptoSnapshot, err := service.GetSnapshotByDate(today, models.SnapshotAssetTypeCrypto)
+	require.NoError(t, err)
+	assert.NotNil(t, cryptoSnapshot)
+	// 預期值：630000 TWD（已轉換）
+	// 如果有二次轉換的 bug，會是：630000 * 31.5 = 19,845,000 TWD
+	assert.Equal(t, 630000.0, cryptoSnapshot.ValueTWD, "加密貨幣應該是 630000 TWD，不應該有二次轉換")
+
+	// 驗證 mock 被正確呼叫
+	mockHoldingService.AssertExpectations(t)
+}
+
