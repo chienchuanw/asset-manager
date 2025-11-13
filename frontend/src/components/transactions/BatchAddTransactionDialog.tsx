@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Copy, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -73,10 +74,21 @@ export function BatchAddTransactionDialog({
 
   // 建立批次交易 mutation
   const createBatchMutation = useCreateTransactionsBatch({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // 顯示成功訊息，包含成功建立的筆數
+      const successCount = data.length;
+      toast.success(`批次新增成功`, {
+        description: `成功建立 ${successCount} 筆交易記錄`,
+      });
       setOpen(false);
       form.reset();
       onSuccess?.();
+    },
+    onError: (error) => {
+      // 顯示錯誤訊息
+      toast.error("批次新增失敗", {
+        description: error.message || "請稍後再試",
+      });
     },
   });
 
