@@ -234,10 +234,13 @@ export type UpdateTransactionFormData = z.infer<typeof updateTransactionSchema>;
 /**
  * 批次建立交易的單列表單 Schema
  * 用於表格中的每一列
+ * 每筆交易都有獨立的 asset_type 和 currency
  */
 export const batchTransactionRowSchema = z
   .object({
     date: z.string().min(1, "日期為必填"),
+    asset_type: assetTypeSchema,
+    currency: currencySchema,
     symbol: z.string().min(1, "代碼為必填"),
     name: z.string().min(1, "名稱為必填"),
     type: transactionTypeSchema,
@@ -281,10 +284,9 @@ export type BatchTransactionRowFormData = z.infer<
 
 /**
  * 批次建立交易的完整表單 Schema
+ * 不再有頂層的 asset_type 和 currency，每筆交易都有自己的
  */
 export const batchCreateTransactionsSchema = z.object({
-  asset_type: assetTypeSchema,
-  currency: currencySchema,
   transactions: z.array(batchTransactionRowSchema).min(1, "至少需要一筆交易"),
 });
 

@@ -15,14 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -91,12 +84,12 @@ export function BatchAddTransactionDialog({
   const form = useForm<BatchCreateTransactionsFormData>({
     resolver: zodResolver(batchCreateTransactionsSchema),
     defaultValues: {
-      asset_type: AssetType.TW_STOCK,
-      currency: Currency.TWD,
       transactions: Array(5)
         .fill(null)
         .map(() => ({
           date: new Date().toISOString().split("T")[0],
+          asset_type: AssetType.TW_STOCK,
+          currency: Currency.TWD,
           symbol: "",
           name: "",
           type: TransactionType.BUY,
@@ -113,16 +106,13 @@ export function BatchAddTransactionDialog({
   // 當有 initialTransactions 時，更新表單資料
   useEffect(() => {
     if (initialTransactions && initialTransactions.length > 0) {
-      // 從第一筆交易取得資產類型和幣別
-      const firstTransaction = initialTransactions[0];
-      form.setValue("asset_type", firstTransaction.asset_type);
-      form.setValue("currency", firstTransaction.currency);
-
-      // 設定所有交易
+      // 設定所有交易（每筆交易都有自己的 asset_type 和 currency）
       form.setValue(
         "transactions",
         initialTransactions.map((t: any) => ({
           date: t.date.split("T")[0], // 確保日期格式正確
+          asset_type: t.asset_type,
+          currency: t.currency,
           symbol: t.symbol,
           name: t.name,
           type: t.transaction_type,
@@ -143,21 +133,12 @@ export function BatchAddTransactionDialog({
     name: "transactions",
   });
 
-  // 監聽資產類型變化，自動更新幣別
-  const assetType = form.watch("asset_type");
-  useEffect(() => {
-    if (assetType === AssetType.TW_STOCK) {
-      form.setValue("currency", Currency.TWD);
-    } else if (assetType === AssetType.US_STOCK) {
-      form.setValue("currency", Currency.USD);
-    }
-    // 加密貨幣可以是 TWD 或 USD，不自動變更
-  }, [assetType, form]);
-
   // 新增一列
   const handleAddRow = () => {
     append({
       date: new Date().toISOString().split("T")[0],
+      asset_type: AssetType.TW_STOCK,
+      currency: Currency.TWD,
       symbol: "",
       name: "",
       type: TransactionType.BUY,
@@ -185,10 +166,10 @@ export function BatchAddTransactionDialog({
 
   // 送出表單
   const onSubmit = (data: BatchCreateTransactionsFormData) => {
-    // 轉換資料格式
+    // 轉換資料格式（每筆交易都有自己的 asset_type 和 currency）
     const transactions = data.transactions.map((tx) => ({
       date: new Date(tx.date).toISOString(),
-      asset_type: data.asset_type,
+      asset_type: tx.asset_type,
       symbol: tx.symbol,
       name: tx.name,
       type: tx.type,
@@ -197,7 +178,7 @@ export function BatchAddTransactionDialog({
       amount: tx.amount,
       fee: tx.fee,
       tax: tx.tax,
-      currency: data.currency,
+      currency: tx.currency,
       note: tx.note,
     }));
 
@@ -256,64 +237,6 @@ export function BatchAddTransactionDialog({
               </Alert>
             )}
 
-            {/* 資產類型和幣別選擇 */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="asset_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>資產類型</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="選擇資產類型" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.values(AssetType)
-                          .filter((type) => type !== AssetType.CASH)
-                          .map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {getAssetTypeLabel(type)}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>幣別</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="選擇幣別" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={Currency.TWD}>TWD</SelectItem>
-                        <SelectItem value={Currency.USD}>USD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {/* 交易列表表格 */}
             <div className="border rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
@@ -322,6 +245,8 @@ export function BatchAddTransactionDialog({
                     <TableRow>
                       <TableHead className="w-12">#</TableHead>
                       <TableHead className="min-w-[140px]">日期</TableHead>
+                      <TableHead className="min-w-[120px]">資產類型</TableHead>
+                      <TableHead className="min-w-20">幣別</TableHead>
                       <TableHead className="min-w-[100px]">代碼</TableHead>
                       <TableHead className="min-w-[120px]">名稱</TableHead>
                       <TableHead className="min-w-[100px]">類型</TableHead>
@@ -343,7 +268,6 @@ export function BatchAddTransactionDialog({
                         onCopy={() => handleCopyRow(index)}
                         onDelete={() => handleDeleteRow(index)}
                         canDelete={fields.length > 1}
-                        assetType={assetType}
                       />
                     ))}
                   </TableBody>
@@ -396,7 +320,6 @@ interface TransactionRowProps {
   onCopy: () => void;
   onDelete: () => void;
   canDelete: boolean;
-  assetType: AssetType;
 }
 
 function TransactionRow({
@@ -405,11 +328,11 @@ function TransactionRow({
   onCopy,
   onDelete,
   canDelete,
-  assetType,
 }: TransactionRowProps) {
   // 監聽數量和價格變化，自動計算金額
   const quantity = form.watch(`transactions.${index}.quantity`);
   const price = form.watch(`transactions.${index}.price`);
+  const assetType = form.watch(`transactions.${index}.asset_type`);
 
   useEffect(() => {
     const amount = quantity * price;
@@ -417,6 +340,16 @@ function TransactionRow({
       form.setValue(`transactions.${index}.amount`, amount);
     }
   }, [quantity, price, index, form]);
+
+  // 監聽資產類型變化，自動更新幣別
+  useEffect(() => {
+    if (assetType === AssetType.TW_STOCK) {
+      form.setValue(`transactions.${index}.currency`, Currency.TWD);
+    } else if (assetType === AssetType.US_STOCK) {
+      form.setValue(`transactions.${index}.currency`, Currency.USD);
+    }
+    // 加密貨幣可以是 TWD 或 USD，不自動變更
+  }, [assetType, index, form]);
 
   return (
     <>
@@ -434,6 +367,63 @@ function TransactionRow({
                 <FormControl>
                   <Input type="date" {...field} className="h-9" />
                 </FormControl>
+              </FormItem>
+            )}
+          />
+        </TableCell>
+
+        {/* 資產類型 */}
+        <TableCell>
+          <FormField
+            control={form.control}
+            name={`transactions.${index}.asset_type`}
+            render={({ field }) => (
+              <FormItem>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.values(AssetType)
+                      .filter((type) => type !== AssetType.CASH)
+                      .map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {getAssetTypeLabel(type)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )}
+          />
+        </TableCell>
+
+        {/* 幣別 */}
+        <TableCell>
+          <FormField
+            control={form.control}
+            name={`transactions.${index}.currency`}
+            render={({ field }) => (
+              <FormItem>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={Currency.TWD}>TWD</SelectItem>
+                    <SelectItem value={Currency.USD}>USD</SelectItem>
+                  </SelectContent>
+                </Select>
               </FormItem>
             )}
           />

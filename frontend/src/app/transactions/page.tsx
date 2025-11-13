@@ -474,26 +474,29 @@ export default function TransactionsPage() {
                                 ? `${transaction.price.toLocaleString("zh-TW", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 4,
-                                  })}`
+                                  })} ${transaction.currency}`
                                 : "-"}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm font-medium">
                               {transaction.amount.toLocaleString("zh-TW", {
                                 minimumFractionDigits: 2,
-                              })}
+                              })}{" "}
+                              <span className="text-muted-foreground font-normal">
+                                {transaction.currency}
+                              </span>
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm text-muted-foreground hidden md:table-cell">
                               {transaction.fee
-                                ? transaction.fee.toLocaleString("zh-TW", {
+                                ? `${transaction.fee.toLocaleString("zh-TW", {
                                     minimumFractionDigits: 2,
-                                  })
+                                  })} ${transaction.currency}`
                                 : "-"}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm text-muted-foreground hidden md:table-cell">
                               {transaction.tax
-                                ? transaction.tax.toLocaleString("zh-TW", {
+                                ? `${transaction.tax.toLocaleString("zh-TW", {
                                     minimumFractionDigits: 2,
-                                  })
+                                  })} ${transaction.currency}`
                                 : "-"}
                             </TableCell>
                             <TableCell>
