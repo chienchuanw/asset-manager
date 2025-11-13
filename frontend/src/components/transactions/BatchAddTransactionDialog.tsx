@@ -378,7 +378,7 @@ function TransactionRow({
             control={form.control}
             name={`transactions.${index}.asset_type`}
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-0">
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -409,7 +409,7 @@ function TransactionRow({
             control={form.control}
             name={`transactions.${index}.currency`}
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-0">
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -480,7 +480,7 @@ function TransactionRow({
             control={form.control}
             name={`transactions.${index}.type`}
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-0">
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}

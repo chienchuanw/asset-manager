@@ -37,88 +37,81 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { BatchAddTransactionDialog } from "@/components/transactions/BatchAddTransactionDialog";
 import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog";
-import { TransactionFilterDrawer } from "@/components/transactions/TransactionFilterDrawer";
 import { CSVImportDialog } from "@/components/transactions/CSVImportDialog";
-import {
-  DateRangeTabs,
-  calculateDateRange,
-  type DateRangeType,
-} from "@/components/common/DateRangeTabs";
+import { DailyDateNavigator } from "@/components/cash-flows/DailyDateNavigator";
+import { WeekMonthTabs } from "@/components/common/WeekMonthTabs";
+import { calculateDateRange } from "@/components/common/DateRangeTabs";
 import {
   useTransactions,
   useDeleteTransaction,
   transactionKeys,
 } from "@/hooks";
 import {
-  AssetType,
   TransactionType,
   type Transaction,
   type TransactionFilters,
   getAssetTypeLabel,
 } from "@/types/transaction";
 import { Search, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { DateRange } from "react-day-picker";
-import { toast } from "sonner";
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
 
   // 狀態管理
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>("today");
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(
-    undefined
-  );
-  const [filterType, setFilterType] = useState<TransactionType | "all">("all");
-  const [filterAssetType, setFilterAssetType] = useState<AssetType | "all">(
-    "all"
-  );
+
+  // 上半部：Tab 控制統計卡片的日期範圍
+  const [statsTab, setStatsTab] = useState<"week" | "month">("week");
+
+  // 下半部：日期導航控制交易列表顯示的日期
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [csvTransactions, setCsvTransactions] = useState<any[]>([]);
 
-  // 計算日期範圍
-  const { startDate, endDate } = useMemo(() => {
-    // 如果有自訂日期範圍,優先使用
-    if (customDateRange?.from) {
-      return {
-        startDate: customDateRange.from.toISOString().split("T")[0],
-        endDate: customDateRange.to
-          ? customDateRange.to.toISOString().split("T")[0]
-          : customDateRange.from.toISOString().split("T")[0],
-      };
-    }
-    // 否則使用 Tabs 選擇的日期範圍
-    return calculateDateRange(dateRangeType);
-  }, [dateRangeType, customDateRange]);
+  // 計算上半部統計卡片的日期範圍
+  const { startDate: statsStartDate, endDate: statsEndDate } = useMemo(() => {
+    return calculateDateRange(statsTab);
+  }, [statsTab]);
 
-  // 建立 API 篩選條件
-  const apiFilters: TransactionFilters = useMemo(() => {
-    const filters: TransactionFilters = {
-      start_date: startDate,
-      end_date: endDate,
+  // 計算下半部交易列表的日期範圍（只顯示選定的那一天）
+  const { startDate: listStartDate, endDate: listEndDate } = useMemo(() => {
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    return {
+      startDate: dateStr,
+      endDate: dateStr,
     };
+  }, [selectedDate]);
 
-    if (filterType !== "all") {
-      filters.type = filterType;
-    }
+  // 建立統計卡片的 API 篩選條件
+  const statsFilters: TransactionFilters = useMemo(() => {
+    return {
+      start_date: statsStartDate,
+      end_date: statsEndDate,
+    };
+  }, [statsStartDate, statsEndDate]);
 
-    if (filterAssetType !== "all") {
-      filters.asset_type = filterAssetType;
-    }
+  // 建立交易列表的 API 篩選條件
+  const listFilters: TransactionFilters = useMemo(() => {
+    return {
+      start_date: listStartDate,
+      end_date: listEndDate,
+    };
+  }, [listStartDate, listEndDate]);
 
-    return filters;
-  }, [startDate, endDate, filterType, filterAssetType]);
+  // 取得統計卡片的交易資料
+  const { data: statsTransactions } = useTransactions(statsFilters, {
+    staleTime: 0,
+  });
 
-  // 取得交易列表資料
+  // 取得交易列表的交易資料
   const {
     data: transactions,
     isLoading,
     error,
-    refetch,
-  } = useTransactions(apiFilters, {
-    // 確保資料總是最新的
+  } = useTransactions(listFilters, {
     staleTime: 0,
   });
 
@@ -129,7 +122,7 @@ export default function TransactionsPage() {
     },
   });
 
-  // 客戶端搜尋篩選（API 已經處理了日期和類型篩選）
+  // 客戶端搜尋篩選（只針對交易列表）
   const filteredTransactions = useMemo(() => {
     if (!transactions) return [];
 
@@ -151,9 +144,9 @@ export default function TransactionsPage() {
       });
   }, [transactions, searchQuery]);
 
-  // 計算統計資料（基於當前篩選的交易）
+  // 計算統計資料（基於統計卡片的日期範圍）
   const stats = useMemo(() => {
-    if (!filteredTransactions) {
+    if (!statsTransactions) {
       return {
         totalTransactions: 0,
         buyAmount: 0,
@@ -162,36 +155,29 @@ export default function TransactionsPage() {
       };
     }
 
-    const buyAmount = filteredTransactions
+    const buyAmount = statsTransactions
       .filter((t) => t.type === TransactionType.BUY)
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const sellAmount = filteredTransactions
+    const sellAmount = statsTransactions
       .filter((t) => t.type === TransactionType.SELL)
       .reduce((sum, t) => sum + t.amount, 0);
 
     const netFlow = buyAmount - sellAmount;
 
     return {
-      totalTransactions: filteredTransactions.length,
+      totalTransactions: statsTransactions.length,
       buyAmount,
       sellAmount,
       netFlow,
     };
-  }, [filteredTransactions]);
+  }, [statsTransactions]);
 
   // 處理刪除交易
   const handleDelete = (id: string) => {
     if (confirm("確定要刪除這筆交易嗎？")) {
       deleteMutation.mutate(id);
     }
-  };
-
-  // 處理重置篩選
-  const handleResetFilters = () => {
-    setFilterType("all");
-    setFilterAssetType("all");
-    setCustomDateRange(undefined);
   };
 
   // 重新獲取所有相關資料
@@ -211,16 +197,11 @@ export default function TransactionsPage() {
   return (
     <AppLayout title="交易記錄" description="管理和查看交易記錄">
       {/* Main Content */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
+        {/* 上半部：Tab + 統計卡片 */}
         <div className="flex flex-col gap-6">
-          {/* 日期範圍 Tabs */}
-          <DateRangeTabs
-            value={dateRangeType}
-            onValueChange={(value) => {
-              setDateRangeType(value);
-              setCustomDateRange(undefined); // 切換 Tabs 時清除自訂日期
-            }}
-          />
+          {/* Tab 切換 */}
+          <WeekMonthTabs value={statsTab} onValueChange={setStatsTab} />
 
           {/* 統計摘要卡片 */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -288,6 +269,15 @@ export default function TransactionsPage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* 下半部：日期導航 + 交易記錄列表 */}
+        <div className="flex flex-col gap-6">
+          {/* 日期導航 */}
+          <DailyDateNavigator
+            date={selectedDate}
+            onDateChange={setSelectedDate}
+          />
 
           {/* 交易記錄列表 */}
           <Card>
@@ -308,10 +298,9 @@ export default function TransactionsPage() {
                 </div>
               </div>
 
-              {/* 篩選工具列 */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center mt-4">
-                {/* 搜尋框 */}
-                <div className="relative flex-1">
+              {/* 搜尋框 */}
+              <div className="mt-4">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="搜尋代碼或名稱..."
@@ -320,17 +309,6 @@ export default function TransactionsPage() {
                     className="pl-9"
                   />
                 </div>
-
-                {/* 進階篩選 Drawer */}
-                <TransactionFilterDrawer
-                  filterType={filterType}
-                  filterAssetType={filterAssetType}
-                  dateRange={customDateRange}
-                  onFilterTypeChange={setFilterType}
-                  onFilterAssetTypeChange={setFilterAssetType}
-                  onDateRangeChange={setCustomDateRange}
-                  onReset={handleResetFilters}
-                />
               </div>
             </CardHeader>
 
@@ -402,10 +380,7 @@ export default function TransactionsPage() {
                       <TableRow>
                         <TableCell colSpan={9} className="h-24 text-center">
                           <p className="text-muted-foreground">
-                            {searchQuery ||
-                            filterType !== "all" ||
-                            filterAssetType !== "all" ||
-                            customDateRange
+                            {searchQuery
                               ? "沒有符合條件的交易記錄"
                               : "尚無交易記錄，點擊「新增交易」開始記錄"}
                           </p>
