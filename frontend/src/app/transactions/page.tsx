@@ -78,7 +78,11 @@ export default function TransactionsPage() {
 
   // 計算下半部交易列表的日期範圍（只顯示選定的那一天）
   const { startDate: listStartDate, endDate: listEndDate } = useMemo(() => {
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    // 使用本地時間格式化日期，避免時區轉換問題
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
     return {
       startDate: dateStr,
       endDate: dateStr,

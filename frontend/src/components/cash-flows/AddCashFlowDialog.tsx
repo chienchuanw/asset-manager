@@ -88,7 +88,14 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
   const form = useForm<CreateCashFlowFormData>({
     resolver: zodResolver(createCashFlowSchema),
     defaultValues: {
-      date: new Date().toISOString().split("T")[0], // YYYY-MM-DD 格式
+      date: (() => {
+        // 使用本地時間格式化日期，避免時區轉換問題
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      })(),
       type: CashFlowType.EXPENSE,
       category_id: "",
       amount: 0,

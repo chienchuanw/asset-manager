@@ -52,7 +52,14 @@ export function InstallmentForm({
       installment_count: 12,
       interest_rate: 0,
       category_id: "",
-      start_date: new Date().toISOString().split("T")[0],
+      start_date: (() => {
+        // 使用本地時間格式化日期，避免時區轉換問題
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      })(),
       billing_day: 1,
       note: "",
     },

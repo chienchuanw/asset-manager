@@ -70,7 +70,14 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
   const form = useForm<CreateTransactionFormData>({
     resolver: zodResolver(createTransactionSchema),
     defaultValues: {
-      date: new Date().toISOString().split("T")[0], // YYYY-MM-DD 格式
+      date: (() => {
+        // 使用本地時間格式化日期，避免時區轉換問題
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      })(),
       asset_type: AssetType.TW_STOCK,
       symbol: "",
       name: "",
@@ -99,8 +106,10 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
 
   // 送出表單
   const onSubmit = (data: CreateTransactionFormData) => {
-    // 將日期轉換為 ISO 8601 格式
-    const isoDate = new Date(data.date).toISOString();
+    // 將日期字串轉換為 ISO 8601 格式，使用本地時間避免時區問題
+    const [year, month, day] = data.date.split("-").map(Number);
+    const localDate = new Date(year, month - 1, day, 12, 0, 0); // 設定為中午避免夏令時問題
+    const isoDate = localDate.toISOString();
 
     createMutation.mutate({
       ...data,
