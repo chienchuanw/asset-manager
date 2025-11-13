@@ -317,12 +317,12 @@ type MockHoldingService struct {
 	mock.Mock
 }
 
-func (m *MockHoldingService) GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error) {
+func (m *MockHoldingService) GetAllHoldings(filters models.HoldingFilters) (*service.HoldingServiceResult, error) {
 	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.Holding), args.Error(1)
+	return args.Get(0).(*service.HoldingServiceResult), args.Error(1)
 }
 
 func (m *MockHoldingService) GetHoldingBySymbol(symbol string) (*models.Holding, error) {
@@ -331,6 +331,14 @@ func (m *MockHoldingService) GetHoldingBySymbol(symbol string) (*models.Holding,
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*models.Holding), args.Error(1)
+}
+
+func (m *MockHoldingService) FixInsufficientQuantity(input *models.FixInsufficientQuantityInput) (*models.Transaction, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
 }
 
 // MockRebalanceService 模擬 RebalanceService

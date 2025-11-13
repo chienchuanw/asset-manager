@@ -145,7 +145,10 @@ func TestCheckRebalance_RebalanceNeeded(t *testing.T) {
 	}
 
 	mockSettings.On("GetSettings").Return(settings, nil)
-	mockHolding.On("GetAllHoldings", mock.Anything).Return(holdings, nil)
+	mockHolding.On("GetAllHoldings", mock.Anything).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	result, err := service.CheckRebalance()

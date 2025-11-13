@@ -162,7 +162,7 @@ func (h *DiscordHandler) SendDailyReport(c *gin.Context) {
 	}
 
 	// 取得所有持倉
-	holdings, err := h.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := h.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, APIResponse{
 			Error: &APIError{
@@ -177,7 +177,7 @@ func (h *DiscordHandler) SendDailyReport(c *gin.Context) {
 	var totalMarketValue, totalCost, totalUnrealizedPL float64
 	byAssetType := make(map[string]*models.AssetTypePerformance)
 
-	for _, holding := range holdings {
+	for _, holding := range result.Holdings {
 		totalMarketValue += holding.MarketValue
 		totalCost += holding.TotalCost
 		totalUnrealizedPL += holding.UnrealizedPL
@@ -210,12 +210,12 @@ func (h *DiscordHandler) SendDailyReport(c *gin.Context) {
 	}
 
 	// 排序持倉（按市值降序）
-	sort.Slice(holdings, func(i, j int) bool {
-		return holdings[i].MarketValue > holdings[j].MarketValue
+	sort.Slice(result.Holdings, func(i, j int) bool {
+		return result.Holdings[i].MarketValue > result.Holdings[j].MarketValue
 	})
 
 	// 取前 5 大持倉
-	topHoldings := holdings
+	topHoldings := result.Holdings
 	if len(topHoldings) > 5 {
 		topHoldings = topHoldings[:5]
 	}
@@ -227,7 +227,7 @@ func (h *DiscordHandler) SendDailyReport(c *gin.Context) {
 		TotalCost:          totalCost,
 		TotalUnrealizedPL:  totalUnrealizedPL,
 		TotalUnrealizedPct: totalUnrealizedPct,
-		HoldingCount:       len(holdings),
+		HoldingCount:       len(result.Holdings),
 		TopHoldings:        topHoldings,
 		ByAssetType:        byAssetType,
 	}

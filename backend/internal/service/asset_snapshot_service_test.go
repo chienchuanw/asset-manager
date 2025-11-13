@@ -322,7 +322,10 @@ func TestAssetSnapshotService_CreateDailySnapshots_NoDoubleCurrencyConversion(t 
 	}
 
 	// 設定 mock 回傳值
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(testHoldings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: testHoldings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// 執行建立每日快照
 	err = service.CreateDailySnapshots()

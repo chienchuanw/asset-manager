@@ -311,13 +311,13 @@ func (m *SchedulerManager) sendDailyDiscordReport() error {
 	}
 
 	// 取得所有持倉
-	holdings, err := m.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := m.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return fmt.Errorf("failed to get holdings: %w", err)
 	}
 
 	// 計算報告資料（與 discord_handler.go 相同的邏輯）
-	reportData := m.buildReportData(holdings)
+	reportData := m.buildReportData(result.Holdings)
 
 	// 檢查是否需要再平衡
 	rebalanceCheck, err := m.rebalanceService.CheckRebalance()

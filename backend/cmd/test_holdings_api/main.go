@@ -61,14 +61,14 @@ func main() {
 	fmt.Println("\n=== 測試 GetAllHoldings API ===")
 
 	filters := models.HoldingFilters{}
-	holdings, err := holdingService.GetAllHoldings(filters)
+	result, err := holdingService.GetAllHoldings(filters)
 	if err != nil {
 		log.Fatalf("❌ Failed to get holdings: %v", err)
 	}
 
-	fmt.Printf("\n找到 %d 個持倉\n", len(holdings))
+	fmt.Printf("\n找到 %d 個持倉\n", len(result.Holdings))
 
-	for _, holding := range holdings {
+	for _, holding := range result.Holdings {
 		fmt.Println("\n============================================================")
 		fmt.Printf("標的: %s (%s)\n", holding.Symbol, holding.Name)
 		fmt.Printf("資產類型: %s\n", holding.AssetType)
