@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -67,6 +69,24 @@ func (m *MockTransactionService) CreateTransactionsBatch(inputs []*models.Create
 	return args.Get(0).([]*models.Transaction), args.Error(1)
 }
 
+// MockCSVImportService 模擬的 CSV import service
+type MockCSVImportService struct {
+	mock.Mock
+}
+
+func (m *MockCSVImportService) GenerateTemplate() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *MockCSVImportService) ParseCSV(reader io.Reader) *models.CSVImportResult {
+	args := m.Called(reader)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*models.CSVImportResult)
+}
+
 // setupTestRouter 設定測試用的 router
 func setupTestRouter(handler *TransactionHandler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -82,6 +102,8 @@ func setupTestRouter(handler *TransactionHandler) *gin.Engine {
 			transactions.GET("/:id", handler.GetTransaction)
 			transactions.PUT("/:id", handler.UpdateTransaction)
 			transactions.DELETE("/:id", handler.DeleteTransaction)
+			transactions.GET("/template", handler.DownloadCSVTemplate)
+			transactions.POST("/parse-csv", handler.ParseCSV)
 		}
 	}
 
@@ -92,7 +114,8 @@ func setupTestRouter(handler *TransactionHandler) *gin.Engine {
 func TestCreateTransaction_Success(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+	handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	fee := 28.0
@@ -152,7 +175,8 @@ func TestCreateTransaction_Success(t *testing.T) {
 func TestCreateTransaction_InvalidInput(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	// 無效的 JSON
@@ -178,7 +202,8 @@ func TestCreateTransaction_InvalidInput(t *testing.T) {
 func TestGetTransaction_Success(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	transactionID := uuid.New()
@@ -219,7 +244,8 @@ func TestGetTransaction_Success(t *testing.T) {
 func TestGetTransaction_InvalidID(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	// 準備請求
@@ -243,7 +269,8 @@ func TestGetTransaction_InvalidID(t *testing.T) {
 func TestListTransactions_Success(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	expectedTransactions := []*models.Transaction{
@@ -287,7 +314,8 @@ func TestListTransactions_Success(t *testing.T) {
 func TestDeleteTransaction_Success(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	transactionID := uuid.New()
@@ -315,7 +343,8 @@ func TestDeleteTransaction_Success(t *testing.T) {
 func TestCreateTransaction_WithTax(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	fee := 28.0
@@ -378,7 +407,8 @@ func TestCreateTransaction_WithTax(t *testing.T) {
 func TestUpdateTransaction_WithTax(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	transactionID := uuid.New()
@@ -430,7 +460,8 @@ func TestUpdateTransaction_WithTax(t *testing.T) {
 func TestCreateTransactionsBatch_Success(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	fee1 := 28.0
@@ -525,7 +556,8 @@ func TestCreateTransactionsBatch_Success(t *testing.T) {
 func TestCreateTransactionsBatch_InvalidInput(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	// 準備無效的請求（缺少必填欄位）
@@ -560,7 +592,8 @@ func TestCreateTransactionsBatch_InvalidInput(t *testing.T) {
 func TestCreateTransactionsBatch_ServiceError(t *testing.T) {
 	// Arrange
 	mockService := new(MockTransactionService)
-	handler := NewTransactionHandler(mockService)
+	mockCSVService := new(MockCSVImportService)
+handler := NewTransactionHandler(mockService, mockCSVService)
 	router := setupTestRouter(handler)
 
 	fee := 28.0
@@ -604,3 +637,111 @@ func TestCreateTransactionsBatch_ServiceError(t *testing.T) {
 
 	mockService.AssertExpectations(t)
 }
+
+// TestDownloadCSVTemplate 測試下載 CSV 樣板
+func TestDownloadCSVTemplate(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	mockCSVService := new(MockCSVImportService)
+	handler := NewTransactionHandler(mockService, mockCSVService)
+	router := setupTestRouter(handler)
+
+	expectedCSV := "date,asset_type,symbol,name,transaction_type,quantity,price,fee,tax,currency,note\n2025-01-15,tw_stock,2330,台積電,buy,10,620,28,,TWD,範例交易\n"
+	mockCSVService.On("GenerateTemplate").Return(expectedCSV)
+
+	// 準備請求
+	req, _ := http.NewRequest("GET", "/api/transactions/template", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "text/csv", w.Header().Get("Content-Type"))
+	assert.Contains(t, w.Header().Get("Content-Disposition"), "attachment")
+	assert.Contains(t, w.Header().Get("Content-Disposition"), "transaction_template.csv")
+	assert.Equal(t, expectedCSV, w.Body.String())
+
+	mockCSVService.AssertExpectations(t)
+}
+
+// TestParseCSV_Success 測試成功解析 CSV
+func TestParseCSV_Success(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	mockCSVService := new(MockCSVImportService)
+	handler := NewTransactionHandler(mockService, mockCSVService)
+	router := setupTestRouter(handler)
+
+	expectedResult := &models.CSVImportResult{
+		Success: true,
+		Transactions: []*models.CreateTransactionInput{
+			{
+				Date:            time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+				AssetType:       models.AssetTypeTWStock,
+				Symbol:          "2330",
+				Name:            "台積電",
+				TransactionType: models.TransactionTypeBuy,
+				Quantity:        10,
+				Price:           620,
+				Amount:          6200,
+				Currency:        models.CurrencyTWD,
+			},
+		},
+		Errors: []models.CSVValidationError{},
+	}
+
+	mockCSVService.On("ParseCSV", mock.Anything).Return(expectedResult)
+
+	// 準備 multipart form 請求
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, _ := writer.CreateFormFile("file", "test.csv")
+	part.Write([]byte("date,asset_type,symbol,name,transaction_type,quantity,price,fee,tax,currency,note\n2025-01-15,tw_stock,2330,台積電,buy,10,620,28,,TWD,"))
+	writer.Close()
+
+	req, _ := http.NewRequest("POST", "/api/transactions/parse-csv", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.NotNil(t, response.Data)
+
+	mockCSVService.AssertExpectations(t)
+}
+
+// TestParseCSV_NoFile 測試未上傳檔案
+func TestParseCSV_NoFile(t *testing.T) {
+	// Arrange
+	mockService := new(MockTransactionService)
+	mockCSVService := new(MockCSVImportService)
+	handler := NewTransactionHandler(mockService, mockCSVService)
+	router := setupTestRouter(handler)
+
+	// 準備沒有檔案的請求
+	req, _ := http.NewRequest("POST", "/api/transactions/parse-csv", nil)
+	req.Header.Set("Content-Type", "multipart/form-data")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.NotNil(t, response.Error)
+	assert.Equal(t, "INVALID_FILE", response.Error.Code)
+}
+

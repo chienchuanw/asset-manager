@@ -119,9 +119,12 @@ func main() {
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
 
+		// 初始化 CSV Import Service
+		csvImportService := service.NewCSVImportService()
+
 		// 初始化 Handler
 		authHandler := api.NewAuthHandler(authService)
-		transactionHandler := api.NewTransactionHandler(transactionService)
+		transactionHandler := api.NewTransactionHandler(transactionService, csvImportService)
 		holdingHandler := api.NewHoldingHandler(holdingService)
 		analyticsHandler := api.NewAnalyticsHandler(analyticsService)
 		unrealizedAnalyticsHandler := api.NewUnrealizedAnalyticsHandler(unrealizedAnalyticsService)
@@ -233,9 +236,12 @@ func main() {
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
 
+	// 初始化 CSV Import Service
+	csvImportService := service.NewCSVImportService()
+
 	// 初始化 Handler
 	authHandler := api.NewAuthHandler(authService)
-	transactionHandler := api.NewTransactionHandler(transactionService)
+	transactionHandler := api.NewTransactionHandler(transactionService, csvImportService)
 	holdingHandler := api.NewHoldingHandler(holdingService)
 	analyticsHandler := api.NewAnalyticsHandler(analyticsService)
 	unrealizedAnalyticsHandler := api.NewUnrealizedAnalyticsHandler(unrealizedAnalyticsService)
@@ -345,6 +351,8 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			transactions.GET("/:id", transactionHandler.GetTransaction)
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)
 			transactions.DELETE("/:id", transactionHandler.DeleteTransaction)
+			transactions.GET("/template", transactionHandler.DownloadCSVTemplate)
+			transactions.POST("/parse-csv", transactionHandler.ParseCSV)
 		}
 
 		// Holdings 路由

@@ -55,6 +55,9 @@ import {
 
 interface BatchAddTransactionDialogProps {
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  initialTransactions?: any[];
 }
 
 /**
@@ -65,8 +68,15 @@ interface BatchAddTransactionDialogProps {
  */
 export function BatchAddTransactionDialog({
   onSuccess,
+  open: controlledOpen,
+  onOpenChange,
+  initialTransactions,
 }: BatchAddTransactionDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // 如果有傳入 open prop，使用受控模式；否則使用內部狀態
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
 
   // 建立批次交易 mutation
   const createBatchMutation = useCreateTransactionsBatch({
@@ -99,6 +109,33 @@ export function BatchAddTransactionDialog({
         })),
     },
   });
+
+  // 當有 initialTransactions 時，更新表單資料
+  useEffect(() => {
+    if (initialTransactions && initialTransactions.length > 0) {
+      // 從第一筆交易取得資產類型和幣別
+      const firstTransaction = initialTransactions[0];
+      form.setValue("asset_type", firstTransaction.asset_type);
+      form.setValue("currency", firstTransaction.currency);
+
+      // 設定所有交易
+      form.setValue(
+        "transactions",
+        initialTransactions.map((t: any) => ({
+          date: t.date.split("T")[0], // 確保日期格式正確
+          symbol: t.symbol,
+          name: t.name,
+          type: t.transaction_type,
+          quantity: t.quantity,
+          price: t.price,
+          amount: t.amount,
+          fee: t.fee || null,
+          tax: t.tax || null,
+          note: t.note || null,
+        }))
+      );
+    }
+  }, [initialTransactions, form]);
 
   // 使用 useFieldArray 管理動態列
   const { fields, append, remove, insert } = useFieldArray({

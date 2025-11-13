@@ -14,12 +14,16 @@ import (
 
 // TransactionHandler 交易記錄 API handler
 type TransactionHandler struct {
-	service service.TransactionService
+	service          service.TransactionService
+	csvImportService service.CSVImportService
 }
 
 // NewTransactionHandler 建立新的交易記錄 handler
-func NewTransactionHandler(service service.TransactionService) *TransactionHandler {
-	return &TransactionHandler{service: service}
+func NewTransactionHandler(service service.TransactionService, csvImportService service.CSVImportService) *TransactionHandler {
+	return &TransactionHandler{
+		service:          service,
+		csvImportService: csvImportService,
+	}
 }
 
 // APIResponse 統一的 API 回應格式
@@ -352,3 +356,66 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	})
 }
 
+// DownloadCSVTemplate 下載 CSV 樣板
+// @Summary 下載 CSV 樣板
+// @Description 下載交易記錄 CSV 匯入樣板檔案
+// @Tags transactions
+// @Produce text/csv
+// @Success 200 {file} string "CSV 樣板檔案"
+// @Router /api/transactions/template [get]
+func (h *TransactionHandler) DownloadCSVTemplate(c *gin.Context) {
+	// 生成 CSV 樣板
+	csvContent := h.csvImportService.GenerateTemplate()
+
+	// 設定回應 header
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", "attachment; filename=transaction_template.csv")
+
+	// 返回 CSV 內容
+	c.String(http.StatusOK, csvContent)
+}
+
+// ParseCSV 解析 CSV 檔案
+// @Summary 解析 CSV 檔案
+// @Description 解析上傳的 CSV 檔案並返回解析後的交易資料或錯誤訊息
+// @Tags transactions
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "CSV 檔案"
+// @Success 200 {object} APIResponse{data=models.CSVImportResult}
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Router /api/transactions/parse-csv [post]
+func (h *TransactionHandler) ParseCSV(c *gin.Context) {
+	// 取得上傳的檔案
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_FILE",
+				Message: "無法讀取上傳的檔案",
+			},
+		})
+		return
+	}
+
+	// 開啟檔案
+	f, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "FILE_OPEN_ERROR",
+				Message: "無法開啟檔案",
+			},
+		})
+		return
+	}
+	defer f.Close()
+
+	// 解析 CSV
+	result := h.csvImportService.ParseCSV(f)
+
+	// 返回結果
+	c.JSON(http.StatusOK, APIResponse{
+		Data: result,
+	})
+}

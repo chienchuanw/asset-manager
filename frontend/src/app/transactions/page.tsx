@@ -38,6 +38,7 @@ import { AddTransactionDialog } from "@/components/transactions/AddTransactionDi
 import { BatchAddTransactionDialog } from "@/components/transactions/BatchAddTransactionDialog";
 import { EditTransactionDialog } from "@/components/transactions/EditTransactionDialog";
 import { TransactionFilterDrawer } from "@/components/transactions/TransactionFilterDrawer";
+import { CSVImportDialog } from "@/components/transactions/CSVImportDialog";
 import {
   DateRangeTabs,
   calculateDateRange,
@@ -55,7 +56,7 @@ import {
   type TransactionFilters,
   getAssetTypeLabel,
 } from "@/types/transaction";
-import { Search, Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Search, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
@@ -74,6 +75,8 @@ export default function TransactionsPage() {
   );
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [csvTransactions, setCsvTransactions] = useState<any[]>([]);
 
   // 計算日期範圍
   const { startDate, endDate } = useMemo(() => {
@@ -199,6 +202,12 @@ export default function TransactionsPage() {
     });
   };
 
+  // 處理 CSV 匯入成功
+  const handleCSVImportSuccess = (transactions: any[]) => {
+    setCsvTransactions(transactions);
+    setShowBatchDialog(true);
+  };
+
   return (
     <AppLayout title="交易記錄" description="管理和查看交易記錄">
       {/* Main Content */}
@@ -295,10 +304,7 @@ export default function TransactionsPage() {
                 <div className="flex gap-2">
                   <AddTransactionDialog onSuccess={handleRefreshData} />
                   <BatchAddTransactionDialog onSuccess={handleRefreshData} />
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    匯出
-                  </Button>
+                  <CSVImportDialog onSuccess={handleCSVImportSuccess} />
                 </div>
               </div>
 
@@ -538,6 +544,16 @@ export default function TransactionsPage() {
             if (!open) setEditingTransaction(null);
           }}
           onSuccess={handleRefreshData}
+        />
+      )}
+
+      {/* CSV 匯入後的批量新增對話框 */}
+      {showBatchDialog && (
+        <BatchAddTransactionDialog
+          open={showBatchDialog}
+          onOpenChange={setShowBatchDialog}
+          onSuccess={handleRefreshData}
+          initialTransactions={csvTransactions}
         />
       )}
     </AppLayout>
