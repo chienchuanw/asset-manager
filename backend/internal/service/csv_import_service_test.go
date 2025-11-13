@@ -23,8 +23,8 @@ func TestGenerateCSVTemplate(t *testing.T) {
 	assert.Contains(t, csv, "2330")
 	assert.Contains(t, csv, "台積電")
 
-	// 驗證 CSV 包含美股範例資料
-	assert.Contains(t, csv, "2025-01-16")
+	// 驗證 CSV 包含美股範例資料（使用 YYYY/MM/DD 格式）
+	assert.Contains(t, csv, "2025/01/16")
 	assert.Contains(t, csv, "us_stock")
 	assert.Contains(t, csv, "AAPL")
 	assert.Contains(t, csv, "Apple Inc.")
@@ -60,12 +60,32 @@ func TestParseCSV_Success(t *testing.T) {
 	assert.Equal(t, models.CurrencyTWD, tx.Currency)
 }
 
+// TestParseCSV_DateWithSlash 測試 YYYY/MM/DD 日期格式
+func TestParseCSV_DateWithSlash(t *testing.T) {
+	service := NewCSVImportService()
+
+	csvContent := `date,asset_type,symbol,name,transaction_type,quantity,price,fee,tax,currency,note
+2025/01/15,tw_stock,2330,台積電,buy,10,620,28,,TWD,測試交易`
+
+	result := service.ParseCSV(strings.NewReader(csvContent))
+
+	assert.True(t, result.Success)
+	assert.Len(t, result.Transactions, 1)
+	assert.Len(t, result.Errors, 0)
+
+	// 驗證日期正確解析
+	tx := result.Transactions[0]
+	assert.Equal(t, 2025, tx.Date.Year())
+	assert.Equal(t, 1, int(tx.Date.Month()))
+	assert.Equal(t, 15, tx.Date.Day())
+}
+
 // TestParseCSV_InvalidDate 測試無效的日期格式
 func TestParseCSV_InvalidDate(t *testing.T) {
 	service := NewCSVImportService()
 
 	csvContent := `date,asset_type,symbol,name,transaction_type,quantity,price,fee,tax,currency,note
-2025/01/15,tw_stock,2330,台積電,buy,10,620,28,,TWD,`
+15-01-2025,tw_stock,2330,台積電,buy,10,620,28,,TWD,`
 
 	result := service.ParseCSV(strings.NewReader(csvContent))
 
@@ -73,6 +93,7 @@ func TestParseCSV_InvalidDate(t *testing.T) {
 	assert.Len(t, result.Errors, 1)
 	assert.Equal(t, 1, result.Errors[0].Row)
 	assert.Equal(t, "date", result.Errors[0].Field)
+	assert.Contains(t, result.Errors[0].Message, "YYYY-MM-DD 或 YYYY/MM/DD")
 }
 
 // TestParseCSV_MissingRequiredField 測試缺少必填欄位
@@ -138,7 +159,7 @@ func TestParseCSV_PartialErrors(t *testing.T) {
 
 	csvContent := `date,asset_type,symbol,name,transaction_type,quantity,price,fee,tax,currency,note
 2025-01-15,tw_stock,2330,台積電,buy,10,620,28,,TWD,
-2025/01/16,us_stock,AAPL,Apple,buy,5,150,1,,USD,
+invalid-date,us_stock,AAPL,Apple,buy,5,150,1,,USD,
 2025-01-17,crypto,BTC,Bitcoin,buy,0.1,50000,,,USD,`
 
 	result := service.ParseCSV(strings.NewReader(csvContent))
@@ -146,6 +167,7 @@ func TestParseCSV_PartialErrors(t *testing.T) {
 	// 即使有部分錯誤，也應該標記為失敗
 	assert.False(t, result.Success)
 	assert.Len(t, result.Errors, 1)
-	assert.Equal(t, 2, result.Errors[0].Row) // 第二行有錯誤
+	assert.Equal(t, 2, result.Errors[0].Row) // 第二行有錯誤（日期格式無效）
+	assert.Equal(t, "date", result.Errors[0].Field)
 }
 

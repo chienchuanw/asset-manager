@@ -31,13 +31,13 @@ func (s *csvImportService) GenerateTemplate() string {
 	// Header
 	sb.WriteString("date,asset_type,symbol,name,transaction_type,quantity,price,fee,tax,currency,note\n")
 
-	// 範例資料 - 台股
+	// 範例資料 - 台股（使用 YYYY-MM-DD 格式）
 	sb.WriteString("2025-01-15,tw_stock,2330,台積電,buy,10,620,28,,TWD,台股買入範例\n")
 
-	// 範例資料 - 美股
-	sb.WriteString("2025-01-16,us_stock,AAPL,Apple Inc.,buy,5,185.5,1,,USD,美股買入範例\n")
+	// 範例資料 - 美股（使用 YYYY/MM/DD 格式）
+	sb.WriteString("2025/01/16,us_stock,AAPL,Apple Inc.,buy,5,185.5,1,,USD,美股買入範例\n")
 
-	// 範例資料 - 加密貨幣
+	// 範例資料 - 加密貨幣（使用 YYYY-MM-DD 格式）
 	sb.WriteString("2025-01-17,crypto,BTC,Bitcoin,buy,0.01,45000,5,,USD,加密貨幣買入範例\n")
 
 	return sb.String()
@@ -138,14 +138,25 @@ func (s *csvImportService) parseRow(record []string, rowNum int) (*models.Create
 
 	tx := &models.CreateTransactionInput{}
 
-	// 解析日期
-	date, err := time.Parse("2006-01-02", strings.TrimSpace(record[0]))
+	// 解析日期（支援 YYYY-MM-DD 和 YYYY/MM/DD 兩種格式）
+	dateStr := strings.TrimSpace(record[0])
+	var date time.Time
+	var err error
+
+	// 嘗試解析 YYYY-MM-DD 格式
+	date, err = time.Parse("2006-01-02", dateStr)
 	if err != nil {
-		errors = append(errors, models.CSVValidationError{
-			Row:     rowNum,
-			Field:   "date",
-			Message: "日期格式錯誤，應為 YYYY-MM-DD",
-		})
+		// 如果失敗，嘗試解析 YYYY/MM/DD 格式
+		date, err = time.Parse("2006/01/02", dateStr)
+		if err != nil {
+			errors = append(errors, models.CSVValidationError{
+				Row:     rowNum,
+				Field:   "date",
+				Message: "日期格式錯誤，應為 YYYY-MM-DD 或 YYYY/MM/DD",
+			})
+		} else {
+			tx.Date = date
+		}
 	} else {
 		tx.Date = date
 	}
