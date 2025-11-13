@@ -13,12 +13,12 @@ type MockHoldingServiceForAllocation struct {
 	mock.Mock
 }
 
-func (m *MockHoldingServiceForAllocation) GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error) {
+func (m *MockHoldingServiceForAllocation) GetAllHoldings(filters models.HoldingFilters) (*HoldingServiceResult, error) {
 	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.Holding), args.Error(1)
+	return args.Get(0).(*HoldingServiceResult), args.Error(1)
 }
 
 func (m *MockHoldingServiceForAllocation) GetHoldingBySymbol(symbol string) (*models.Holding, error) {
@@ -65,7 +65,10 @@ func TestAllocationService_GetCurrentAllocation(t *testing.T) {
 		},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(holdings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// 執行測試
 	result, err := service.GetCurrentAllocation()
@@ -97,7 +100,10 @@ func TestAllocationService_GetCurrentAllocation_EmptyHoldings(t *testing.T) {
 	mockHoldingService := new(MockHoldingServiceForAllocation)
 	service := NewAllocationService(mockHoldingService)
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return([]*models.Holding{}, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: []*models.Holding{},
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	result, err := service.GetCurrentAllocation()
 
@@ -145,7 +151,10 @@ func TestAllocationService_GetAllocationByType(t *testing.T) {
 		},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(holdings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	result, err := service.GetAllocationByType()
 
@@ -194,7 +203,10 @@ func TestAllocationService_GetAllocationByAsset(t *testing.T) {
 		},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(holdings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	result, err := service.GetAllocationByAsset(10)
 
@@ -227,7 +239,10 @@ func TestAllocationService_GetAllocationByAsset_WithLimit(t *testing.T) {
 		{Symbol: "E", MarketValue: 60},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(holdings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	result, err := service.GetAllocationByAsset(3)
 

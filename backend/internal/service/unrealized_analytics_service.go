@@ -33,7 +33,7 @@ func NewUnrealizedAnalyticsService(holdingService HoldingService) UnrealizedAnal
 // GetSummary 取得未實現損益摘要
 func (s *unrealizedAnalyticsService) GetSummary() (*models.UnrealizedSummary, error) {
 	// 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *unrealizedAnalyticsService) GetSummary() (*models.UnrealizedSummary, er
 	// 計算總計
 	var totalCost, totalMarketValue, totalUnrealizedPL float64
 
-	for _, h := range holdings {
+	for _, h := range result.Holdings {
 		totalCost += h.TotalCost
 		totalMarketValue += h.MarketValue
 		totalUnrealizedPL += h.UnrealizedPL
@@ -58,7 +58,7 @@ func (s *unrealizedAnalyticsService) GetSummary() (*models.UnrealizedSummary, er
 		TotalMarketValue:   totalMarketValue,
 		TotalUnrealizedPL:  totalUnrealizedPL,
 		TotalUnrealizedPct: totalUnrealizedPct,
-		HoldingCount:       len(holdings),
+		HoldingCount:       len(result.Holdings),
 		Currency:           "TWD",
 	}, nil
 }
@@ -66,7 +66,7 @@ func (s *unrealizedAnalyticsService) GetSummary() (*models.UnrealizedSummary, er
 // GetPerformance 取得各資產類型未實現績效
 func (s *unrealizedAnalyticsService) GetPerformance() ([]models.UnrealizedPerformance, error) {
 	// 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (s *unrealizedAnalyticsService) GetPerformance() ([]models.UnrealizedPerfor
 	// 按資產類型分組計算
 	perfMap := make(map[models.AssetType]*models.UnrealizedPerformance)
 
-	for _, h := range holdings {
+	for _, h := range result.Holdings {
 		// 如果該資產類型還沒有記錄，建立新的
 		if _, exists := perfMap[h.AssetType]; !exists {
 			perfMap[h.AssetType] = &models.UnrealizedPerformance{
@@ -92,33 +92,33 @@ func (s *unrealizedAnalyticsService) GetPerformance() ([]models.UnrealizedPerfor
 	}
 
 	// 計算百分比並轉換為陣列
-	result := make([]models.UnrealizedPerformance, 0, len(perfMap))
+	performances := make([]models.UnrealizedPerformance, 0, len(perfMap))
 	for _, perf := range perfMap {
 		if perf.Cost > 0 {
 			perf.UnrealizedPct = (perf.UnrealizedPL / perf.Cost) * 100
 		}
-		result = append(result, *perf)
+		performances = append(performances, *perf)
 	}
 
 	// 按資產類型排序（可選，保持一致性）
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].AssetType < result[j].AssetType
+	sort.Slice(performances, func(i, j int) bool {
+		return performances[i].AssetType < performances[j].AssetType
 	})
 
-	return result, nil
+	return performances, nil
 }
 
 // GetTopAssets 取得 Top 未實現損益資產
 func (s *unrealizedAnalyticsService) GetTopAssets(limit int) ([]models.UnrealizedTopAsset, error) {
 	// 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, err
 	}
 
 	// 轉換為 TopAsset 格式
-	topAssets := make([]models.UnrealizedTopAsset, 0, len(holdings))
-	for _, h := range holdings {
+	topAssets := make([]models.UnrealizedTopAsset, 0, len(result.Holdings))
+	for _, h := range result.Holdings {
 		topAssets = append(topAssets, models.UnrealizedTopAsset{
 			Symbol:        h.Symbol,
 			Name:          h.Name,

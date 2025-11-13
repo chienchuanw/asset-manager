@@ -34,25 +34,25 @@ func NewAllocationService(holdingService HoldingService) AllocationService {
 // GetCurrentAllocation 取得當前資產配置摘要
 func (s *allocationService) GetCurrentAllocation() (*models.AllocationSummary, error) {
 	// 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, err
 	}
 
 	// 計算總市值
 	var totalMarketValue float64
-	for _, holding := range holdings {
+	for _, holding := range result.Holdings {
 		totalMarketValue += holding.MarketValue
 	}
 
 	// 計算按資產類型的配置
-	byType, err := s.calculateAllocationByType(holdings, totalMarketValue)
+	byType, err := s.calculateAllocationByType(result.Holdings, totalMarketValue)
 	if err != nil {
 		return nil, err
 	}
 
 	// 計算按個別資產的配置
-	byAsset, err := s.calculateAllocationByAsset(holdings, totalMarketValue, 0)
+	byAsset, err := s.calculateAllocationByAsset(result.Holdings, totalMarketValue, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -69,35 +69,35 @@ func (s *allocationService) GetCurrentAllocation() (*models.AllocationSummary, e
 // GetAllocationByType 取得按資產類型的配置
 func (s *allocationService) GetAllocationByType() ([]models.AllocationByType, error) {
 	// 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, err
 	}
 
 	// 計算總市值
 	var totalMarketValue float64
-	for _, holding := range holdings {
+	for _, holding := range result.Holdings {
 		totalMarketValue += holding.MarketValue
 	}
 
-	return s.calculateAllocationByType(holdings, totalMarketValue)
+	return s.calculateAllocationByType(result.Holdings, totalMarketValue)
 }
 
 // GetAllocationByAsset 取得按個別資產的配置
 func (s *allocationService) GetAllocationByAsset(limit int) ([]models.AllocationByAsset, error) {
 	// 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, err
 	}
 
 	// 計算總市值
 	var totalMarketValue float64
-	for _, holding := range holdings {
+	for _, holding := range result.Holdings {
 		totalMarketValue += holding.MarketValue
 	}
 
-	return s.calculateAllocationByAsset(holdings, totalMarketValue, limit)
+	return s.calculateAllocationByAsset(result.Holdings, totalMarketValue, limit)
 }
 
 // calculateAllocationByType 計算按資產類型的配置

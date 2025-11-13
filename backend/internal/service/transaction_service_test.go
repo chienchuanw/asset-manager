@@ -111,12 +111,12 @@ func (m *MockFIFOCalculator) CalculateHoldingForSymbol(symbol string, transactio
 	return args.Get(0).(*models.Holding), args.Error(1)
 }
 
-func (m *MockFIFOCalculator) CalculateAllHoldings(transactions []*models.Transaction) (map[string]*models.Holding, error) {
+func (m *MockFIFOCalculator) CalculateAllHoldings(transactions []*models.Transaction) (*FIFOCalculatorResult, error) {
 	args := m.Called(transactions)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(map[string]*models.Holding), args.Error(1)
+	return args.Get(0).(*FIFOCalculatorResult), args.Error(1)
 }
 
 func (m *MockFIFOCalculator) CalculateCostBasis(symbol string, sellTransaction *models.Transaction, allTransactions []*models.Transaction) (float64, error) {

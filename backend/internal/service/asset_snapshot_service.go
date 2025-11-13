@@ -174,7 +174,7 @@ func (s *assetSnapshotService) CreateDailySnapshots() error {
 	today := time.Now().Truncate(24 * time.Hour)
 
 	// 取得所有持倉（不使用篩選條件）
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return fmt.Errorf("failed to get holdings: %w", err)
 	}
@@ -185,7 +185,7 @@ func (s *assetSnapshotService) CreateDailySnapshots() error {
 	var usStockValueTWD float64
 	var cryptoValueTWD float64
 
-	for _, holding := range holdings {
+	for _, holding := range result.Holdings {
 		// holding.MarketValue 已經在 holding_service 中轉換為 TWD
 		// 這裡直接使用即可，不需要再次轉換
 		valueTWD := holding.MarketValue

@@ -8,10 +8,16 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/repository"
 )
 
+// HoldingServiceResult 持倉服務返回結果
+type HoldingServiceResult struct {
+	Holdings []*models.Holding // 持倉列表
+	Warnings []*models.Warning  // 警告列表
+}
+
 // HoldingService 持倉服務介面
 type HoldingService interface {
-	// GetAllHoldings 取得所有持倉
-	GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error)
+	// GetAllHoldings 取得所有持倉（包含警告）
+	GetAllHoldings(filters models.HoldingFilters) (*HoldingServiceResult, error)
 
 	// GetHoldingBySymbol 取得單一標的持倉
 	GetHoldingBySymbol(symbol string) (*models.Holding, error)
@@ -40,8 +46,8 @@ func NewHoldingService(
 	}
 }
 
-// GetAllHoldings 取得所有持倉
-func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error) {
+// GetAllHoldings 取得所有持倉（包含警告）
+func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) (*HoldingServiceResult, error) {
 	log.Println("[DEBUG] HoldingService.GetAllHoldings started")
 
 	// 1. 從 Repository 取得交易記錄
@@ -61,30 +67,36 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 	// 如果沒有交易記錄，返回空列表
 	if len(transactions) == 0 {
 		log.Println("[DEBUG] No transactions found, returning empty list")
-		return []*models.Holding{}, nil
+		return &HoldingServiceResult{
+			Holdings: []*models.Holding{},
+			Warnings: []*models.Warning{},
+		}, nil
 	}
 
 	// 2. 使用 FIFO Calculator 計算持倉
 	log.Println("[DEBUG] Step 2: Calculating holdings using FIFO...")
-	holdingsMap, err := s.fifoCalculator.CalculateAllHoldings(transactions)
+	result, err := s.fifoCalculator.CalculateAllHoldings(transactions)
 	if err != nil {
 		log.Printf("[ERROR] Failed to calculate holdings: %v", err)
 		return nil, fmt.Errorf("failed to calculate holdings: %w", err)
 	}
-	log.Printf("[DEBUG] Step 2: Calculated %d holdings", len(holdingsMap))
+	log.Printf("[DEBUG] Step 2: Calculated %d holdings, %d warnings", len(result.Holdings), len(result.Warnings))
 
-	// 如果沒有持倉，返回空列表
-	if len(holdingsMap) == 0 {
+	// 如果沒有持倉，返回空列表（但保留警告）
+	if len(result.Holdings) == 0 {
 		log.Println("[DEBUG] No holdings after FIFO calculation, returning empty list")
-		return []*models.Holding{}, nil
+		return &HoldingServiceResult{
+			Holdings: []*models.Holding{},
+			Warnings: result.Warnings,
+		}, nil
 	}
 
 	// 3. 準備批次取得價格
 	log.Println("[DEBUG] Step 3: Preparing to fetch prices...")
-	symbols := make([]string, 0, len(holdingsMap))
+	symbols := make([]string, 0, len(result.Holdings))
 	assetTypes := make(map[string]models.AssetType)
 
-	for symbol, holding := range holdingsMap {
+	for symbol, holding := range result.Holdings {
 		symbols = append(symbols, symbol)
 		assetTypes[symbol] = holding.AssetType
 	}
@@ -103,10 +115,10 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 
 	// 5. 整合價格資訊並計算損益（統一轉換為 TWD）
 	log.Println("[DEBUG] Step 5: Integrating prices and calculating P&L...")
-	holdings := make([]*models.Holding, 0, len(holdingsMap))
+	holdings := make([]*models.Holding, 0, len(result.Holdings))
 	skippedCount := 0
 
-	for symbol, holding := range holdingsMap {
+	for symbol, holding := range result.Holdings {
 		log.Printf("[DEBUG] Processing holding: %s (AssetType: %s, Quantity: %.4f)",
 			symbol, holding.AssetType, holding.Quantity)
 
@@ -176,14 +188,17 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) ([]*model
 
 	log.Printf("[DEBUG] Step 5 completed: %d holdings processed, %d skipped", len(holdings), skippedCount)
 
-	if len(holdings) == 0 && len(holdingsMap) > 0 {
+	if len(holdings) == 0 && len(result.Holdings) > 0 {
 		log.Printf("[ERROR] All holdings were skipped! Original count: %d, Final count: %d",
-			len(holdingsMap), len(holdings))
+			len(result.Holdings), len(holdings))
 		return nil, fmt.Errorf("all holdings were skipped due to conversion errors")
 	}
 
-	log.Printf("[DEBUG] GetAllHoldings completed successfully, returning %d holdings", len(holdings))
-	return holdings, nil
+	log.Printf("[DEBUG] GetAllHoldings completed successfully, returning %d holdings, %d warnings", len(holdings), len(result.Warnings))
+	return &HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: result.Warnings,
+	}, nil
 }
 
 // GetHoldingBySymbol 取得單一標的持倉

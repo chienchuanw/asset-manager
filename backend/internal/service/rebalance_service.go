@@ -37,13 +37,13 @@ func (s *rebalanceService) CheckRebalance() (*models.RebalanceCheck, error) {
 	}
 
 	// 2. 取得所有持倉
-	holdings, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
+	result, err := s.holdingService.GetAllHoldings(models.HoldingFilters{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get holdings: %w", err)
 	}
 
 	// 3. 如果沒有持倉，返回空結果
-	if len(holdings) == 0 {
+	if len(result.Holdings) == 0 {
 		return &models.RebalanceCheck{
 			NeedsRebalance: false,
 			Threshold:      settings.Allocation.RebalanceThreshold,
@@ -54,7 +54,7 @@ func (s *rebalanceService) CheckRebalance() (*models.RebalanceCheck, error) {
 	}
 
 	// 4. 計算當前配置
-	currentAllocation := s.calculateCurrentAllocation(holdings)
+	currentAllocation := s.calculateCurrentAllocation(result.Holdings)
 
 	// 5. 計算偏離情況
 	deviations := s.calculateDeviations(settings.Allocation, currentAllocation)

@@ -191,15 +191,16 @@ func TestGetAllHoldings_Success(t *testing.T) {
 	mockExchangeRateService.On("ConvertToTWD", 175.0, models.CurrencyUSD, mock.Anything).Return(5250.0, nil)
 
 	// Act
-	holdings, err := service.GetAllHoldings(models.HoldingFilters{})
+	result, err := service.GetAllHoldings(models.HoldingFilters{})
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(holdings))
+	assert.Equal(t, 2, len(result.Holdings))
+	assert.Equal(t, 0, len(result.Warnings))
 
 	// 驗證台積電持倉
 	var tsmc *models.Holding
-	for _, h := range holdings {
+	for _, h := range result.Holdings {
 		if h.Symbol == "2330" {
 			tsmc = h
 			break
@@ -230,11 +231,12 @@ func TestGetAllHoldings_EmptyTransactions(t *testing.T) {
 	mockRepo.On("GetAll", mock.Anything).Return([]*models.Transaction{}, nil)
 
 	// Act
-	holdings, err := service.GetAllHoldings(models.HoldingFilters{})
+	result, err := service.GetAllHoldings(models.HoldingFilters{})
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(holdings))
+	assert.Equal(t, 0, len(result.Holdings))
+	assert.Equal(t, 0, len(result.Warnings))
 
 	mockRepo.AssertExpectations(t)
 }
@@ -288,12 +290,13 @@ func TestGetAllHoldings_WithAssetTypeFilter(t *testing.T) {
 	mockExchangeRateService.On("ConvertToTWD", 620.0, models.CurrencyTWD, mock.Anything).Return(620.0, nil)
 
 	// Act
-	holdings, err := service.GetAllHoldings(filters)
+	result, err := service.GetAllHoldings(filters)
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(holdings))
-	assert.Equal(t, "2330", holdings[0].Symbol)
+	assert.Equal(t, 1, len(result.Holdings))
+	assert.Equal(t, 0, len(result.Warnings))
+	assert.Equal(t, "2330", result.Holdings[0].Symbol)
 
 	mockRepo.AssertExpectations(t)
 	mockPriceService.AssertExpectations(t)

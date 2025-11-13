@@ -54,7 +54,7 @@ func (h *HoldingHandler) GetAllHoldings(c *gin.Context) {
 	log.Println("[DEBUG] Calling holdingService.GetAllHoldings...")
 
 	// 呼叫 Service 層
-	holdings, err := h.holdingService.GetAllHoldings(filters)
+	result, err := h.holdingService.GetAllHoldings(filters)
 	if err != nil {
 		log.Printf("[ERROR] GetAllHoldings failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -67,13 +67,22 @@ func (h *HoldingHandler) GetAllHoldings(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[DEBUG] GetAllHoldings success, returned %d holdings", len(holdings))
+	log.Printf("[DEBUG] GetAllHoldings success, returned %d holdings, %d warnings", len(result.Holdings), len(result.Warnings))
 
-	// 返回成功結果
-	c.JSON(http.StatusOK, gin.H{
-		"data":  holdings,
-		"error": nil,
-	})
+	// 返回成功結果（包含警告）
+	response := gin.H{
+		"data": result.Holdings,
+	}
+
+	// 如果有警告，加入 warnings 欄位
+	if len(result.Warnings) > 0 {
+		response["warnings"] = result.Warnings
+		log.Printf("[WARNING] Returning %d warnings to client", len(result.Warnings))
+	}
+
+	response["error"] = nil
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetHoldingBySymbol 取得單一標的持倉

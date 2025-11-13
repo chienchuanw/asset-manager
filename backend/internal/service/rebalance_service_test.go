@@ -34,12 +34,12 @@ type MockHoldingServiceForRebalance struct {
 	mock.Mock
 }
 
-func (m *MockHoldingServiceForRebalance) GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error) {
+func (m *MockHoldingServiceForRebalance) GetAllHoldings(filters models.HoldingFilters) (*HoldingServiceResult, error) {
 	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.Holding), args.Error(1)
+	return args.Get(0).(*HoldingServiceResult), args.Error(1)
 }
 
 func (m *MockHoldingServiceForRebalance) GetHoldingBySymbol(symbol string) (*models.Holding, error) {
@@ -77,7 +77,10 @@ func TestCheckRebalance_NoRebalanceNeeded(t *testing.T) {
 	}
 
 	mockSettings.On("GetSettings").Return(settings, nil)
-	mockHolding.On("GetAllHoldings", mock.Anything).Return(holdings, nil)
+	mockHolding.On("GetAllHoldings", mock.Anything).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	result, err := service.CheckRebalance()
@@ -186,7 +189,10 @@ func TestCheckRebalance_EmptyHoldings(t *testing.T) {
 	holdings := []*models.Holding{}
 
 	mockSettings.On("GetSettings").Return(settings, nil)
-	mockHolding.On("GetAllHoldings", mock.Anything).Return(holdings, nil)
+	mockHolding.On("GetAllHoldings", mock.Anything).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	result, err := service.CheckRebalance()
@@ -228,7 +234,10 @@ func TestCheckRebalance_ZeroThreshold(t *testing.T) {
 	}
 
 	mockSettings.On("GetSettings").Return(settings, nil)
-	mockHolding.On("GetAllHoldings", mock.Anything).Return(holdings, nil)
+	mockHolding.On("GetAllHoldings", mock.Anything).Return(&HoldingServiceResult{
+		Holdings: holdings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	result, err := service.CheckRebalance()

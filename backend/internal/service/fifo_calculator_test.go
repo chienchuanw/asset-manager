@@ -529,26 +529,27 @@ func TestFIFO_CalculateAllHoldings(t *testing.T) {
 	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
-	holdings, err := calculator.CalculateAllHoldings(transactions)
+	result, err := calculator.CalculateAllHoldings(transactions)
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(holdings))
+	assert.Equal(t, 3, len(result.Holdings))
+	assert.Equal(t, 0, len(result.Warnings))
 
 	// 驗證台積電
-	tsmc := holdings["2330"]
+	tsmc := result.Holdings["2330"]
 	assert.NotNil(t, tsmc)
 	assert.Equal(t, 100.0, tsmc.Quantity)
 	assert.InDelta(t, 500.28, tsmc.AvgCost, 0.01)
 
 	// 驗證 Apple
-	apple := holdings["AAPL"]
+	apple := result.Holdings["AAPL"]
 	assert.NotNil(t, apple)
 	assert.Equal(t, 50.0, apple.Quantity)
 	assert.InDelta(t, 150.20, apple.AvgCost, 0.01)
 
 	// 驗證 Bitcoin
-	btc := holdings["BTC"]
+	btc := result.Holdings["BTC"]
 	assert.NotNil(t, btc)
 	assert.Equal(t, 0.5, btc.Quantity)
 	assert.InDelta(t, 900200.0, btc.AvgCost, 0.01)
@@ -598,19 +599,20 @@ func TestFIFO_CalculateAllHoldings_WithSoldOut(t *testing.T) {
 	calculator := NewFIFOCalculator(newMockExchangeRateForTWD())
 
 	// Act
-	holdings, err := calculator.CalculateAllHoldings(transactions)
+	result, err := calculator.CalculateAllHoldings(transactions)
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(holdings)) // 只有台積電有持倉
+	assert.Equal(t, 1, len(result.Holdings)) // 只有台積電有持倉
+	assert.Equal(t, 0, len(result.Warnings))
 
 	// 驗證台積電
-	tsmc := holdings["2330"]
+	tsmc := result.Holdings["2330"]
 	assert.NotNil(t, tsmc)
 	assert.Equal(t, 100.0, tsmc.Quantity)
 
 	// 鴻海應該不在持倉中
-	_, exists := holdings["2317"]
+	_, exists := result.Holdings["2317"]
 	assert.False(t, exists)
 }
 

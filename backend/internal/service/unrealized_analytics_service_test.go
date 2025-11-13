@@ -13,12 +13,12 @@ type MockHoldingService struct {
 	mock.Mock
 }
 
-func (m *MockHoldingService) GetAllHoldings(filters models.HoldingFilters) ([]*models.Holding, error) {
+func (m *MockHoldingService) GetAllHoldings(filters models.HoldingFilters) (*HoldingServiceResult, error) {
 	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.Holding), args.Error(1)
+	return args.Get(0).(*HoldingServiceResult), args.Error(1)
 }
 
 func (m *MockHoldingService) GetHoldingBySymbol(symbol string) (*models.Holding, error) {
@@ -61,7 +61,10 @@ func TestUnrealizedAnalyticsService_GetSummary(t *testing.T) {
 		},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(mockHoldings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: mockHoldings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	summary, err := service.GetSummary()
@@ -84,7 +87,10 @@ func TestUnrealizedAnalyticsService_GetSummary_EmptyHoldings(t *testing.T) {
 	mockHoldingService := new(MockHoldingService)
 	service := NewUnrealizedAnalyticsService(mockHoldingService)
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return([]*models.Holding{}, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: []*models.Holding{},
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	summary, err := service.GetSummary()
@@ -131,7 +137,10 @@ func TestUnrealizedAnalyticsService_GetPerformance(t *testing.T) {
 		},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(mockHoldings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: mockHoldings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	performance, err := service.GetPerformance()
@@ -220,7 +229,10 @@ func TestUnrealizedAnalyticsService_GetTopAssets(t *testing.T) {
 		},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(mockHoldings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: mockHoldings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	topAssets, err := service.GetTopAssets(10)
@@ -256,7 +268,10 @@ func TestUnrealizedAnalyticsService_GetTopAssets_WithLimit(t *testing.T) {
 		{Symbol: "E", UnrealizedPL: 5000},
 	}
 
-	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(mockHoldings, nil)
+	mockHoldingService.On("GetAllHoldings", models.HoldingFilters{}).Return(&HoldingServiceResult{
+		Holdings: mockHoldings,
+		Warnings: []*models.Warning{},
+	}, nil)
 
 	// Act
 	topAssets, err := service.GetTopAssets(3)

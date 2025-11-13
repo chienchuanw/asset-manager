@@ -8,13 +8,19 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/models"
 )
 
+// FIFOCalculatorResult FIFO 計算結果（包含持倉和警告）
+type FIFOCalculatorResult struct {
+	Holdings map[string]*models.Holding // 成功計算的持倉
+	Warnings []*models.Warning           // 計算過程中的警告
+}
+
 // FIFOCalculator FIFO 成本計算器介面
 type FIFOCalculator interface {
 	// CalculateHoldingForSymbol 計算單一標的的持倉
 	CalculateHoldingForSymbol(symbol string, transactions []*models.Transaction) (*models.Holding, error)
 
-	// CalculateAllHoldings 計算所有標的的持倉
-	CalculateAllHoldings(transactions []*models.Transaction) (map[string]*models.Holding, error)
+	// CalculateAllHoldings 計算所有標的的持倉（返回結果包含警告）
+	CalculateAllHoldings(transactions []*models.Transaction) (*FIFOCalculatorResult, error)
 
 	// CalculateCostBasis 計算賣出交易的成本基礎（使用 FIFO 規則）
 	CalculateCostBasis(symbol string, sellTransaction *models.Transaction, allTransactions []*models.Transaction) (float64, error)
@@ -96,9 +102,10 @@ func (c *fifoCalculator) CalculateHoldingForSymbol(symbol string, transactions [
 	return holding, nil
 }
 
-// CalculateAllHoldings 計算所有標的的持倉
-func (c *fifoCalculator) CalculateAllHoldings(transactions []*models.Transaction) (map[string]*models.Holding, error) {
+// CalculateAllHoldings 計算所有標的的持倉（返回結果包含警告）
+func (c *fifoCalculator) CalculateAllHoldings(transactions []*models.Transaction) (*FIFOCalculatorResult, error) {
 	holdings := make(map[string]*models.Holding)
+	warnings := []*models.Warning{}
 
 	// 取得所有唯一的標的代碼
 	symbols := getUniqueSymbols(transactions)
@@ -107,6 +114,14 @@ func (c *fifoCalculator) CalculateAllHoldings(transactions []*models.Transaction
 	for _, symbol := range symbols {
 		holding, err := c.CalculateHoldingForSymbol(symbol, transactions)
 		if err != nil {
+			// 檢查是否為數量不足錯誤
+			if isInsufficientQuantityError(err) {
+				// 記錄警告並跳過此標的
+				warning := createInsufficientQuantityWarning(symbol, err)
+				warnings = append(warnings, warning)
+				continue
+			}
+			// 其他錯誤直接返回
 			return nil, fmt.Errorf("failed to calculate holding for %s: %w", symbol, err)
 		}
 
@@ -116,7 +131,10 @@ func (c *fifoCalculator) CalculateAllHoldings(transactions []*models.Transaction
 		}
 	}
 
-	return holdings, nil
+	return &FIFOCalculatorResult{
+		Holdings: holdings,
+		Warnings: warnings,
+	}, nil
 }
 
 // processBuy 處理買入交易，建立新的成本批次
@@ -343,3 +361,40 @@ func filterTransactionsBeforeSell(transactions []*models.Transaction, symbol str
 	return result
 }
 
+// isInsufficientQuantityError 檢查錯誤是否為數量不足錯誤
+func isInsufficientQuantityError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// 檢查錯誤訊息是否包含 "insufficient quantity"
+	return fmt.Sprintf("%v", err) != "" &&
+		(fmt.Sprintf("%v", err)[:len("insufficient quantity")] == "insufficient quantity" ||
+		 fmt.Sprintf("%v", err)[:len("failed to calculate holding")] == "failed to calculate holding")
+}
+
+// createInsufficientQuantityWarning 建立數量不足警告
+func createInsufficientQuantityWarning(symbol string, err error) *models.Warning {
+	// 解析錯誤訊息以取得詳細資訊
+	// 錯誤格式: "insufficient quantity to sell: trying to sell X but only have Y"
+	errMsg := err.Error()
+
+	var required, available float64
+	// 嘗試從錯誤訊息中解析數字
+	fmt.Sscanf(errMsg, "insufficient quantity to sell: trying to sell %f but only have %f", &required, &available)
+
+	missing := required - available
+	if missing < 0 {
+		missing = 0
+	}
+
+	return &models.Warning{
+		Code:    models.WarningCodeInsufficientQuantity,
+		Symbol:  symbol,
+		Message: fmt.Sprintf("標的 %s 的交易記錄不完整：嘗試賣出 %.2f 股，但只有 %.2f 股可用", symbol, required, available),
+		Details: map[string]interface{}{
+			"required":  required,
+			"available": available,
+			"missing":   missing,
+		},
+	}
+}
