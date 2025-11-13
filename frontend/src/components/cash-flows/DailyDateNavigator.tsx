@@ -86,6 +86,7 @@ export function DailyDateNavigator({
             mode="single"
             selected={date}
             onSelect={handleCalendarSelect}
+            captionLayout="dropdown"
           />
         </PopoverContent>
       </Popover>
