@@ -50,6 +50,14 @@ func (m *MockHoldingServiceForRebalance) GetHoldingBySymbol(symbol string) (*mod
 	return args.Get(0).(*models.Holding), args.Error(1)
 }
 
+func (m *MockHoldingServiceForRebalance) FixInsufficientQuantity(input *models.FixInsufficientQuantityInput) (*models.Transaction, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
 // ==================== 測試案例 ====================
 
 // TestCheckRebalance_NoRebalanceNeeded 測試不需要再平衡的情況

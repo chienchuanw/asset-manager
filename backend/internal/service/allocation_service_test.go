@@ -29,6 +29,14 @@ func (m *MockHoldingServiceForAllocation) GetHoldingBySymbol(symbol string) (*mo
 	return args.Get(0).(*models.Holding), args.Error(1)
 }
 
+func (m *MockHoldingServiceForAllocation) FixInsufficientQuantity(input *models.FixInsufficientQuantityInput) (*models.Transaction, error) {
+	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
 // TestAllocationService_GetCurrentAllocation 測試取得當前資產配置
 func TestAllocationService_GetCurrentAllocation(t *testing.T) {
 	mockHoldingService := new(MockHoldingServiceForAllocation)

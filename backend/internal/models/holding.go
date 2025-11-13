@@ -46,6 +46,13 @@ type HoldingFilters struct {
 	Symbol    *string    `json:"symbol,omitempty"`     // 按標的代碼篩選
 }
 
+// FixInsufficientQuantityInput 修復持倉數量不足的輸入
+type FixInsufficientQuantityInput struct {
+	Symbol         string   `json:"symbol" binding:"required"`                         // 標的代碼
+	CurrentHolding float64  `json:"current_holding" binding:"required,gt=0"`           // 使用者當前實際持有股數
+	EstimatedCost  *float64 `json:"estimated_cost,omitempty" binding:"omitempty,gt=0"` // 估計成本（fallback，當價格 API 失敗時使用）
+}
+
 // CorporateActionType 公司行動類型（股票分割/合併）
 type CorporateActionType string
 

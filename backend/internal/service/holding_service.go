@@ -21,6 +21,10 @@ type HoldingService interface {
 
 	// GetHoldingBySymbol 取得單一標的持倉
 	GetHoldingBySymbol(symbol string) (*models.Holding, error)
+
+	// FixInsufficientQuantity 修復持倉數量不足的問題
+	// 透過新增股票股利記錄來補足缺少的股數
+	FixInsufficientQuantity(input *models.FixInsufficientQuantityInput) (*models.Transaction, error)
 }
 
 // holdingService 持倉服務實作
@@ -283,3 +287,99 @@ func (s *holdingService) getCurrencyForAssetType(assetType models.AssetType) mod
 	}
 }
 
+// FixInsufficientQuantity 修復持倉數量不足的問題
+// 透過新增股票股利記錄來補足缺少的股數
+func (s *holdingService) FixInsufficientQuantity(input *models.FixInsufficientQuantityInput) (*models.Transaction, error) {
+	log.Printf("[DEBUG] FixInsufficientQuantity started for symbol: %s", input.Symbol)
+
+	// 1. 取得該標的的所有交易記錄
+	symbolFilter := input.Symbol
+	txFilters := repository.TransactionFilters{
+		Symbol: &symbolFilter,
+	}
+
+	transactions, err := s.transactionRepo.GetAll(txFilters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transactions: %w", err)
+	}
+
+	if len(transactions) == 0 {
+		return nil, fmt.Errorf("no transactions found for symbol: %s", input.Symbol)
+	}
+
+	// 2. 取得資產類型（從第一筆交易）
+	assetType := transactions[0].AssetType
+	name := transactions[0].Name
+	log.Printf("[DEBUG] Asset type: %s, Name: %s", assetType, name)
+
+	// 3. 計算當前 FIFO 持倉（會失敗，因為數量不足）
+	result, err := s.fifoCalculator.CalculateAllHoldings(transactions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate holdings: %w", err)
+	}
+
+	// 檢查是否有該標的的持倉
+	holding, exists := result.Holdings[input.Symbol]
+	var currentQuantity float64
+	if exists {
+		currentQuantity = holding.Quantity
+	} else {
+		currentQuantity = 0
+	}
+
+	log.Printf("[DEBUG] Current FIFO quantity: %.4f, User reported: %.4f", currentQuantity, input.CurrentHolding)
+
+	// 4. 計算需要補足的股數
+	missingQuantity := input.CurrentHolding - currentQuantity
+	if missingQuantity <= 0 {
+		return nil, fmt.Errorf("no missing quantity: current=%.4f, reported=%.4f", currentQuantity, input.CurrentHolding)
+	}
+
+	log.Printf("[DEBUG] Missing quantity: %.4f", missingQuantity)
+
+	// 5. 取得當前價格作為成本估算
+	var estimatedCost float64
+	price, err := s.priceService.GetPrice(input.Symbol, assetType)
+	if err != nil || price == nil {
+		// 價格 API 失敗，使用使用者提供的估計成本
+		if input.EstimatedCost == nil {
+			return nil, fmt.Errorf("failed to get price and no estimated cost provided: %w", err)
+		}
+		estimatedCost = *input.EstimatedCost
+		log.Printf("[WARNING] Failed to get price, using user estimated cost: %.2f", estimatedCost)
+	} else {
+		estimatedCost = price.Price
+		log.Printf("[DEBUG] Using current price as cost: %.2f", estimatedCost)
+	}
+
+	// 6. 建立股票股利交易記錄
+	totalAmount := missingQuantity * estimatedCost
+	currency := s.getCurrencyForAssetType(assetType)
+	note := "股票股利配股 (系統自動補登)"
+
+	createInput := &models.CreateTransactionInput{
+		Date:            transactions[len(transactions)-1].Date, // 使用最後一筆交易的日期
+		AssetType:       assetType,
+		Symbol:          input.Symbol,
+		Name:            name,
+		TransactionType: models.TransactionTypeBuy,
+		Quantity:        missingQuantity,
+		Price:           estimatedCost,
+		Amount:          totalAmount,
+		Fee:             nil,
+		Tax:             nil,
+		Currency:        currency,
+		Note:            &note,
+	}
+
+	// 7. 建立交易記錄
+	transaction, err := s.transactionRepo.Create(createInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stock dividend transaction: %w", err)
+	}
+
+	log.Printf("[INFO] Successfully created stock dividend transaction: ID=%s, Quantity=%.4f, Cost=%.2f",
+		transaction.ID, missingQuantity, estimatedCost)
+
+	return transaction, nil
+}

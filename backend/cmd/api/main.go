@@ -360,6 +360,7 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		{
 			holdings.GET("", holdingHandler.GetAllHoldings)
 			holdings.GET("/:symbol", holdingHandler.GetHoldingBySymbol)
+			holdings.POST("/fix-insufficient-quantity", holdingHandler.FixInsufficientQuantity)
 		}
 
 		// Analytics 路由

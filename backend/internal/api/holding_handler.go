@@ -130,3 +130,59 @@ func (h *HoldingHandler) GetHoldingBySymbol(c *gin.Context) {
 	})
 }
 
+// FixInsufficientQuantity 修復持倉數量不足
+// @Summary 修復持倉數量不足
+// @Description 透過新增股票股利記錄來補足缺少的股數
+// @Tags holdings
+// @Accept json
+// @Produce json
+// @Param input body models.FixInsufficientQuantityInput true "修復輸入"
+// @Success 200 {object} map[string]interface{} "成功返回新增的交易記錄"
+// @Failure 400 {object} map[string]interface{} "請求參數錯誤"
+// @Failure 500 {object} map[string]interface{} "伺服器錯誤"
+// @Router /api/holdings/fix-insufficient-quantity [post]
+func (h *HoldingHandler) FixInsufficientQuantity(c *gin.Context) {
+	log.Println("=== [DEBUG] FixInsufficientQuantity API called ===")
+
+	// 解析請求 body
+	var input models.FixInsufficientQuantityInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		log.Printf("[ERROR] Failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"data": nil,
+			"error": gin.H{
+				"code":    "INVALID_INPUT",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	log.Printf("[DEBUG] Input: Symbol=%s, CurrentHolding=%.4f, EstimatedCost=%v",
+		input.Symbol, input.CurrentHolding, input.EstimatedCost)
+
+	// 呼叫 service 處理
+	transaction, err := h.holdingService.FixInsufficientQuantity(&input)
+	if err != nil {
+		log.Printf("[ERROR] FixInsufficientQuantity failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"data": nil,
+			"error": gin.H{
+				"code":    "FIX_FAILED",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	log.Printf("[INFO] Successfully fixed insufficient quantity for %s", input.Symbol)
+
+	// 返回成功結果
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"transaction": transaction,
+			"message":     "Successfully fixed insufficient quantity",
+		},
+		"error": nil,
+	})
+}
