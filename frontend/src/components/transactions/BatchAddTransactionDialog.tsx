@@ -115,7 +115,7 @@ export function BatchAddTransactionDialog({
           currency: t.currency,
           symbol: t.symbol,
           name: t.name,
-          type: t.transaction_type,
+          type: t.type, // 修正：後端回傳的欄位名稱是 "type" 而非 "transaction_type"
           quantity: t.quantity,
           price: t.price,
           amount: t.amount,
