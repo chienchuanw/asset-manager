@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -32,6 +33,8 @@ func NewHoldingHandler(holdingService service.HoldingService) *HoldingHandler {
 // @Failure 500 {object} map[string]interface{} "伺服器錯誤"
 // @Router /api/holdings [get]
 func (h *HoldingHandler) GetAllHoldings(c *gin.Context) {
+	log.Println("=== [DEBUG] GetAllHoldings API called ===")
+
 	// 解析查詢參數
 	var filters models.HoldingFilters
 
@@ -39,16 +42,21 @@ func (h *HoldingHandler) GetAllHoldings(c *gin.Context) {
 	if assetTypeStr := c.Query("asset_type"); assetTypeStr != "" {
 		assetType := models.AssetType(assetTypeStr)
 		filters.AssetType = &assetType
+		log.Printf("[DEBUG] Filter by asset_type: %s", assetTypeStr)
 	}
 
 	// 標的代碼篩選
 	if symbol := c.Query("symbol"); symbol != "" {
 		filters.Symbol = &symbol
+		log.Printf("[DEBUG] Filter by symbol: %s", symbol)
 	}
+
+	log.Println("[DEBUG] Calling holdingService.GetAllHoldings...")
 
 	// 呼叫 Service 層
 	holdings, err := h.holdingService.GetAllHoldings(filters)
 	if err != nil {
+		log.Printf("[ERROR] GetAllHoldings failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"data":  nil,
 			"error": gin.H{
@@ -58,6 +66,8 @@ func (h *HoldingHandler) GetAllHoldings(c *gin.Context) {
 		})
 		return
 	}
+
+	log.Printf("[DEBUG] GetAllHoldings success, returned %d holdings", len(holdings))
 
 	// 返回成功結果
 	c.JSON(http.StatusOK, gin.H{
