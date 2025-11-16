@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -33,6 +33,34 @@ import { CashFlowType, type CashFlowFilters } from "@/types/cash-flow";
 import { Download, Search } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
+// 日期記憶相關的 localStorage key
+const SELECTED_DATE_KEY = "cash-flows-selected-date";
+
+/**
+ * 從 localStorage 讀取上次選擇的日期
+ * 如果沒有記錄或日期無效，則返回今天
+ */
+function getInitialSelectedDate(): Date {
+  if (typeof window === "undefined") return new Date();
+
+  const savedDate = localStorage.getItem(SELECTED_DATE_KEY);
+  if (!savedDate) return new Date();
+
+  const parsedDate = new Date(savedDate);
+  // 檢查日期是否有效
+  if (isNaN(parsedDate.getTime())) return new Date();
+
+  return parsedDate;
+}
+
+/**
+ * 將選擇的日期儲存到 localStorage
+ */
+function saveSelectedDate(date: Date): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SELECTED_DATE_KEY, date.toISOString());
+}
+
 export default function CashFlowsPage() {
   const queryClient = useQueryClient();
 
@@ -43,8 +71,15 @@ export default function CashFlowsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 左側「今日」專用的日期狀態
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  // 左側「今日」專用的日期狀態 - 使用記憶的日期作為初始值
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    getInitialSelectedDate
+  );
+
+  // 當使用者切換日期時，儲存到 localStorage
+  useEffect(() => {
+    saveSelectedDate(selectedDate);
+  }, [selectedDate]);
 
   // 右側「本週/本月」專用的分頁狀態
   const [rightPanelTab, setRightPanelTab] = useState<"week" | "month">("week");

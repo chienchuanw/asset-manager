@@ -295,9 +295,10 @@ export function EditCashFlowDialog({
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
+                        inputMode="numeric"
+                        step="1"
                         min="0"
-                        placeholder="0.00"
+                        placeholder="0"
                         {...field}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />

@@ -71,9 +71,6 @@ export function CategorySelect({
         {categories?.map((category) => (
           <SelectItem key={category.id} value={category.id}>
             {category.name}
-            {category.is_system && (
-              <span className="ml-2 text-xs text-muted-foreground">(系統)</span>
-            )}
           </SelectItem>
         ))}
       </SelectContent>
