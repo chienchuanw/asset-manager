@@ -25,10 +25,12 @@ import {
   DailyDateNavigator,
   DailySummaryCards,
   CategoryManagement,
+  MonthlyExpenseChart,
 } from "@/components/cash-flows";
 import { calculateDateRange } from "@/components/common/DateRangeTabs";
 import { WeekMonthTabs } from "@/components/common/WeekMonthTabs";
 import { useCashFlows, cashFlowKeys } from "@/hooks";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CashFlowType, type CashFlowFilters } from "@/types/cash-flow";
 import { Download, Search } from "lucide-react";
 import { DateRange } from "react-day-picker";
@@ -63,6 +65,7 @@ function saveSelectedDate(date: Date): void {
 
 export default function CashFlowsPage() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   // 狀態管理
   const [filterType, setFilterType] = useState<CashFlowType | "all">("all");
@@ -191,7 +194,22 @@ export default function CashFlowsPage() {
     <AppLayout title="現金流記錄" description="追蹤和管理您的收入與支出">
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
-        {/* 分類管理 - 置於頁面最上方 */}
+        {/* 當月/當週每日收入/支出圖表 - 置於頁面最上方 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{isMobile ? "當週" : "當月"}每日收入/支出統計</CardTitle>
+            <CardDescription>
+              顯示 {new Date(selectedDate).getFullYear()} 年{" "}
+              {new Date(selectedDate).getMonth() + 1} 月{isMobile ? "當週" : ""}
+              的每日現金流動
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MonthlyExpenseChart selectedDate={todayStartDate} />
+          </CardContent>
+        </Card>
+
+        {/* 分類管理 */}
         <CategoryManagement />
 
         {/* 左右分欄佈局 */}
