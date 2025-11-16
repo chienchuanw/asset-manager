@@ -65,18 +65,18 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
   // 主要導航項目
   const mainNavItems = [
     { id: "dashboard", label: "首頁", icon: HomeIcon, href: "/dashboard" },
+    {
+      id: "cash-flows",
+      label: "現金流記錄",
+      icon: TrendingUpIcon,
+      href: "/cash-flows",
+    },
     { id: "holdings", label: "持倉明細", icon: WalletIcon, href: "/holdings" },
     {
       id: "transactions",
       label: "交易記錄",
       icon: ArrowLeftRightIcon,
       href: "/transactions",
-    },
-    {
-      id: "cash-flows",
-      label: "現金流記錄",
-      icon: TrendingUpIcon,
-      href: "/cash-flows",
     },
     {
       id: "recurring",
