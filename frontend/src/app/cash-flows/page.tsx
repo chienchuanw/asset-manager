@@ -24,7 +24,6 @@ import {
   CashFlowFilterDrawer,
   DailyDateNavigator,
   DailySummaryCards,
-  CategoryManagement,
   MonthlyExpenseChart,
 } from "@/components/cash-flows";
 import { calculateDateRange } from "@/components/common/DateRangeTabs";
@@ -208,9 +207,6 @@ export default function CashFlowsPage() {
             <MonthlyExpenseChart selectedDate={todayStartDate} />
           </CardContent>
         </Card>
-
-        {/* 分類管理 */}
-        <CategoryManagement />
 
         {/* 左右分欄佈局 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

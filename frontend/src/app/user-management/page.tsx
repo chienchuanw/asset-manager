@@ -30,6 +30,7 @@ import { BankAccountForm } from "@/components/user-management/BankAccountForm";
 import { CreditCardList } from "@/components/user-management/CreditCardList";
 import { CreditCardForm } from "@/components/user-management/CreditCardForm";
 import { CreditCardGroupForm } from "@/components/user-management/CreditCardGroupForm";
+import { CategoryManagement } from "@/components/cash-flows";
 import {
   useBankAccounts,
   useCreateBankAccount,
@@ -328,6 +329,9 @@ export default function UserManagementPage() {
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
+          {/* 分類管理 */}
+          <CategoryManagement />
+
           {/* 銀行帳戶區塊 */}
           <Card>
             <CardHeader>
