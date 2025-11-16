@@ -275,63 +275,14 @@ export default function CashFlowsPage() {
               onValueChange={setRightPanelTab}
             />
 
-            {/* 卡片區域 - 垂直排列（1 欄 6 列）*/}
-            <div className="flex flex-col gap-4">
-              {/* 摘要統計卡片 - 佔三欄 */}
-              <CashFlowSummaryCard
-                startDate={rightStartDate}
-                endDate={rightEndDate}
-              />
-
-              {/* 記錄統計卡片 - 垂直排列 */}
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardDescription className="text-base">
-                    總記錄數
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold mb-2">
-                    {rightStats.totalRecords}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    期間內的所有交易記錄
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardDescription className="text-base">
-                    收入記錄
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-green-600 mb-2">
-                    {rightStats.incomeRecords}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    期間內的收入交易筆數
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardDescription className="text-base">
-                    支出記錄
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-red-600 mb-2">
-                    {rightStats.expenseRecords}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    期間內的支出交易筆數
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* 摘要統計卡片區域 - 2 欄 3 列佈局 */}
+            <CashFlowSummaryCard
+              startDate={rightStartDate}
+              endDate={rightEndDate}
+              totalRecords={rightStats.totalRecords}
+              incomeRecords={rightStats.incomeRecords}
+              expenseRecords={rightStats.expenseRecords}
+            />
           </div>
         </div>
       </div>
