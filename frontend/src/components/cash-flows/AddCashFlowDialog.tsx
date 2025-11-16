@@ -199,8 +199,34 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               )}
             />
 
-            {/* 類型與分類並排 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 分類與類型並排 */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* 分類 */}
+              <FormField
+                control={form.control}
+                name="category_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>分類</FormLabel>
+                    <FormControl>
+                      <CategorySelect
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        type={cashFlowType}
+                        placeholder="選擇分類"
+                        autoSelectName={
+                          cashFlowType === CashFlowType.TRANSFER_IN ||
+                          cashFlowType === CashFlowType.TRANSFER_OUT
+                            ? "移轉"
+                            : undefined
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* 類型 */}
               <FormField
                 control={form.control}
@@ -238,32 +264,6 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                   </FormItem>
                 )}
               />
-
-              {/* 分類 */}
-              <FormField
-                control={form.control}
-                name="category_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>分類</FormLabel>
-                    <FormControl>
-                      <CategorySelect
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        type={cashFlowType}
-                        placeholder="選擇分類"
-                        autoSelectName={
-                          cashFlowType === CashFlowType.TRANSFER_IN ||
-                          cashFlowType === CashFlowType.TRANSFER_OUT
-                            ? "移轉"
-                            : undefined
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             {/* 金額 */}
@@ -292,7 +292,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
             />
 
             {/* 付款方式與帳戶選擇並排 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {/* 付款方式 */}
               <FormField
                 control={form.control}
@@ -456,16 +456,21 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="flex flex-row gap-2 sm:gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
                 disabled={createMutation.isPending}
+                className="flex-1"
               >
                 取消
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="flex-1"
+              >
                 {createMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
