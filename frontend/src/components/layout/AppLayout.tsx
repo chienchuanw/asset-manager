@@ -7,6 +7,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   HomeIcon,
@@ -14,7 +15,6 @@ import {
   WalletIcon,
   ArrowLeftRightIcon,
   SettingsIcon,
-  HelpCircleIcon,
   UserIcon,
   LogOutIcon,
   TrendingUpIcon,
@@ -113,8 +113,14 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
                 <Link href="/dashboard">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-black">
-                    <WalletIcon className="size-4" />
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <Image
+                      src="/logotype_01.png"
+                      alt="Asset Manager Logo"
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
