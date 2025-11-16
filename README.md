@@ -1,6 +1,6 @@
 # Asset Manager
 
-A personal asset-tracking system supporting Taiwan stocks, U.S. stocks, and cryptocurrencies with manual transaction import, end-of-day valuations, and holdings visualization.
+A comprehensive personal finance management system supporting investment portfolio tracking, cash flow management, subscription/installment billing, and financial analytics with real-time valuations and detailed reporting.
 
 ## 📋 Table of Contents
 
@@ -10,50 +10,106 @@ A personal asset-tracking system supporting Taiwan stocks, U.S. stocks, and cryp
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
-  - [Quick Start](#quick-start)
+  - [Quick Start with Docker Compose](#quick-start-with-docker-compose)
   - [Manual Setup](#manual-setup)
 - [Development](#-development)
   - [Running Tests](#running-tests)
-  - [API Documentation](#api-documentation)
+  - [Development Commands](#development-commands)
+  - [Code Standards](#code-standards)
 - [Architecture](#️-architecture)
-- [Phase 1 Status](#-phase-1-status)
-- [Roadmap](#️-roadmap)
+- [Development Progress](#development-progress)
+- [API Endpoints](#api-endpoints)
+- [Documentation](#documentation)
 - [Contributing](#-contributing)
+- [License](#license)
+- [Support](#support)
+- [Acknowledgments](#acknowledgments)
 
 ---
 
 ## 🎯 Overview
 
-Asset Manager is a full-stack application designed to help users track their investment portfolio across multiple asset classes. The system supports:
+Asset Manager is a full-stack application designed to help users manage their personal finances comprehensively. The system supports:
+
+### Investment Portfolio Tracking
 
 - **Taiwan Stocks** (台股)
 - **U.S. Stocks** (美股)
 - **Cryptocurrencies** (加密貨幣)
+- **Cash Holdings** (現金)
 
-The application calculates holdings using the **FIFO (First-In, First-Out)** method and provides end-of-day valuations in TWD or USD.
+### Financial Management
+
+- **Cash Flow Tracking** - Income and expense management with categorization
+- **Subscription Management** - Track recurring subscriptions and auto-billing
+- **Installment Tracking** - Manage payment plans with interest calculations
+- **Bank & Credit Card Management** - Multi-account support with grouping
+
+### Analytics & Reporting
+
+- **Holdings Calculation** - FIFO (First-In, First-Out) cost basis calculation
+- **Performance Analytics** - Realized/unrealized P&L tracking
+- **Asset Allocation** - Portfolio composition visualization
+- **Daily Snapshots** - Historical valuation tracking
+- **Discord Integration** - Automated daily reports and alerts
 
 ---
 
 ## ✨ Features
 
-### Current Features (Phase 1 - Backend)
+### Investment & Holdings Management ✅
 
-- ✅ Transaction management (Create, Read, Update, Delete)
-- ✅ Support for multiple asset types (Taiwan stocks, U.S. stocks, crypto)
-- ✅ Support for multiple transaction types (buy, sell, dividend, fee)
-- ✅ RESTful API with comprehensive error handling
-- ✅ PostgreSQL database with migrations
-- ✅ Comprehensive test coverage (21 test cases)
-- ✅ TDD (Test-Driven Development) approach
+- ✅ Transaction management (Buy, Sell, Dividend, Fee, Tax)
+- ✅ Multi-asset support (Taiwan stocks, U.S. stocks, cryptocurrencies, cash)
+- ✅ FIFO cost basis calculation
+- ✅ Holdings tracking with real-time valuations
+- ✅ Asset allocation by type and individual assets
+- ✅ CSV import/export for transactions
+- ✅ Batch transaction creation
 
-### Planned Features (Phase 2+)
+### Financial Analytics ✅
 
-- 🔄 Frontend dashboard with React/Next.js
-- 🔄 Holdings calculation with FIFO cost basis
-- 🔄 Real-time price integration
-- 🔄 Profit & Loss (P&L) calculation
-- 🔄 Asset allocation visualization
-- 🔄 Discord notifications for rebalancing alerts
+- ✅ Realized profit/loss calculation
+- ✅ Unrealized profit/loss tracking
+- ✅ Performance trends with daily snapshots
+- ✅ Time-range based analytics (week, month, quarter, year, all)
+- ✅ Top performing/underperforming assets
+- ✅ Asset allocation visualization
+
+### Cash Flow Management ✅
+
+- ✅ Income and expense tracking with categorization
+- ✅ Predefined and custom categories
+- ✅ Monthly/yearly cash flow reports
+- ✅ Summary statistics and trends
+- ✅ Discord integration for reports
+
+### Subscription & Installment Management ✅
+
+- ✅ Subscription creation and management
+- ✅ Automatic daily billing
+- ✅ Installment tracking with interest calculations
+- ✅ Payment progress visualization
+- ✅ Expiration reminders and alerts
+- ✅ Auto-renewal settings
+
+### Financial Account Management ✅
+
+- ✅ Bank account tracking
+- ✅ Credit card management
+- ✅ Credit card grouping
+- ✅ Multi-account support
+
+### System Features ✅
+
+- ✅ JWT authentication
+- ✅ Role-based access control
+- ✅ Settings management (notifications, preferences)
+- ✅ Discord webhook integration
+- ✅ Scheduled tasks (daily snapshots, billing, reports)
+- ✅ Exchange rate management
+- ✅ Graceful API degradation with caching
+- ✅ Comprehensive error handling
 
 ---
 
@@ -62,25 +118,35 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 ### Frontend
 
 - **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **UI Library**: shadcn/ui (Tailwind CSS)
-- **State Management**: TanStack Query (React Query)
-- **Form Management**: react-hook-form + zod
+- **Language**: TypeScript 5
+- **UI Library**: shadcn/ui (Tailwind CSS 4)
+- **State Management**: TanStack Query 5 (React Query)
+- **Form Management**: react-hook-form 7 + zod 4
+- **Charts**: Recharts 2
+- **Date Handling**: date-fns 4
+- **Notifications**: Sonner
 - **Package Manager**: pnpm
+- **Runtime**: React 19, Node.js 18+
 
 ### Backend
 
-- **Language**: Go 1.21+
-- **Web Framework**: Gin
+- **Language**: Go 1.24
+- **Web Framework**: Gin 1.11
 - **Database**: PostgreSQL 12+
-- **Cache**: Redis (planned)
+- **Cache/Queue**: Redis 9
+- **Authentication**: JWT (golang-jwt/jwt v5)
 - **Migration**: golang-migrate
-- **Testing**: testify
+- **Testing**: testify 1.11
+- **Task Scheduling**: robfig/cron v3
+- **HTTP Client**: Standard library + custom clients
 
-### DevOps
+### DevOps & Deployment
 
-- **Deployment**: AWS EC2 (planned)
-- **CI/CD**: GitHub Actions (planned)
+- **Containerization**: Docker
+- **Orchestration**: Docker Compose
+- **Reverse Proxy**: Nginx
+- **Deployment Target**: AWS EC2
+- **CI/CD**: GitHub Actions (ready for setup)
 
 ---
 
@@ -88,28 +154,53 @@ The application calculates holdings using the **FIFO (First-In, First-Out)** met
 
 ```bash
 asset-manager/
-├── frontend/                 # Next.js frontend application
+├── frontend/                      # Next.js frontend application
 │   ├── src/
-│   │   ├── app/             # Next.js App Router pages
-│   │   ├── components/      # React components
-│   │   ├── lib/             # Utilities and API clients
-│   │   └── types/           # TypeScript type definitions
+│   │   ├── app/                  # Next.js App Router pages
+│   │   │   ├── dashboard/        # Dashboard page
+│   │   │   ├── transactions/     # Transaction management
+│   │   │   ├── holdings/         # Holdings tracking
+│   │   │   ├── cash-flows/       # Cash flow management
+│   │   │   ├── recurring/        # Subscriptions & installments
+│   │   │   ├── analytics/        # Performance analytics
+│   │   │   ├── settings/         # User settings
+│   │   │   └── user-management/  # User management
+│   │   ├── components/           # React components
+│   │   ├── hooks/                # Custom React hooks
+│   │   ├── lib/                  # Utilities and API clients
+│   │   ├── types/                # TypeScript type definitions
+│   │   └── providers/            # Context providers
+│   ├── doc/                      # Documentation
 │   └── package.json
 │
-├── backend/                  # Go backend application
+├── backend/                       # Go backend application
 │   ├── cmd/
-│   │   └── api/             # Main application entry point
+│   │   ├── api/                  # Main API server
+│   │   ├── snapshot/             # Snapshot utility
+│   │   └── [other utilities]/    # Various CLI tools
 │   ├── internal/
-│   │   ├── models/          # Data models
-│   │   ├── repository/      # Data access layer
-│   │   ├── service/         # Business logic layer
-│   │   ├── api/             # HTTP handlers
-│   │   └── db/              # Database connection
-│   ├── migrations/          # Database migrations
-│   ├── scripts/             # Utility scripts
+│   │   ├── api/                  # HTTP handlers
+│   │   ├── models/               # Data models and DTOs
+│   │   ├── repository/           # Data access layer
+│   │   ├── service/              # Business logic layer
+│   │   ├── db/                   # Database connection
+│   │   ├── auth/                 # Authentication
+│   │   ├── middleware/           # HTTP middleware
+│   │   ├── cache/                # Caching layer
+│   │   ├── external/             # External API clients
+│   │   ├── scheduler/            # Task scheduling
+│   │   └── client/               # HTTP clients
+│   ├── migrations/               # Database migrations (23 files)
+│   ├── mock/                     # Mock data
+│   ├── test/                     # Integration tests
+│   ├── scripts/                  # Utility scripts
+│   ├── doc/                      # Documentation
 │   └── go.mod
 │
-└── README.md                # This file
+├── scripts/                       # Project-level scripts
+├── docker-compose.yml            # Docker Compose configuration
+├── nginx.conf                     # Nginx configuration
+└── README.md                      # This file
 ```
 
 ---
@@ -120,79 +211,47 @@ asset-manager/
 
 Before you begin, ensure you have the following installed:
 
-- **Go** 1.21 or higher ([Download](https://golang.org/dl/))
+- **Go** 1.24 or higher ([Download](https://golang.org/dl/))
 - **PostgreSQL** 12 or higher ([Download](https://www.postgresql.org/download/))
-- **Node.js** 18+ and **pnpm** (for frontend)
-- **golang-migrate** CLI ([Installation Guide](https://github.com/golang-migrate/migrate))
+- **Redis** 6+ (optional, for caching and scheduling)
+- **Node.js** 18+ and **pnpm** ([Installation Guide](https://pnpm.io/))
+- **Docker** & **Docker Compose** (optional, for containerized setup)
 
-### Quick Start
+### Quick Start with Docker Compose
 
-#### Backend Setup (Automated)
-
-```bash
-cd backend
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
-
-This script will:
-
-- ✅ Check Go and PostgreSQL installation
-- ✅ Install golang-migrate (if needed)
-- ✅ Install Go dependencies
-- ✅ Create `.env` file
-- ✅ Create databases (optional)
-- ✅ Run migrations (optional)
-
-#### Start the Backend Server
+The easiest way to get started is using Docker Compose:
 
 ```bash
-cd backend
-make run
+# Clone the repository
+git clone https://github.com/chienchuanw/asset-manager.git
+cd asset-manager
+
+# Start all services (PostgreSQL, Redis, Backend, Frontend)
+docker-compose up -d
+
+# Backend API: http://localhost:8080
+# Frontend: http://localhost:3000
 ```
-
-The API server will start at `http://localhost:8080`.
-
-#### Test the API
-
-```bash
-cd backend
-chmod +x scripts/test-api.sh
-./scripts/test-api.sh
-```
-
----
 
 ### Manual Setup
-
-If you prefer manual setup, follow these steps:
 
 #### 1. Backend Setup
 
 ```bash
-# Navigate to backend directory
 cd backend
 
 # Install Go dependencies
-make install
+go mod download
 
 # Create environment file
 cp .env.example .env
 # Edit .env with your database credentials
 
 # Create databases
-psql -U postgres
-CREATE DATABASE asset_manager;
-CREATE DATABASE asset_manager_test;
-\q
+psql -U postgres -c "CREATE DATABASE asset_manager;"
+psql -U postgres -c "CREATE DATABASE asset_manager_test;"
 
 # Run migrations
-export DB_USER=postgres
-export DB_PASSWORD=your_password
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=asset_manager
-
 make migrate-up
 
 # Run tests
@@ -202,10 +261,11 @@ make test
 make run
 ```
 
-#### 2. Frontend Setup (Coming in Phase 2)
+The API server will start at `http://localhost:8080`.
+
+#### 2. Frontend Setup
 
 ```bash
-# Navigate to frontend directory
 cd frontend
 
 # Install dependencies
@@ -213,11 +273,13 @@ pnpm install
 
 # Create environment file
 cp .env.example .env.local
-# Edit .env.local with API URL
+# Edit .env.local with API URL (default: http://localhost:8080)
 
 # Start development server
 pnpm dev
 ```
+
+The frontend will start at `http://localhost:3000`.
 
 ---
 
@@ -251,52 +313,58 @@ export TEST_DB_NAME=asset_manager_test
 make test-integration
 ```
 
-### API Documentation
-
-#### Endpoints
-
-| Method | Path                    | Description                          |
-| ------ | ----------------------- | ------------------------------------ |
-| GET    | `/health`               | Health check                         |
-| POST   | `/api/transactions`     | Create a transaction                 |
-| GET    | `/api/transactions`     | List all transactions (with filters) |
-| GET    | `/api/transactions/:id` | Get a transaction by ID              |
-| PUT    | `/api/transactions/:id` | Update a transaction                 |
-| DELETE | `/api/transactions/:id` | Delete a transaction                 |
-
-#### Example: Create a Transaction
+### Development Commands
 
 ```bash
-curl -X POST http://localhost:8080/api/transactions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "date": "2025-10-22T00:00:00Z",
-    "asset_type": "tw-stock",
-    "symbol": "2330",
-    "name": "TSMC",
-    "type": "buy",
-    "quantity": 10,
-    "price": 620,
-    "amount": 6200,
-    "fee": 28,
-    "note": "Regular investment"
-  }'
+# Backend
+cd backend
+
+# Install dependencies
+make install
+
+# Run linter
+make lint
+
+# Format code
+make fmt
+
+# Run migrations
+make migrate-up
+make migrate-down
+
+# Seed test data
+make seed
+
+# Frontend
+cd frontend
+
+# Install dependencies
+pnpm install
+
+# Type check
+pnpm tsc --noEmit
+
+# Build
+pnpm build
+
+# Start dev server
+pnpm dev
 ```
 
-#### Example: List Transactions with Filters
+### Code Standards
 
-```bash
-# Filter by asset type
-curl "http://localhost:8080/api/transactions?asset_type=tw-stock"
+- **Backend**: Follow `.augment/rules/coding-standards.md`
 
-# Filter by date range
-curl "http://localhost:8080/api/transactions?start_date=2025-10-01&end_date=2025-10-31"
+  - Use `gofmt` and `goimports` for formatting
+  - Use `golangci-lint` for linting
+  - Write tests using TDD approach
+  - Use meaningful variable names and comments in Chinese
 
-# Pagination
-curl "http://localhost:8080/api/transactions?limit=10&offset=0"
-```
-
-For more examples, see [`backend/README_PHASE1.md`](backend/README_PHASE1.md).
+- **Frontend**: Follow `.augment/rules/coding-standards.md`
+  - Use Prettier for formatting
+  - Use ESLint with TypeScript rules
+  - Follow React best practices
+  - Use TypeScript strictly
 
 ---
 
@@ -306,116 +374,289 @@ For more examples, see [`backend/README_PHASE1.md`](backend/README_PHASE1.md).
 
 The backend follows a **clean architecture** pattern with clear separation of concerns:
 
-```bash
-Client Request
-      ↓
+```text
+HTTP Request
+    ↓
+Middleware (Auth, CORS, Logging)
+    ↓
 API Handler Layer (HTTP handling, request/response formatting)
-      ↓
-Service Layer (Business logic, validation)
-      ↓
+    ↓
+Service Layer (Business logic, validation, orchestration)
+    ↓
 Repository Layer (Data access, SQL queries)
-      ↓
-Database (PostgreSQL)
+    ↓
+Database (PostgreSQL) / Cache (Redis)
 ```
 
-#### Layers
+#### Core Layers
 
 1. **API Handler Layer** (`internal/api/`)
 
    - HTTP request/response handling
    - Input validation and parsing
    - Error handling and status codes
+   - 20+ handlers for different features
 
 2. **Service Layer** (`internal/service/`)
 
    - Business logic implementation
-   - Data validation
+   - Data validation and transformation
    - Orchestration of multiple repositories
+   - External API integration
+   - 20+ services for different domains
 
 3. **Repository Layer** (`internal/repository/`)
 
    - Database CRUD operations
    - SQL query construction
-   - Data mapping
+   - Data mapping and transactions
+   - 15+ repositories for different entities
 
 4. **Models Layer** (`internal/models/`)
    - Data structure definitions
    - Input/output DTOs
    - Validation methods
+   - 30+ model types
 
-For detailed architecture documentation, see [`backend/ARCHITECTURE.md`](backend/ARCHITECTURE.md).
+#### Supporting Layers
+
+- **Middleware** (`internal/middleware/`) - Authentication, CORS, logging
+- **Auth** (`internal/auth/`) - JWT token generation and validation
+- **Cache** (`internal/cache/`) - Redis caching layer
+- **External** (`internal/external/`) - External API clients
+- **Scheduler** (`internal/scheduler/`) - Task scheduling and management
+- **Database** (`internal/db/`) - Database connection and initialization
+
+### Frontend Architecture
+
+```text
+User Interface (Next.js Pages)
+    ↓
+React Components (Presentational)
+    ↓
+Custom Hooks (Data fetching, state management)
+    ↓
+API Client Layer (HTTP requests)
+    ↓
+Backend API
+```
+
+#### Frontend Structure
+
+- **Pages** (`src/app/`) - Next.js App Router pages
+- **Components** (`src/components/`) - Reusable React components
+- **Hooks** (`src/hooks/`) - Custom React hooks for data fetching
+- **API Client** (`src/lib/`) - API communication layer
+- **Types** (`src/types/`) - TypeScript type definitions
+- **Providers** (`src/providers/`) - Context providers and configuration
+
+For detailed architecture documentation, see [`backend/doc/ARCHITECTURE.md`](backend/doc/ARCHITECTURE.md).
 
 ---
 
-## ✅ Phase 1 Status
-
-**Phase 1: Backend Transaction API** - ✅ **COMPLETED**
-
-### Completed Work
-
-- ✅ Database schema design and migrations
-- ✅ Transaction model with validation
-- ✅ Repository layer with CRUD operations
-- ✅ Service layer with business logic
-- ✅ API handlers with RESTful endpoints
-- ✅ Comprehensive test coverage (21 test cases)
-- ✅ Development tools (Makefile, scripts)
-- ✅ Complete documentation
-
-### Test Coverage
-
-- **Repository Layer**: 7 integration tests
-- **Service Layer**: 8 unit tests (with mocks)
-- **API Handler Layer**: 6 unit tests (with mocks)
-- **Total**: 21 test cases
-
-### Documentation
-
-- [`backend/QUICK_START.md`](backend/QUICK_START.md) - Quick start guide (5 minutes)
-- [`backend/README_PHASE1.md`](backend/README_PHASE1.md) - Detailed implementation guide
-- [`backend/ARCHITECTURE.md`](backend/ARCHITECTURE.md) - Architecture documentation
-- [`backend/PHASE1_SUMMARY.md`](backend/PHASE1_SUMMARY.md) - Phase 1 completion summary
-- [`backend/FILES_CREATED.md`](backend/FILES_CREATED.md) - File listing
-
----
-
-## 🗺️ Roadmap
+## Development Progress
 
 ### Phase 1: Backend Transaction API ✅ COMPLETED
 
-- ✅ Database design and migrations
+**Status**: Fully implemented and tested
+
+- ✅ Database schema and migrations
 - ✅ Transaction CRUD API
-- ✅ Comprehensive testing
-- ✅ Documentation
+- ✅ Multi-asset support (stocks, crypto, cash)
+- ✅ CSV import/export functionality
+- ✅ Comprehensive test coverage
+- ✅ Complete documentation
 
-### Phase 2: Frontend Integration 🔄 IN PROGRESS
+### Phase 2: Frontend Integration ✅ COMPLETED
 
-- [ ] Install frontend dependencies (React Query, react-hook-form, zod)
-- [ ] Create API client layer
-- [ ] Implement transaction list page
-- [ ] Implement add transaction dialog
-- [ ] Implement edit/delete functionality
+**Status**: Fully implemented with all core pages
 
-### Phase 3: Holdings Calculation
+- ✅ Dashboard with overview statistics
+- ✅ Transaction management page
+- ✅ Holdings tracking page
+- ✅ API client layer with React Query
+- ✅ Form validation with react-hook-form + zod
+- ✅ Authentication system
 
-- [ ] Implement FIFO cost calculation
-- [ ] Holdings API endpoints
-- [ ] Holdings dashboard page
-- [ ] Real-time price integration
+### Phase 3: Holdings & Analytics ✅ COMPLETED
 
-### Phase 4: Analytics & Reporting
+**Status**: Fully implemented with FIFO calculations
 
-- [ ] Asset allocation calculation
-- [ ] P&L calculation (realized/unrealized)
-- [ ] Performance analytics
-- [ ] Charts and visualizations
+- ✅ FIFO cost basis calculation
+- ✅ Holdings API endpoints
+- ✅ Realized/unrealized P&L tracking
+- ✅ Asset allocation calculations
+- ✅ Performance trends with daily snapshots
+- ✅ Analytics dashboard with charts
 
-### Phase 5: Advanced Features
+### Phase 4: Cash Flow Management ✅ COMPLETED
 
-- [ ] Discord notifications
-- [ ] Rebalancing alerts
-- [ ] Multi-currency support
-- [ ] Export functionality (CSV/PDF)
+**Status**: Fully implemented with categorization
+
+- ✅ Income/expense tracking
+- ✅ Category management
+- ✅ Monthly/yearly reports
+- ✅ Summary statistics
+- ✅ Discord integration for reports
+
+### Phase 5: Subscription & Installment Management ✅ COMPLETED
+
+**Status**: Fully implemented with auto-billing
+
+- ✅ Subscription creation and management
+- ✅ Installment tracking with interest
+- ✅ Automatic daily billing
+- ✅ Payment progress visualization
+- ✅ Expiration reminders
+
+### Phase 6: Account Management ✅ COMPLETED
+
+**Status**: Fully implemented
+
+- ✅ Bank account tracking
+- ✅ Credit card management
+- ✅ Credit card grouping
+- ✅ Multi-account support
+
+### Phase 7: System Features & Integration ✅ COMPLETED
+
+**Status**: Fully implemented
+
+- ✅ JWT authentication
+- ✅ Settings management
+- ✅ Discord webhook integration
+- ✅ Scheduled tasks (snapshots, billing, reports)
+- ✅ Exchange rate management
+- ✅ Graceful API degradation with caching
+- ✅ Docker containerization
+- ✅ Nginx reverse proxy configuration
+
+---
+
+## 🗺️ Future Roadmap
+
+### Phase 8: Advanced Analytics (Planned)
+
+- [ ] Tax reporting and export
+- [ ] Portfolio rebalancing recommendations
+- [ ] Risk analysis and metrics
+- [ ] Benchmark comparison
+- [ ] Custom report generation
+
+### Phase 9: Mobile & Notifications (Planned)
+
+- [ ] Mobile app (React Native)
+- [ ] Push notifications
+- [ ] Email notifications
+- [ ] SMS alerts
+- [ ] Webhook support for custom integrations
+
+### Phase 10: Multi-User & Collaboration (Planned)
+
+- [ ] Multi-user support
+- [ ] Role-based access control (RBAC)
+- [ ] Shared portfolios
+- [ ] Audit logging
+- [ ] User activity tracking
+
+### Phase 11: Advanced Features (Planned)
+
+- [ ] Machine learning for predictions
+- [ ] Automated trading signals
+- [ ] Portfolio optimization
+- [ ] Tax-loss harvesting recommendations
+- [ ] Integration with brokers (API)
+
+### Phase 12: Enterprise Features (Planned)
+
+- [ ] Multi-currency support (beyond TWD/USD)
+- [ ] Advanced reporting (PDF/Excel export)
+- [ ] Data backup and recovery
+- [ ] API rate limiting and quotas
+- [ ] White-label support
+
+---
+
+## API Endpoints
+
+### Authentication
+
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+- `POST /auth/refresh` - Refresh JWT token
+
+### Transactions
+
+- `POST /api/transactions` - Create transaction
+- `POST /api/transactions/batch` - Batch create transactions
+- `GET /api/transactions` - List transactions (with filters)
+- `GET /api/transactions/:id` - Get transaction by ID
+- `PUT /api/transactions/:id` - Update transaction
+- `DELETE /api/transactions/:id` - Delete transaction
+- `GET /api/transactions/template` - Download CSV template
+- `POST /api/transactions/parse-csv` - Parse CSV file
+
+### Holdings
+
+- `GET /api/holdings` - Get all holdings
+- `GET /api/holdings/:symbol` - Get holding by symbol
+
+### Analytics
+
+- `GET /api/analytics/summary` - Get analytics summary
+- `GET /api/analytics/performance` - Get performance data
+- `GET /api/analytics/top-assets` - Get top performing assets
+- `GET /api/analytics/unrealized` - Get unrealized P&L
+
+### Asset Allocation
+
+- `GET /api/allocation/current` - Get current allocation
+- `GET /api/allocation/by-type` - Get allocation by asset type
+- `GET /api/allocation/by-asset` - Get allocation by individual asset
+
+### Cash Flows
+
+- `POST /api/cash-flows` - Create cash flow record
+- `GET /api/cash-flows` - List cash flows (with filters)
+- `GET /api/cash-flows/:id` - Get cash flow by ID
+- `PUT /api/cash-flows/:id` - Update cash flow
+- `DELETE /api/cash-flows/:id` - Delete cash flow
+- `GET /api/cash-flows/summary` - Get cash flow summary
+
+### Categories
+
+- `POST /api/categories` - Create category
+- `GET /api/categories` - List categories
+- `PUT /api/categories/:id` - Update category
+- `DELETE /api/categories/:id` - Delete category
+
+### Subscriptions
+
+- `POST /api/subscriptions` - Create subscription
+- `GET /api/subscriptions` - List subscriptions
+- `GET /api/subscriptions/expiring-soon` - Get expiring subscriptions
+- `PUT /api/subscriptions/:id` - Update subscription
+- `DELETE /api/subscriptions/:id` - Delete subscription
+
+### Installments
+
+- `POST /api/installments` - Create installment
+- `GET /api/installments` - List installments
+- `GET /api/installments/completing-soon` - Get completing installments
+- `PUT /api/installments/:id` - Update installment
+- `DELETE /api/installments/:id` - Delete installment
+
+### Settings
+
+- `GET /api/settings` - Get user settings
+- `PUT /api/settings` - Update user settings
+
+### Discord Integration
+
+- `POST /api/discord/test` - Test Discord webhook
+- `POST /api/discord/daily-report` - Send daily report
+
+For complete API documentation, see the backend documentation files in `backend/doc/`.
 
 ---
 
@@ -429,6 +670,7 @@ This is a personal project, but suggestions and feedback are welcome!
 2. Write tests before implementation
 3. Ensure all tests pass before committing
 4. Follow the coding standards in `.augment/rules/`
+5. Use meaningful commit messages in English
 
 ### Coding Standards
 
@@ -437,41 +679,82 @@ This is a personal project, but suggestions and feedback are welcome!
   - Use `gofmt` and `goimports` for formatting
   - Follow clean architecture principles
   - Write comprehensive tests
-  - Use meaningful variable names
+  - Use meaningful variable names and Chinese comments
+  - Handle all errors explicitly
 
 - **Frontend (TypeScript/React)**
   - Use Prettier for formatting
   - Follow React best practices
   - Use TypeScript strictly
   - Component-based architecture
+  - Write Chinese comments for complex logic
 
 For detailed coding standards, see [`.augment/rules/coding-standards.md`](.augment/rules/coding-standards.md).
 
 ---
 
-## 📄 License
+## Documentation
+
+### Backend Documentation
+
+- [`backend/doc/ARCHITECTURE.md`](backend/doc/ARCHITECTURE.md) - System architecture
+- [`backend/doc/QUICK_START.md`](backend/doc/QUICK_START.md) - Quick start guide
+- [`backend/doc/TESTING_GUIDE.md`](backend/doc/TESTING_GUIDE.md) - Testing guide
+- [`backend/doc/DEPLOYMENT.md`](backend/doc/DEPLOYMENT.md) - Deployment guide
+- [`backend/doc/ANALYTICS_COMPLETE_SUMMARY.md`](backend/doc/ANALYTICS_COMPLETE_SUMMARY.md) - Analytics feature documentation
+
+### Frontend Documentation
+
+- [`frontend/doc/PHASE_6_SUMMARY.md`](frontend/doc/PHASE_6_SUMMARY.md) - Frontend implementation summary
+- [`frontend/README.md`](frontend/README.md) - Frontend setup guide
+
+---
+
+## License
 
 This project is for personal use.
 
 ---
 
-## 📞 Support
+## Support
 
 For questions or issues:
 
-1. Check the documentation in `backend/` directory
-2. Review the [Quick Start Guide](backend/QUICK_START.md)
-3. Check the [Architecture Documentation](backend/ARCHITECTURE.md)
+1. Check the documentation in `backend/doc/` and `frontend/doc/` directories
+2. Review the [Quick Start Guide](backend/doc/QUICK_START.md)
+3. Check the [Architecture Documentation](backend/doc/ARCHITECTURE.md)
+4. Review the [Testing Guide](backend/doc/TESTING_GUIDE.md)
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- Built with [Go](https://golang.org/), [Gin](https://gin-gonic.com/), and [PostgreSQL](https://www.postgresql.org/)
-- Frontend powered by [Next.js](https://nextjs.org/) and [shadcn/ui](https://ui.shadcn.com/)
-- Testing with [testify](https://github.com/stretchr/testify)
+### Backend Technologies
+
+- [Go](https://golang.org/) - Programming language
+- [Gin](https://gin-gonic.com/) - Web framework
+- [PostgreSQL](https://www.postgresql.org/) - Database
+- [Redis](https://redis.io/) - Cache and message broker
+- [testify](https://github.com/stretchr/testify) - Testing framework
+- [golang-jwt](https://github.com/golang-jwt/jwt) - JWT authentication
+
+### Frontend Technologies
+
+- [Next.js](https://nextjs.org/) - React framework
+- [React](https://react.dev/) - UI library
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [shadcn/ui](https://ui.shadcn.com/) - Component library
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [TanStack Query](https://tanstack.com/query/) - Data fetching
+- [Recharts](https://recharts.org/) - Charting library
+
+### DevOps
+
+- [Docker](https://www.docker.com/) - Containerization
+- [Nginx](https://nginx.org/) - Reverse proxy
 
 ---
 
-**Last Updated**: 2025-10-23
-**Current Version**: Phase 1 Complete
+**Last Updated**: 2025-11-16
+**Current Version**: Phase 7 Complete (All Core Features Implemented)
+**Status**: Production Ready
