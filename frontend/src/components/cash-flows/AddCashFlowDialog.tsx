@@ -184,49 +184,8 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* 日期 */}
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>日期</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 分類與類型並排 */}
+            {/* 類型與分類並排 */}
             <div className="grid grid-cols-2 gap-4">
-              {/* 分類 */}
-              <FormField
-                control={form.control}
-                name="category_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>分類</FormLabel>
-                    <FormControl>
-                      <CategorySelect
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        type={cashFlowType}
-                        placeholder="選擇分類"
-                        autoSelectName={
-                          cashFlowType === CashFlowType.TRANSFER_IN ||
-                          cashFlowType === CashFlowType.TRANSFER_OUT
-                            ? "移轉"
-                            : undefined
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {/* 類型 */}
               <FormField
                 control={form.control}
@@ -264,98 +223,139 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* 金額 */}
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>金額 (TWD)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      step="1"
-                      min="0"
-                      placeholder="0"
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(parseFloat(e.target.value) || 0);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 付款方式與帳戶選擇並排 */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* 付款方式 */}
+              {/* 分類 */}
               <FormField
                 control={form.control}
-                name="payment_method"
+                name="category_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>付款方式</FormLabel>
+                    <FormLabel>分類</FormLabel>
                     <FormControl>
-                      <PaymentMethodSelect
+                      <CategorySelect
                         value={field.value}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // 重置帳戶選擇
-                          form.setValue("account_id", "");
-                        }}
-                        placeholder="選擇付款方式"
-                        disabled={
+                        onValueChange={field.onChange}
+                        type={cashFlowType}
+                        placeholder="選擇分類"
+                        autoSelectName={
                           cashFlowType === CashFlowType.TRANSFER_IN ||
                           cashFlowType === CashFlowType.TRANSFER_OUT
+                            ? "移轉"
+                            : undefined
                         }
                       />
                     </FormControl>
                     <FormMessage />
-                    {(cashFlowType === CashFlowType.TRANSFER_IN ||
-                      cashFlowType === CashFlowType.TRANSFER_OUT) && (
-                      <p className="text-sm text-muted-foreground">
-                        轉帳類型僅支援銀行帳戶
-                      </p>
-                    )}
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 日期與金額並排 */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* 日期 */}
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>日期</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* 帳戶選擇 */}
-              {paymentMethod !== PaymentMethodType.CASH && (
-                <FormField
-                  control={form.control}
-                  name="account_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {paymentMethod === PaymentMethodType.BANK_ACCOUNT
-                          ? "銀行帳戶"
-                          : "信用卡"}
-                      </FormLabel>
-                      <FormControl>
-                        <AccountSelect
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          paymentMethodType={paymentMethod}
-                          placeholder={`選擇${
-                            paymentMethod === PaymentMethodType.BANK_ACCOUNT
-                              ? "銀行帳戶"
-                              : "信用卡"
-                          }`}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              {/* 金額 */}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>金額 (TWD)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        step="1"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(parseFloat(e.target.value) || 0);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+
+            {/* 付款方式 */}
+            <FormField
+              control={form.control}
+              name="payment_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>付款方式</FormLabel>
+                  <FormControl>
+                    <PaymentMethodSelect
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // 重置帳戶選擇
+                        form.setValue("account_id", "");
+                      }}
+                      placeholder="選擇付款方式"
+                      disabled={
+                        cashFlowType === CashFlowType.TRANSFER_IN ||
+                        cashFlowType === CashFlowType.TRANSFER_OUT
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  {(cashFlowType === CashFlowType.TRANSFER_IN ||
+                    cashFlowType === CashFlowType.TRANSFER_OUT) && (
+                    <p className="text-sm text-muted-foreground">
+                      轉帳類型僅支援銀行帳戶
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
+
+            {/* 銀行帳戶選擇 */}
+            {paymentMethod !== PaymentMethodType.CASH && (
+              <FormField
+                control={form.control}
+                name="account_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {paymentMethod === PaymentMethodType.BANK_ACCOUNT
+                        ? "銀行帳戶"
+                        : "信用卡"}
+                    </FormLabel>
+                    <FormControl>
+                      <AccountSelect
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        paymentMethodType={paymentMethod}
+                        placeholder={`選擇${
+                          paymentMethod === PaymentMethodType.BANK_ACCOUNT
+                            ? "銀行帳戶"
+                            : "信用卡"
+                        }`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* 轉帳目標選擇（僅在 transfer_out 時顯示） */}
             {cashFlowType === CashFlowType.TRANSFER_OUT && (
