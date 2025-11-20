@@ -24,6 +24,7 @@ export const SourceType = {
   INSTALLMENT: "installment", // 分期自動產生
   BANK_ACCOUNT: "bank_account", // 銀行帳戶交易
   CREDIT_CARD: "credit_card", // 信用卡交易
+  CASH: "cash", // 現金
 } as const;
 
 export type SourceType = (typeof SourceType)[keyof typeof SourceType];
@@ -258,11 +259,16 @@ export const createCashFlowSchema = z
     (data) => {
       // transfer_out 類型必須選擇轉帳目標
       if (data.type === CashFlowType.TRANSFER_OUT) {
-        return (
-          data.target_payment_method &&
-          data.target_account_id &&
-          data.target_account_id.length > 0
-        );
+        // 必須選擇目標付款方式
+        if (!data.target_payment_method) {
+          return false;
+        }
+        // 如果目標是現金，不需要選擇帳戶
+        if (data.target_payment_method === PaymentMethodType.CASH) {
+          return true;
+        }
+        // 其他類型需要選擇帳戶
+        return data.target_account_id && data.target_account_id.length > 0;
       }
       return true;
     },
@@ -430,7 +436,7 @@ export function paymentMethodTypeToSourceType(
   paymentMethodType: PaymentMethodType
 ): SourceType {
   const mapping: Record<PaymentMethodType, SourceType> = {
-    [PaymentMethodType.CASH]: SourceType.MANUAL,
+    [PaymentMethodType.CASH]: SourceType.CASH,
     [PaymentMethodType.BANK_ACCOUNT]: SourceType.BANK_ACCOUNT,
     [PaymentMethodType.CREDIT_CARD]: SourceType.CREDIT_CARD,
   };
@@ -449,6 +455,7 @@ export function sourceTypeToPaymentMethodType(
     [SourceType.INSTALLMENT]: PaymentMethodType.CASH, // 分期預設為現金
     [SourceType.BANK_ACCOUNT]: PaymentMethodType.BANK_ACCOUNT,
     [SourceType.CREDIT_CARD]: PaymentMethodType.CREDIT_CARD,
+    [SourceType.CASH]: PaymentMethodType.CASH, // 現金
   };
   return mapping[sourceType];
 }

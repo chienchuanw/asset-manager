@@ -24,6 +24,6 @@ ON CONFLICT (name, type) DO NOTHING;
 -- 轉帳分類
 INSERT INTO cash_flow_categories (name, type, is_system) VALUES
     ('移轉', 'transfer_in', true),
-    ('移轉', 'transfer_out', true)
+    ('移轉', 'transfer_out', true),
+    ('提領', 'transfer_out', true)
 ON CONFLICT (name, type) DO NOTHING;
-

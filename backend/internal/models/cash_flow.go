@@ -25,6 +25,7 @@ const (
 	SourceTypeInstallment  SourceType = "installment"  // 分期自動產生
 	SourceTypeBankAccount  SourceType = "bank_account" // 銀行帳戶交易
 	SourceTypeCreditCard   SourceType = "credit_card"  // 信用卡交易
+	SourceTypeCash         SourceType = "cash"         // 現金
 )
 
 // CashFlowCategory 現金流分類模型
@@ -108,7 +109,7 @@ func (t CashFlowType) Validate() bool {
 // Validate 驗證 SourceType 是否有效
 func (s SourceType) Validate() bool {
 	switch s {
-	case SourceTypeManual, SourceTypeSubscription, SourceTypeInstallment, SourceTypeBankAccount, SourceTypeCreditCard:
+	case SourceTypeManual, SourceTypeSubscription, SourceTypeInstallment, SourceTypeBankAccount, SourceTypeCreditCard, SourceTypeCash:
 		return true
 	}
 	return false

@@ -95,14 +95,26 @@ func (s *cashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*mo
 	}
 
 	// 處理轉帳目標 (target) - 只在 transfer_out 類型時處理
-	if input.Type == models.CashFlowTypeTransferOut && input.TargetType != nil && input.TargetID != nil {
-		err := s.validateAndUpdateTarget(*input.TargetType, *input.TargetID, input.Amount)
-		if err != nil {
-			// 如果目標更新失敗，需要回復 source 的餘額變動
-			if input.SourceType != nil && input.SourceID != nil {
-				s.revertBalanceUpdate(input.Type, *input.SourceType, *input.SourceID, input.Amount)
+	if input.Type == models.CashFlowTypeTransferOut && input.TargetType != nil {
+		// 如果目標是現金 (cash)，不需要更新任何帳戶餘額
+		if *input.TargetType == models.SourceTypeCash {
+			// 現金提領：target_id 應為 null，不需要驗證或更新餘額
+			if input.TargetID != nil {
+				return nil, fmt.Errorf("target_id must be null when target_type is cash")
 			}
-			return nil, fmt.Errorf("failed to update target balance: %w", err)
+		} else if input.TargetID != nil {
+			// 其他類型的轉帳：需要驗證並更新目標帳戶餘額
+			err := s.validateAndUpdateTarget(*input.TargetType, *input.TargetID, input.Amount)
+			if err != nil {
+				// 如果目標更新失敗，需要回復 source 的餘額變動
+				if input.SourceType != nil && input.SourceID != nil {
+					s.revertBalanceUpdate(input.Type, *input.SourceType, *input.SourceID, input.Amount)
+				}
+				return nil, fmt.Errorf("failed to update target balance: %w", err)
+			}
+		} else {
+			// target_type 不是 cash，但 target_id 為 null
+			return nil, fmt.Errorf("target_id is required when target_type is not cash")
 		}
 	}
 
@@ -113,7 +125,8 @@ func (s *cashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*mo
 		if input.SourceType != nil && input.SourceID != nil {
 			s.revertBalanceUpdate(input.Type, *input.SourceType, *input.SourceID, input.Amount)
 		}
-		if input.Type == models.CashFlowTypeTransferOut && input.TargetType != nil && input.TargetID != nil {
+		// 只有當目標不是現金時，才需要回復目標餘額
+		if input.Type == models.CashFlowTypeTransferOut && input.TargetType != nil && *input.TargetType != models.SourceTypeCash && input.TargetID != nil {
 			s.revertTargetUpdate(*input.TargetType, *input.TargetID, input.Amount)
 		}
 		return nil, fmt.Errorf("failed to create cash flow: %w", err)

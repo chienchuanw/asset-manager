@@ -538,3 +538,98 @@ func TestCashFlowService_UpdateCashFlow_ChangePaymentMethod(t *testing.T) {
 	mockBankAccountRepo.AssertExpectations(t)
 	mockCreditCardRepo.AssertExpectations(t)
 }
+
+// TestCashFlowService_CreateCashFlow_CashWithdrawal 測試現金提領功能
+func TestCashFlowService_CreateCashFlow_CashWithdrawal(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	sourceType := models.SourceTypeBankAccount
+	targetType := models.SourceTypeCash
+
+	// 模擬「提領」分類
+	category := &models.CashFlowCategory{
+		ID:   categoryID,
+		Name: "提領",
+		Type: models.CashFlowTypeTransferOut,
+	}
+
+	// 模擬銀行帳戶（原始餘額 10000）
+	bankAccount := &models.BankAccount{
+		ID:       bankAccountID,
+		BankName: "台灣銀行",
+		Balance:  10000,
+		Currency: models.CurrencyTWD,
+	}
+
+	// 提領金額 5000
+	input := &models.CreateCashFlowInput{
+		Date:        time.Date(2025, 11, 20, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeTransferOut,
+		CategoryID:  categoryID,
+		Amount:      5000,
+		Description: "ATM 提領現金",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    nil, // 現金提領時 target_id 為 nil
+	}
+
+	expectedCashFlow := &models.CashFlow{
+		ID:          uuid.New(),
+		Date:        input.Date,
+		Type:        input.Type,
+		CategoryID:  input.CategoryID,
+		Amount:      input.Amount,
+		Currency:    models.CurrencyTWD,
+		Description: input.Description,
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    nil,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	// 提領後銀行帳戶餘額應減少 5000
+	updatedBankAccount := &models.BankAccount{
+		ID:       bankAccountID,
+		BankName: "台灣銀行",
+		Balance:  5000, // 10000 - 5000
+		Currency: models.CurrencyTWD,
+	}
+
+	// 設定 mock 期望
+	mockCategoryRepo.On("GetByID", categoryID).Return(category, nil)
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(bankAccount, nil)
+	// 轉出類型應該減少銀行帳戶餘額
+	mockBankAccountRepo.On("UpdateBalance", bankAccountID, float64(-5000)).Return(updatedBankAccount, nil)
+	mockRepo.On("Create", input).Return(expectedCashFlow, nil)
+
+	// Act
+	result, err := service.CreateCashFlow(input)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, expectedCashFlow.ID, result.ID)
+	assert.Equal(t, input.Amount, result.Amount)
+	assert.Equal(t, sourceType, *result.SourceType)
+	assert.Equal(t, bankAccountID, *result.SourceID)
+	assert.Equal(t, targetType, *result.TargetType)
+	assert.Nil(t, result.TargetID) // 現金提領時 target_id 應為 nil
+
+	// 驗證所有 mock 期望都被呼叫
+	mockCategoryRepo.AssertExpectations(t)
+	mockBankAccountRepo.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
+	// 現金提領不應該呼叫信用卡相關方法
+	mockCreditCardRepo.AssertNotCalled(t, "GetByID")
+	mockCreditCardRepo.AssertNotCalled(t, "UpdateUsedCredit")
+}

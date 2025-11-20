@@ -44,6 +44,13 @@ func ensureSystemCategories(db *sql.DB) {
 		VALUES ($1, $2, true)
 		ON CONFLICT (name, type) DO NOTHING
 	`, "移轉", models.CashFlowTypeTransferOut)
+
+	// 提領分類
+	_, _ = db.Exec(`
+		INSERT INTO cash_flow_categories (name, type, is_system)
+		VALUES ($1, $2, true)
+		ON CONFLICT (name, type) DO NOTHING
+	`, "提領", models.CashFlowTypeTransferOut)
 }
 
 // TestCategoryRepository_Create 測試建立分類

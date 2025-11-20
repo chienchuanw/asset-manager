@@ -631,3 +631,74 @@ func TestSendYearlyReport_Success(t *testing.T) {
 	mockCashFlowService.AssertExpectations(t)
 	mockDiscordService.AssertExpectations(t)
 }
+
+// TestCreateCashFlow_CashWithdrawal 測試建立現金提領記錄
+func TestCreateCashFlow_CashWithdrawal(t *testing.T) {
+	// Arrange
+	mockService := new(MockCashFlowService)
+	handler := NewCashFlowHandler(mockService)
+	router := setupCashFlowTestRouter(handler)
+
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	sourceType := models.SourceTypeBankAccount
+	targetType := models.SourceTypeCash
+
+	input := models.CreateCashFlowInput{
+		Date:        time.Date(2025, 11, 20, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeTransferOut,
+		CategoryID:  categoryID,
+		Amount:      5000,
+		Description: "ATM 提領現金",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    nil, // 現金提領時 target_id 為 null
+	}
+
+	expectedCashFlow := &models.CashFlow{
+		ID:          uuid.New(),
+		Date:        input.Date,
+		Type:        input.Type,
+		CategoryID:  input.CategoryID,
+		Amount:      input.Amount,
+		Currency:    models.CurrencyTWD,
+		Description: input.Description,
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    nil,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	mockService.On("CreateCashFlow", &input).Return(expectedCashFlow, nil)
+
+	// 準備請求
+	body, _ := json.Marshal(input)
+	req, _ := http.NewRequest("POST", "/api/cash-flows", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Nil(t, response.Error)
+	assert.NotNil(t, response.Data)
+
+	// 驗證回傳的資料結構
+	cashFlowData, ok := response.Data.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, "transfer_out", cashFlowData["type"])
+	assert.Equal(t, "bank_account", cashFlowData["source_type"])
+	assert.Equal(t, "cash", cashFlowData["target_type"])
+	assert.Nil(t, cashFlowData["target_id"])
+
+	mockService.AssertExpectations(t)
+}
