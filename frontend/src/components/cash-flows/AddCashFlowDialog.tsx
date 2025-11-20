@@ -99,7 +99,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
       })(),
       type: CashFlowType.EXPENSE,
       category_id: "",
-      amount: 0,
+      amount: undefined, // 不設定預設值
       description: "",
       note: null,
       payment_method: PaymentMethodType.CASH, // 預設為現金
@@ -211,6 +211,39 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* 金額顯示區域（計算機風格） */}
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm text-muted-foreground">
+                    金額 (TWD)
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      {/* 計算機風格的金額顯示 - 可輸入 */}
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        step="1"
+                        min="0"
+                        placeholder="0"
+                        className="w-full bg-slate-100 dark:bg-slate-900 rounded-lg p-6 min-h-20 text-4xl font-bold tabular-nums text-right border-0 focus:outline-none focus:ring-2 focus:ring-ring"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value ? parseFloat(value) : undefined);
+                        }}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* 類型與分類並排 */}
             <div className="grid grid-cols-2 gap-4">
               {/* 類型 */}
@@ -278,48 +311,20 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               />
             </div>
 
-            {/* 日期與金額並排 */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* 日期 */}
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>日期</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* 金額 */}
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>金額 (TWD)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        step="1"
-                        min="0"
-                        placeholder="0"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(parseFloat(e.target.value) || 0);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* 日期 */}
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>日期</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* 付款方式 */}
             <FormField
