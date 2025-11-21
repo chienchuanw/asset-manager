@@ -19,3 +19,4 @@ export { AddCategoryDialog } from "./AddCategoryDialog";
 export { EditCategoryDialog } from "./EditCategoryDialog";
 export { DeleteCategoryDialog } from "./DeleteCategoryDialog";
 export { MonthlyExpenseChart } from "./MonthlyExpenseChart";
+export { ExpenseCategoryPieChart } from "./ExpenseCategoryPieChart";

@@ -25,6 +25,7 @@ import {
   DailyDateNavigator,
   DailySummaryCards,
   MonthlyExpenseChart,
+  ExpenseCategoryPieChart,
 } from "@/components/cash-flows";
 import { calculateDateRange } from "@/components/common/DateRangeTabs";
 import { WeekMonthTabs } from "@/components/common/WeekMonthTabs";
@@ -296,6 +297,12 @@ export default function CashFlowsPage() {
               totalRecords={rightStats.totalRecords}
               incomeRecords={rightStats.incomeRecords}
               expenseRecords={rightStats.expenseRecords}
+            />
+
+            {/* 支出分類圓餅圖 */}
+            <ExpenseCategoryPieChart
+              cashFlows={rightCashFlows || []}
+              period={rightPanelTab}
             />
           </div>
         </div>
