@@ -93,10 +93,11 @@ export function ExpenseCategoryPieChart({
     const data = topCategories.map((cat, index) => {
       const colorIndex = (index % 5) + 1; // 循環使用 chart-1 到 chart-5
       const categoryKey = cat.name; // 使用分類名稱作為 key
+      const percentage = ((cat.amount / total) * 100).toFixed(1); // 計算百分比
 
-      // 為每個分類建立配置
+      // 為每個分類建立配置，包含金額和百分比
       config[categoryKey] = {
-        label: cat.name,
+        label: `${cat.name} $${formatAmount(cat.amount)} (${percentage}%)`,
         color: `var(--chart-${colorIndex})`,
       };
 
