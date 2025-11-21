@@ -41,13 +41,17 @@ export function ExpenseCategoryPieChart({
   period,
 }: ExpenseCategoryPieChartProps) {
   // 處理圓餅圖資料
-  const { chartData, totalExpense } = useMemo(() => {
+  const { chartData, chartConfig, totalExpense } = useMemo(() => {
     // 步驟 1: 篩選出支出類型的記錄
     const expenses = cashFlows.filter((cf) => cf.type === CashFlowType.EXPENSE);
 
     // 如果沒有支出記錄，直接返回空資料
     if (expenses.length === 0) {
-      return { chartData: [], totalExpense: 0 };
+      return {
+        chartData: [],
+        chartConfig: { amount: { label: "金額" } },
+        totalExpense: 0,
+      };
     }
 
     // 步驟 2: 按分類分組並計算總額
@@ -79,35 +83,32 @@ export function ExpenseCategoryPieChart({
       topCategories.push({ name: "其他", amount: otherTotal });
     }
 
-    // 步驟 5: 轉換成圓餅圖需要的格式
-    const data = topCategories.map((cat, index) => ({
-      category: cat.name,
-      amount: cat.amount,
-      fill: `var(--color-category-${index})`,
-    }));
-
-    return { chartData: data, totalExpense: total };
-  }, [cashFlows]);
-
-  // 圖表配置：動態生成顏色配置
-  const chartConfig = useMemo(() => {
+    // 步驟 5: 轉換成圓餅圖需要的格式，並同時建立配置
     const config: ChartConfig = {
       amount: {
         label: "金額",
       },
     };
 
-    // 為每個分類動態分配顏色（使用 shadcn 的 chart 顏色變數）
-    chartData.forEach((item, index) => {
+    const data = topCategories.map((cat, index) => {
       const colorIndex = (index % 5) + 1; // 循環使用 chart-1 到 chart-5
-      config[`category-${index}`] = {
-        label: item.category,
+      const categoryKey = cat.name; // 使用分類名稱作為 key
+
+      // 為每個分類建立配置
+      config[categoryKey] = {
+        label: cat.name,
         color: `var(--chart-${colorIndex})`,
+      };
+
+      return {
+        category: cat.name,
+        amount: cat.amount,
+        fill: `var(--color-${categoryKey})`,
       };
     });
 
-    return config;
-  }, [chartData]);
+    return { chartData: data, chartConfig: config, totalExpense: total };
+  }, [cashFlows]);
 
   // 取得期間標題
   const periodLabel = period === "week" ? "本週" : "本月";
