@@ -19,6 +19,7 @@ import {
   LogOutIcon,
   TrendingUpIcon,
   RepeatIcon,
+  BellIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -95,6 +96,12 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
   // 工具區項目
   const toolItems = [
     { id: "settings", label: "設定", icon: SettingsIcon, href: "/settings" },
+    {
+      id: "notification",
+      label: "通知管理",
+      icon: BellIcon,
+      href: "/notification",
+    },
     {
       id: "user",
       label: "使用者管理",
