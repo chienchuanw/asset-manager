@@ -25,20 +25,22 @@ const (
 
 // Subscription 訂閱模型
 type Subscription struct {
-	ID           uuid.UUID          `json:"id" db:"id"`
-	Name         string             `json:"name" db:"name"`
-	Amount       float64            `json:"amount" db:"amount"`
-	Currency     Currency           `json:"currency" db:"currency"`
-	BillingCycle BillingCycle       `json:"billing_cycle" db:"billing_cycle"`
-	BillingDay   int                `json:"billing_day" db:"billing_day"`
-	CategoryID   uuid.UUID          `json:"category_id" db:"category_id"`
-	StartDate    time.Time          `json:"start_date" db:"start_date"`
-	EndDate      *time.Time         `json:"end_date,omitempty" db:"end_date"`
-	AutoRenew    bool               `json:"auto_renew" db:"auto_renew"`
-	Status       SubscriptionStatus `json:"status" db:"status"`
-	Note         *string            `json:"note,omitempty" db:"note"`
-	CreatedAt    time.Time          `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time          `json:"updated_at" db:"updated_at"`
+	ID            uuid.UUID          `json:"id" db:"id"`
+	Name          string             `json:"name" db:"name"`
+	Amount        float64            `json:"amount" db:"amount"`
+	Currency      Currency           `json:"currency" db:"currency"`
+	BillingCycle  BillingCycle       `json:"billing_cycle" db:"billing_cycle"`
+	BillingDay    int                `json:"billing_day" db:"billing_day"`
+	CategoryID    uuid.UUID          `json:"category_id" db:"category_id"`
+	PaymentMethod PaymentMethod      `json:"payment_method" db:"payment_method"` // 付款方式
+	AccountID     *uuid.UUID         `json:"account_id,omitempty" db:"account_id"` // 帳戶 ID（銀行帳戶或信用卡）
+	StartDate     time.Time          `json:"start_date" db:"start_date"`
+	EndDate       *time.Time         `json:"end_date,omitempty" db:"end_date"`
+	AutoRenew     bool               `json:"auto_renew" db:"auto_renew"`
+	Status        SubscriptionStatus `json:"status" db:"status"`
+	Note          *string            `json:"note,omitempty" db:"note"`
+	CreatedAt     time.Time          `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at" db:"updated_at"`
 
 	// 關聯資料（Join 時使用）
 	Category *CashFlowCategory `json:"category,omitempty" db:"-"`
@@ -46,28 +48,32 @@ type Subscription struct {
 
 // CreateSubscriptionInput 建立訂閱的輸入資料
 type CreateSubscriptionInput struct {
-	Name         string       `json:"name" binding:"required,max=255"`
-	Amount       float64      `json:"amount" binding:"required,gt=0"`
-	BillingCycle BillingCycle `json:"billing_cycle" binding:"required"`
-	BillingDay   int          `json:"billing_day" binding:"required,min=1,max=31"`
-	CategoryID   uuid.UUID    `json:"category_id" binding:"required"`
-	StartDate    time.Time    `json:"start_date" binding:"required"`
-	EndDate      *time.Time   `json:"end_date,omitempty"`
-	AutoRenew    bool         `json:"auto_renew"`
-	Note         *string      `json:"note,omitempty"`
+	Name          string        `json:"name" binding:"required,max=255"`
+	Amount        float64       `json:"amount" binding:"required,gt=0"`
+	BillingCycle  BillingCycle  `json:"billing_cycle" binding:"required"`
+	BillingDay    int           `json:"billing_day" binding:"required,min=1,max=31"`
+	CategoryID    uuid.UUID     `json:"category_id" binding:"required"`
+	PaymentMethod PaymentMethod `json:"payment_method" binding:"required"` // 付款方式
+	AccountID     *uuid.UUID    `json:"account_id,omitempty"`              // 帳戶 ID（銀行帳戶或信用卡）
+	StartDate     time.Time     `json:"start_date" binding:"required"`
+	EndDate       *time.Time    `json:"end_date,omitempty"`
+	AutoRenew     bool          `json:"auto_renew"`
+	Note          *string       `json:"note,omitempty"`
 }
 
 // UpdateSubscriptionInput 更新訂閱的輸入資料
 type UpdateSubscriptionInput struct {
-	Name         *string              `json:"name,omitempty" binding:"omitempty,max=255"`
-	Amount       *float64             `json:"amount,omitempty" binding:"omitempty,gt=0"`
-	BillingCycle *BillingCycle        `json:"billing_cycle,omitempty"`
-	BillingDay   *int                 `json:"billing_day,omitempty" binding:"omitempty,min=1,max=31"`
-	CategoryID   *uuid.UUID           `json:"category_id,omitempty"`
-	EndDate      *time.Time           `json:"end_date,omitempty"`
-	AutoRenew    *bool                `json:"auto_renew,omitempty"`
-	Status       *SubscriptionStatus  `json:"status,omitempty"`
-	Note         *string              `json:"note,omitempty"`
+	Name          *string             `json:"name,omitempty" binding:"omitempty,max=255"`
+	Amount        *float64            `json:"amount,omitempty" binding:"omitempty,gt=0"`
+	BillingCycle  *BillingCycle       `json:"billing_cycle,omitempty"`
+	BillingDay    *int                `json:"billing_day,omitempty" binding:"omitempty,min=1,max=31"`
+	CategoryID    *uuid.UUID          `json:"category_id,omitempty"`
+	PaymentMethod *PaymentMethod      `json:"payment_method,omitempty"` // 付款方式
+	AccountID     *uuid.UUID          `json:"account_id,omitempty"`     // 帳戶 ID
+	EndDate       *time.Time          `json:"end_date,omitempty"`
+	AutoRenew     *bool               `json:"auto_renew,omitempty"`
+	Status        *SubscriptionStatus `json:"status,omitempty"`
+	Note          *string             `json:"note,omitempty"`
 }
 
 // Validate 驗證 BillingCycle 是否有效
@@ -214,3 +220,18 @@ func (s *Subscription) IsActive() bool {
 	return true
 }
 
+// ValidatePaymentMethod 驗證付款方式設定是否正確
+// 當付款方式需要帳戶 ID 時，必須提供有效的帳戶 ID
+func (s *Subscription) ValidatePaymentMethod() bool {
+	// 先驗證付款方式本身是否有效
+	if !s.PaymentMethod.Validate() {
+		return false
+	}
+
+	// 如果付款方式需要帳戶 ID，檢查是否有提供
+	if s.PaymentMethod.RequiresAccountID() {
+		return s.AccountID != nil
+	}
+
+	return true
+}

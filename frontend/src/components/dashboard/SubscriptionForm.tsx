@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -30,9 +30,11 @@ import { Switch } from "@/components/ui/switch";
 import type {
   Subscription,
   CreateSubscriptionInput,
-  BillingCycle,
+  PaymentMethod,
 } from "@/types/subscription";
 import type { CashFlowCategory } from "@/types/cash-flow";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useCreditCards } from "@/hooks/useCreditCards";
 
 interface SubscriptionFormProps {
   subscription?: Subscription;
@@ -49,6 +51,10 @@ export function SubscriptionForm({
   onCancel,
   isSubmitting = false,
 }: SubscriptionFormProps) {
+  // 取得銀行帳戶和信用卡列表
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const { data: creditCards = [] } = useCreditCards();
+
   const form = useForm<CreateSubscriptionInput>({
     defaultValues: {
       name: "",
@@ -57,10 +63,18 @@ export function SubscriptionForm({
       billing_cycle: "monthly",
       billing_day: 1,
       category_id: "",
+      payment_method: "cash",
+      account_id: undefined,
       start_date: new Date().toISOString().split("T")[0],
       auto_renew: true,
       note: "",
     },
+  });
+
+  // 監聽付款方式變化
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: "payment_method",
   });
 
   // 如果是編輯模式，填入現有資料
@@ -73,6 +87,8 @@ export function SubscriptionForm({
         billing_cycle: subscription.billing_cycle,
         billing_day: subscription.billing_day,
         category_id: subscription.category_id,
+        payment_method: subscription.payment_method || "cash",
+        account_id: subscription.account_id,
         start_date: subscription.start_date.split("T")[0],
         end_date: subscription.end_date?.split("T")[0],
         auto_renew: subscription.auto_renew,
@@ -83,6 +99,25 @@ export function SubscriptionForm({
 
   // 篩選支出類別
   const expenseCategories = categories.filter((c) => c.type === "expense");
+
+  // 根據付款方式取得帳戶選項
+  const getAccountOptions = () => {
+    if (paymentMethod === "bank_account") {
+      return bankAccounts.map((account) => ({
+        id: account.id,
+        name: `${account.bank_name} - ${account.account_type} (${account.account_number_last4})`,
+      }));
+    }
+    if (paymentMethod === "credit_card") {
+      return creditCards.map((card) => ({
+        id: card.id,
+        name: `${card.issuing_bank} - ${card.card_name}`,
+      }));
+    }
+    return [];
+  };
+
+  const accountOptions = getAccountOptions();
 
   return (
     <Form {...form}>
@@ -212,6 +247,80 @@ export function SubscriptionForm({
             </FormItem>
           )}
         />
+
+        {/* 付款方式 */}
+        <FormField
+          control={form.control}
+          name="payment_method"
+          rules={{ required: "請選擇付款方式" }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>付款方式</FormLabel>
+              <Select
+                onValueChange={(value: PaymentMethod) => {
+                  field.onChange(value);
+                  // 切換付款方式時清除帳戶選擇
+                  if (value === "cash") {
+                    form.setValue("account_id", undefined);
+                  }
+                }}
+                value={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="選擇付款方式" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="cash">現金</SelectItem>
+                  <SelectItem value="bank_account">銀行帳戶</SelectItem>
+                  <SelectItem value="credit_card">信用卡</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 帳戶選擇（當付款方式為銀行帳戶或信用卡時顯示） */}
+        {paymentMethod !== "cash" && accountOptions.length > 0 && (
+          <FormField
+            control={form.control}
+            name="account_id"
+            rules={{ required: "請選擇帳戶" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {paymentMethod === "bank_account" ? "銀行帳戶" : "信用卡"}
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          paymentMethod === "bank_account"
+                            ? "選擇銀行帳戶"
+                            : "選擇信用卡"
+                        }
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {accountOptions.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* 開始日期 */}
         <FormField

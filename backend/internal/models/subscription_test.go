@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -184,6 +185,67 @@ func TestSubscription_NextBillingDate(t *testing.T) {
 			}
 			got := sub.NextBillingDate(tt.fromDate)
 			assert.Equal(t, tt.want, got, "NextBillingDate() should return %v", tt.want)
+		})
+	}
+}
+
+// TestSubscription_PaymentMethodValidation 測試訂閱付款方式驗證
+func TestSubscription_PaymentMethodValidation(t *testing.T) {
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+
+	tests := []struct {
+		name          string
+		paymentMethod PaymentMethod
+		accountID     *uuid.UUID
+		wantValid     bool
+	}{
+		{
+			name:          "cash without account ID is valid",
+			paymentMethod: PaymentMethodCash,
+			accountID:     nil,
+			wantValid:     true,
+		},
+		{
+			name:          "cash with account ID is also valid (ignored)",
+			paymentMethod: PaymentMethodCash,
+			accountID:     &bankAccountID,
+			wantValid:     true,
+		},
+		{
+			name:          "bank_account with account ID is valid",
+			paymentMethod: PaymentMethodBankAccount,
+			accountID:     &bankAccountID,
+			wantValid:     true,
+		},
+		{
+			name:          "bank_account without account ID is invalid",
+			paymentMethod: PaymentMethodBankAccount,
+			accountID:     nil,
+			wantValid:     false,
+		},
+		{
+			name:          "credit_card with account ID is valid",
+			paymentMethod: PaymentMethodCreditCard,
+			accountID:     &creditCardID,
+			wantValid:     true,
+		},
+		{
+			name:          "credit_card without account ID is invalid",
+			paymentMethod: PaymentMethodCreditCard,
+			accountID:     nil,
+			wantValid:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sub := &Subscription{
+				PaymentMethod: tt.paymentMethod,
+				AccountID:     tt.accountID,
+			}
+			got := sub.ValidatePaymentMethod()
+			assert.Equal(t, tt.wantValid, got, "ValidatePaymentMethod() should return %v", tt.wantValid)
 		})
 	}
 }

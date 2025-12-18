@@ -78,6 +78,16 @@ func (s *installmentService) CreateInstallment(input *models.CreateInstallmentIn
 		return nil, fmt.Errorf("installment category must be expense type")
 	}
 
+	// 驗證付款方式
+	if !input.PaymentMethod.Validate() {
+		return nil, fmt.Errorf("invalid payment method: %s", input.PaymentMethod)
+	}
+
+	// 驗證帳戶 ID（當付款方式需要帳戶時）
+	if input.PaymentMethod.RequiresAccountID() && input.AccountID == nil {
+		return nil, fmt.Errorf("account ID is required for payment method: %s", input.PaymentMethod)
+	}
+
 	// 呼叫 repository 建立分期
 	installment, err := s.repo.Create(input)
 	if err != nil {
@@ -128,6 +138,18 @@ func (s *installmentService) UpdateInstallment(id uuid.UUID, input *models.Updat
 		}
 		if category.Type != models.CashFlowTypeExpense {
 			return nil, fmt.Errorf("installment category must be expense type")
+		}
+	}
+
+	// 驗證付款方式
+	if input.PaymentMethod != nil {
+		if !input.PaymentMethod.Validate() {
+			return nil, fmt.Errorf("invalid payment method: %s", *input.PaymentMethod)
+		}
+
+		// 驗證帳戶 ID（當付款方式需要帳戶時）
+		if input.PaymentMethod.RequiresAccountID() && input.AccountID == nil {
+			return nil, fmt.Errorf("account ID is required for payment method: %s", *input.PaymentMethod)
 		}
 	}
 

@@ -35,14 +35,15 @@ func TestSubscriptionRepository_Create(t *testing.T) {
 	// 準備測試資料
 	note := "Netflix 訂閱"
 	input := &models.CreateSubscriptionInput{
-		Name:         "Netflix",
-		Amount:       390,
-		BillingCycle: models.BillingCycleMonthly,
-		BillingDay:   15,
-		CategoryID:   categoryID,
-		StartDate:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
-		AutoRenew:    true,
-		Note:         &note,
+		Name:          "Netflix",
+		Amount:        390,
+		BillingCycle:  models.BillingCycleMonthly,
+		BillingDay:    15,
+		CategoryID:    categoryID,
+		PaymentMethod: models.PaymentMethodCash,
+		StartDate:     time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+		AutoRenew:     true,
+		Note:          &note,
 	}
 
 	// 執行測試
@@ -85,14 +86,15 @@ func TestSubscriptionRepository_GetByID(t *testing.T) {
 	// 建立測試訂閱
 	note := "Spotify 訂閱"
 	input := &models.CreateSubscriptionInput{
-		Name:         "Spotify",
-		Amount:       149,
-		BillingCycle: models.BillingCycleMonthly,
-		BillingDay:   1,
-		CategoryID:   categoryID,
-		StartDate:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		AutoRenew:    true,
-		Note:         &note,
+		Name:          "Spotify",
+		Amount:        149,
+		BillingCycle:  models.BillingCycleMonthly,
+		BillingDay:    1,
+		CategoryID:    categoryID,
+		PaymentMethod: models.PaymentMethodCash,
+		StartDate:     time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		AutoRenew:     true,
+		Note:          &note,
 	}
 	created, err := repo.Create(input)
 	require.NoError(t, err)
@@ -137,13 +139,14 @@ func TestSubscriptionRepository_List(t *testing.T) {
 
 	for _, sub := range subscriptions {
 		input := &models.CreateSubscriptionInput{
-			Name:         sub.name,
-			Amount:       sub.amount,
-			BillingCycle: models.BillingCycleMonthly,
-			BillingDay:   15,
-			CategoryID:   categoryID,
-			StartDate:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
-			AutoRenew:    true,
+			Name:          sub.name,
+			Amount:        sub.amount,
+			BillingCycle:  models.BillingCycleMonthly,
+			BillingDay:    15,
+			CategoryID:    categoryID,
+			PaymentMethod: models.PaymentMethodCash,
+			StartDate:     time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+			AutoRenew:     true,
 		}
 		created, err := repo.Create(input)
 		require.NoError(t, err)
@@ -209,13 +212,14 @@ func TestSubscriptionRepository_Update(t *testing.T) {
 
 	// 建立測試訂閱
 	input := &models.CreateSubscriptionInput{
-		Name:         "Netflix",
-		Amount:       390,
-		BillingCycle: models.BillingCycleMonthly,
-		BillingDay:   15,
-		CategoryID:   categoryID,
-		StartDate:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
-		AutoRenew:    true,
+		Name:          "Netflix",
+		Amount:        390,
+		BillingCycle:  models.BillingCycleMonthly,
+		BillingDay:    15,
+		CategoryID:    categoryID,
+		PaymentMethod: models.PaymentMethodCash,
+		StartDate:     time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+		AutoRenew:     true,
 	}
 	created, err := repo.Create(input)
 	require.NoError(t, err)
@@ -257,13 +261,14 @@ func TestSubscriptionRepository_Delete(t *testing.T) {
 
 	// 建立測試訂閱
 	input := &models.CreateSubscriptionInput{
-		Name:         "Netflix",
-		Amount:       390,
-		BillingCycle: models.BillingCycleMonthly,
-		BillingDay:   15,
-		CategoryID:   categoryID,
-		StartDate:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
-		AutoRenew:    true,
+		Name:          "Netflix",
+		Amount:        390,
+		BillingCycle:  models.BillingCycleMonthly,
+		BillingDay:    15,
+		CategoryID:    categoryID,
+		PaymentMethod: models.PaymentMethodCash,
+		StartDate:     time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+		AutoRenew:     true,
 	}
 	created, err := repo.Create(input)
 	require.NoError(t, err)

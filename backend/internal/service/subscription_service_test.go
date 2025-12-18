@@ -83,28 +83,30 @@ func TestSubscriptionService_CreateSubscription(t *testing.T) {
 	}
 
 	input := &models.CreateSubscriptionInput{
-		Name:         "Netflix",
-		Amount:       390,
-		BillingCycle: models.BillingCycleMonthly,
-		BillingDay:   15,
-		CategoryID:   categoryID,
-		StartDate:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
-		AutoRenew:    true,
+		Name:          "Netflix",
+		Amount:        390,
+		BillingCycle:  models.BillingCycleMonthly,
+		BillingDay:    15,
+		CategoryID:    categoryID,
+		PaymentMethod: models.PaymentMethodCash,
+		StartDate:     time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+		AutoRenew:     true,
 	}
 
 	expectedSubscription := &models.Subscription{
-		ID:           uuid.New(),
-		Name:         input.Name,
-		Amount:       input.Amount,
-		Currency:     models.CurrencyTWD,
-		BillingCycle: input.BillingCycle,
-		BillingDay:   input.BillingDay,
-		CategoryID:   input.CategoryID,
-		StartDate:    input.StartDate,
-		AutoRenew:    input.AutoRenew,
-		Status:       models.SubscriptionStatusActive,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:            uuid.New(),
+		Name:          input.Name,
+		Amount:        input.Amount,
+		Currency:      models.CurrencyTWD,
+		BillingCycle:  input.BillingCycle,
+		BillingDay:    input.BillingDay,
+		CategoryID:    input.CategoryID,
+		PaymentMethod: input.PaymentMethod,
+		StartDate:     input.StartDate,
+		AutoRenew:     input.AutoRenew,
+		Status:        models.SubscriptionStatusActive,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	// 設定 mock 期望

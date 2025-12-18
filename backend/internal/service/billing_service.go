@@ -81,8 +81,14 @@ func (s *billingService) ProcessSubscriptionBilling(date time.Time) (*BillingRes
 
 	// 處理每個訂閱
 	for _, subscription := range subscriptions {
+		// 根據訂閱的付款方式設定現金流的來源類型
+		sourceType := subscription.PaymentMethod.ToSourceType()
+		var sourceID *uuid.UUID
+		if subscription.AccountID != nil {
+			sourceID = subscription.AccountID
+		}
+
 		// 建立現金流記錄
-		sourceType := models.SourceTypeSubscription
 		cashFlowInput := &models.CreateCashFlowInput{
 			Date:        date,
 			Type:        models.CashFlowTypeExpense,
@@ -90,7 +96,7 @@ func (s *billingService) ProcessSubscriptionBilling(date time.Time) (*BillingRes
 			Amount:      subscription.Amount,
 			Description: fmt.Sprintf("%s - 訂閱扣款", subscription.Name),
 			SourceType:  &sourceType,
-			SourceID:    &subscription.ID,
+			SourceID:    sourceID,
 		}
 
 		if subscription.Note != nil {
@@ -135,8 +141,14 @@ func (s *billingService) ProcessInstallmentBilling(date time.Time) (*BillingResu
 		// 計算當前期數
 		currentPeriod := installment.PaidCount + 1
 
+		// 根據分期的付款方式設定現金流的來源類型
+		sourceType := installment.PaymentMethod.ToSourceType()
+		var sourceID *uuid.UUID
+		if installment.AccountID != nil {
+			sourceID = installment.AccountID
+		}
+
 		// 建立現金流記錄
-		sourceType := models.SourceTypeInstallment
 		cashFlowInput := &models.CreateCashFlowInput{
 			Date:        date,
 			Type:        models.CashFlowTypeExpense,
@@ -144,7 +156,7 @@ func (s *billingService) ProcessInstallmentBilling(date time.Time) (*BillingResu
 			Amount:      installment.InstallmentAmount,
 			Description: fmt.Sprintf("%s - 分期付款 (%d/%d)", installment.Name, currentPeriod, installment.InstallmentCount),
 			SourceType:  &sourceType,
-			SourceID:    &installment.ID,
+			SourceID:    sourceID,
 		}
 
 		if installment.Note != nil {

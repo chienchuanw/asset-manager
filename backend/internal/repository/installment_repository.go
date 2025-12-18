@@ -53,12 +53,12 @@ func (r *installmentRepository) Create(input *models.CreateInstallmentInput) (*m
 		INSERT INTO installments (
 			name, total_amount, currency, installment_count, installment_amount,
 			interest_rate, total_interest, paid_count, billing_day,
-			category_id, start_date, note
+			category_id, payment_method, account_id, start_date, note
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, name, total_amount, currency, installment_count, installment_amount,
 			interest_rate, total_interest, paid_count, billing_day,
-			category_id, start_date, status, note, created_at, updated_at
+			category_id, payment_method, account_id, start_date, status, note, created_at, updated_at
 	`
 
 	err := r.db.QueryRow(
@@ -73,6 +73,8 @@ func (r *installmentRepository) Create(input *models.CreateInstallmentInput) (*m
 		0, // paid_count 初始為 0
 		input.BillingDay,
 		input.CategoryID,
+		input.PaymentMethod,
+		input.AccountID,
 		input.StartDate,
 		input.Note,
 	).Scan(
@@ -87,6 +89,8 @@ func (r *installmentRepository) Create(input *models.CreateInstallmentInput) (*m
 		&installment.PaidCount,
 		&installment.BillingDay,
 		&installment.CategoryID,
+		&installment.PaymentMethod,
+		&installment.AccountID,
 		&installment.StartDate,
 		&installment.Status,
 		&installment.Note,
@@ -104,10 +108,10 @@ func (r *installmentRepository) Create(input *models.CreateInstallmentInput) (*m
 // GetByID 根據 ID 取得分期（包含分類資訊）
 func (r *installmentRepository) GetByID(id uuid.UUID) (*models.Installment, error) {
 	query := `
-		SELECT 
+		SELECT
 			i.id, i.name, i.total_amount, i.currency, i.installment_count, i.installment_amount,
 			i.interest_rate, i.total_interest, i.paid_count, i.billing_day,
-			i.category_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
+			i.category_id, i.payment_method, i.account_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM installments i
 		LEFT JOIN cash_flow_categories c ON i.category_id = c.id
@@ -130,6 +134,8 @@ func (r *installmentRepository) GetByID(id uuid.UUID) (*models.Installment, erro
 		&installment.PaidCount,
 		&installment.BillingDay,
 		&installment.CategoryID,
+		&installment.PaymentMethod,
+		&installment.AccountID,
 		&installment.StartDate,
 		&installment.Status,
 		&installment.Note,
@@ -153,10 +159,10 @@ func (r *installmentRepository) GetByID(id uuid.UUID) (*models.Installment, erro
 // List 取得分期列表（包含分類資訊）
 func (r *installmentRepository) List(filters InstallmentFilters) ([]*models.Installment, error) {
 	query := `
-		SELECT 
+		SELECT
 			i.id, i.name, i.total_amount, i.currency, i.installment_count, i.installment_amount,
 			i.interest_rate, i.total_interest, i.paid_count, i.billing_day,
-			i.category_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
+			i.category_id, i.payment_method, i.account_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM installments i
 		LEFT JOIN cash_flow_categories c ON i.category_id = c.id
@@ -219,6 +225,8 @@ func (r *installmentRepository) List(filters InstallmentFilters) ([]*models.Inst
 			&installment.PaidCount,
 			&installment.BillingDay,
 			&installment.CategoryID,
+			&installment.PaymentMethod,
+			&installment.AccountID,
 			&installment.StartDate,
 			&installment.Status,
 			&installment.Note,
@@ -259,9 +267,27 @@ func (r *installmentRepository) Update(id uuid.UUID, input *models.UpdateInstall
 		argCount++
 	}
 
+	if input.BillingDay != nil {
+		updates = append(updates, fmt.Sprintf("billing_day = $%d", argCount))
+		args = append(args, *input.BillingDay)
+		argCount++
+	}
+
 	if input.CategoryID != nil {
 		updates = append(updates, fmt.Sprintf("category_id = $%d", argCount))
 		args = append(args, *input.CategoryID)
+		argCount++
+	}
+
+	if input.PaymentMethod != nil {
+		updates = append(updates, fmt.Sprintf("payment_method = $%d", argCount))
+		args = append(args, *input.PaymentMethod)
+		argCount++
+	}
+
+	if input.AccountID != nil {
+		updates = append(updates, fmt.Sprintf("account_id = $%d", argCount))
+		args = append(args, *input.AccountID)
 		argCount++
 	}
 
@@ -296,7 +322,7 @@ func (r *installmentRepository) Update(id uuid.UUID, input *models.UpdateInstall
 		WHERE id = $%d
 		RETURNING id, name, total_amount, currency, installment_count, installment_amount,
 			interest_rate, total_interest, paid_count, billing_day,
-			category_id, start_date, status, note, created_at, updated_at
+			category_id, payment_method, account_id, start_date, status, note, created_at, updated_at
 	`, strings.Join(updates, ", "), argCount)
 
 	installment := &models.Installment{}
@@ -312,6 +338,8 @@ func (r *installmentRepository) Update(id uuid.UUID, input *models.UpdateInstall
 		&installment.PaidCount,
 		&installment.BillingDay,
 		&installment.CategoryID,
+		&installment.PaymentMethod,
+		&installment.AccountID,
 		&installment.StartDate,
 		&installment.Status,
 		&installment.Note,
@@ -354,7 +382,7 @@ func (r *installmentRepository) GetDueBillings(date time.Time) ([]*models.Instal
 		SELECT
 			i.id, i.name, i.total_amount, i.currency, i.installment_count, i.installment_amount,
 			i.interest_rate, i.total_interest, i.paid_count, i.billing_day,
-			i.category_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
+			i.category_id, i.payment_method, i.account_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM installments i
 		LEFT JOIN cash_flow_categories c ON i.category_id = c.id
@@ -389,6 +417,8 @@ func (r *installmentRepository) GetDueBillings(date time.Time) ([]*models.Instal
 			&installment.PaidCount,
 			&installment.BillingDay,
 			&installment.CategoryID,
+			&installment.PaymentMethod,
+			&installment.AccountID,
 			&installment.StartDate,
 			&installment.Status,
 			&installment.Note,
@@ -422,7 +452,7 @@ func (r *installmentRepository) GetCompletingSoon(remainingCount int) ([]*models
 		SELECT
 			i.id, i.name, i.total_amount, i.currency, i.installment_count, i.installment_amount,
 			i.interest_rate, i.total_interest, i.paid_count, i.billing_day,
-			i.category_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
+			i.category_id, i.payment_method, i.account_id, i.start_date, i.status, i.note, i.created_at, i.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM installments i
 		LEFT JOIN cash_flow_categories c ON i.category_id = c.id
@@ -456,6 +486,8 @@ func (r *installmentRepository) GetCompletingSoon(remainingCount int) ([]*models
 			&installment.PaidCount,
 			&installment.BillingDay,
 			&installment.CategoryID,
+			&installment.PaymentMethod,
+			&installment.AccountID,
 			&installment.StartDate,
 			&installment.Status,
 			&installment.Note,

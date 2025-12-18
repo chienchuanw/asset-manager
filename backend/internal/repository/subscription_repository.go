@@ -43,12 +43,12 @@ func NewSubscriptionRepository(db *sql.DB) SubscriptionRepository {
 func (r *subscriptionRepository) Create(input *models.CreateSubscriptionInput) (*models.Subscription, error) {
 	query := `
 		INSERT INTO subscriptions (
-			name, amount, currency, billing_cycle, billing_day, 
-			category_id, start_date, end_date, auto_renew, note
+			name, amount, currency, billing_cycle, billing_day,
+			category_id, payment_method, account_id, start_date, end_date, auto_renew, note
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, name, amount, currency, billing_cycle, billing_day, 
-			category_id, start_date, end_date, auto_renew, status, note, 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id, name, amount, currency, billing_cycle, billing_day,
+			category_id, payment_method, account_id, start_date, end_date, auto_renew, status, note,
 			created_at, updated_at
 	`
 
@@ -61,6 +61,8 @@ func (r *subscriptionRepository) Create(input *models.CreateSubscriptionInput) (
 		input.BillingCycle,
 		input.BillingDay,
 		input.CategoryID,
+		input.PaymentMethod,
+		input.AccountID,
 		input.StartDate,
 		input.EndDate,
 		input.AutoRenew,
@@ -73,6 +75,8 @@ func (r *subscriptionRepository) Create(input *models.CreateSubscriptionInput) (
 		&subscription.BillingCycle,
 		&subscription.BillingDay,
 		&subscription.CategoryID,
+		&subscription.PaymentMethod,
+		&subscription.AccountID,
 		&subscription.StartDate,
 		&subscription.EndDate,
 		&subscription.AutoRenew,
@@ -92,9 +96,9 @@ func (r *subscriptionRepository) Create(input *models.CreateSubscriptionInput) (
 // GetByID 根據 ID 取得訂閱（包含分類資訊）
 func (r *subscriptionRepository) GetByID(id uuid.UUID) (*models.Subscription, error) {
 	query := `
-		SELECT 
+		SELECT
 			s.id, s.name, s.amount, s.currency, s.billing_cycle, s.billing_day,
-			s.category_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
+			s.category_id, s.payment_method, s.account_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
 			s.created_at, s.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM subscriptions s
@@ -114,6 +118,8 @@ func (r *subscriptionRepository) GetByID(id uuid.UUID) (*models.Subscription, er
 		&subscription.BillingCycle,
 		&subscription.BillingDay,
 		&subscription.CategoryID,
+		&subscription.PaymentMethod,
+		&subscription.AccountID,
 		&subscription.StartDate,
 		&subscription.EndDate,
 		&subscription.AutoRenew,
@@ -139,9 +145,9 @@ func (r *subscriptionRepository) GetByID(id uuid.UUID) (*models.Subscription, er
 // List 取得訂閱列表（包含分類資訊）
 func (r *subscriptionRepository) List(filters SubscriptionFilters) ([]*models.Subscription, error) {
 	query := `
-		SELECT 
+		SELECT
 			s.id, s.name, s.amount, s.currency, s.billing_cycle, s.billing_day,
-			s.category_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
+			s.category_id, s.payment_method, s.account_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
 			s.created_at, s.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM subscriptions s
@@ -201,6 +207,8 @@ func (r *subscriptionRepository) List(filters SubscriptionFilters) ([]*models.Su
 			&subscription.BillingCycle,
 			&subscription.BillingDay,
 			&subscription.CategoryID,
+			&subscription.PaymentMethod,
+			&subscription.AccountID,
 			&subscription.StartDate,
 			&subscription.EndDate,
 			&subscription.AutoRenew,
@@ -267,6 +275,18 @@ func (r *subscriptionRepository) Update(id uuid.UUID, input *models.UpdateSubscr
 		argCount++
 	}
 
+	if input.PaymentMethod != nil {
+		updates = append(updates, fmt.Sprintf("payment_method = $%d", argCount))
+		args = append(args, *input.PaymentMethod)
+		argCount++
+	}
+
+	if input.AccountID != nil {
+		updates = append(updates, fmt.Sprintf("account_id = $%d", argCount))
+		args = append(args, *input.AccountID)
+		argCount++
+	}
+
 	if input.EndDate != nil {
 		updates = append(updates, fmt.Sprintf("end_date = $%d", argCount))
 		args = append(args, *input.EndDate)
@@ -303,7 +323,7 @@ func (r *subscriptionRepository) Update(id uuid.UUID, input *models.UpdateSubscr
 		SET %s, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $%d
 		RETURNING id, name, amount, currency, billing_cycle, billing_day,
-			category_id, start_date, end_date, auto_renew, status, note,
+			category_id, payment_method, account_id, start_date, end_date, auto_renew, status, note,
 			created_at, updated_at
 	`, strings.Join(updates, ", "), argCount)
 
@@ -316,6 +336,8 @@ func (r *subscriptionRepository) Update(id uuid.UUID, input *models.UpdateSubscr
 		&subscription.BillingCycle,
 		&subscription.BillingDay,
 		&subscription.CategoryID,
+		&subscription.PaymentMethod,
+		&subscription.AccountID,
 		&subscription.StartDate,
 		&subscription.EndDate,
 		&subscription.AutoRenew,
@@ -359,7 +381,7 @@ func (r *subscriptionRepository) GetDueBillings(date time.Time) ([]*models.Subsc
 	query := `
 		SELECT
 			s.id, s.name, s.amount, s.currency, s.billing_cycle, s.billing_day,
-			s.category_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
+			s.category_id, s.payment_method, s.account_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
 			s.created_at, s.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM subscriptions s
@@ -391,6 +413,8 @@ func (r *subscriptionRepository) GetDueBillings(date time.Time) ([]*models.Subsc
 			&subscription.BillingCycle,
 			&subscription.BillingDay,
 			&subscription.CategoryID,
+			&subscription.PaymentMethod,
+			&subscription.AccountID,
 			&subscription.StartDate,
 			&subscription.EndDate,
 			&subscription.AutoRenew,
@@ -428,7 +452,7 @@ func (r *subscriptionRepository) GetExpiringSoon(days int) ([]*models.Subscripti
 	query := `
 		SELECT
 			s.id, s.name, s.amount, s.currency, s.billing_cycle, s.billing_day,
-			s.category_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
+			s.category_id, s.payment_method, s.account_id, s.start_date, s.end_date, s.auto_renew, s.status, s.note,
 			s.created_at, s.updated_at,
 			c.id, c.name, c.type, c.is_system, c.created_at, c.updated_at
 		FROM subscriptions s
@@ -459,6 +483,8 @@ func (r *subscriptionRepository) GetExpiringSoon(days int) ([]*models.Subscripti
 			&subscription.BillingCycle,
 			&subscription.BillingDay,
 			&subscription.CategoryID,
+			&subscription.PaymentMethod,
+			&subscription.AccountID,
 			&subscription.StartDate,
 			&subscription.EndDate,
 			&subscription.AutoRenew,
@@ -487,4 +513,3 @@ func (r *subscriptionRepository) GetExpiringSoon(days int) ([]*models.Subscripti
 
 	return subscriptions, nil
 }
-

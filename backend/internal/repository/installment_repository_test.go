@@ -41,6 +41,7 @@ func TestInstallmentRepository_Create(t *testing.T) {
 		InterestRate:     0,
 		BillingDay:       15,
 		CategoryID:       categoryID,
+		PaymentMethod:    models.PaymentMethodCash,
 		StartDate:        time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
 		Note:             &note,
 	}
@@ -92,6 +93,7 @@ func TestInstallmentRepository_Create_WithInterest(t *testing.T) {
 		InterestRate:     10,
 		BillingDay:       1,
 		CategoryID:       categoryID,
+		PaymentMethod:    models.PaymentMethodCash,
 		StartDate:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
@@ -128,6 +130,7 @@ func TestInstallmentRepository_GetByID(t *testing.T) {
 		InterestRate:     0,
 		BillingDay:       10,
 		CategoryID:       categoryID,
+		PaymentMethod:    models.PaymentMethodCash,
 		StartDate:        time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
 	}
 	created, err := repo.Create(input)
@@ -179,6 +182,7 @@ func TestInstallmentRepository_List(t *testing.T) {
 			InterestRate:     0,
 			BillingDay:       15,
 			CategoryID:       categoryID,
+			PaymentMethod:    models.PaymentMethodCash,
 			StartDate:        time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
 		}
 		created, err := repo.Create(input)
@@ -239,6 +243,7 @@ func TestInstallmentRepository_Update(t *testing.T) {
 		InterestRate:     0,
 		BillingDay:       15,
 		CategoryID:       categoryID,
+		PaymentMethod:    models.PaymentMethodCash,
 		StartDate:        time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
 	}
 	created, err := repo.Create(input)
@@ -284,6 +289,7 @@ func TestInstallmentRepository_Delete(t *testing.T) {
 		InterestRate:     0,
 		BillingDay:       15,
 		CategoryID:       categoryID,
+		PaymentMethod:    models.PaymentMethodCash,
 		StartDate:        time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
 	}
 	created, err := repo.Create(input)

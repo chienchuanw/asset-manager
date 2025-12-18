@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -28,6 +28,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Installment, CreateInstallmentInput } from "@/types/installment";
 import type { CashFlowCategory } from "@/types/cash-flow";
+import type { PaymentMethod } from "@/types/subscription";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useCreditCards } from "@/hooks/useCreditCards";
 
 interface InstallmentFormProps {
   installment?: Installment;
@@ -44,6 +47,10 @@ export function InstallmentForm({
   onCancel,
   isSubmitting = false,
 }: InstallmentFormProps) {
+  // 取得銀行帳戶和信用卡列表
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const { data: creditCards = [] } = useCreditCards();
+
   const form = useForm<CreateInstallmentInput>({
     defaultValues: {
       name: "",
@@ -52,6 +59,8 @@ export function InstallmentForm({
       installment_count: 12,
       interest_rate: 0,
       category_id: "",
+      payment_method: "cash",
+      account_id: undefined,
       start_date: (() => {
         // 使用本地時間格式化日期，避免時區轉換問題
         const now = new Date();
@@ -63,6 +72,12 @@ export function InstallmentForm({
       billing_day: 1,
       note: "",
     },
+  });
+
+  // 監聽付款方式變化
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: "payment_method",
   });
 
   // 監聽表單變化以計算每期金額和總利息
@@ -101,6 +116,8 @@ export function InstallmentForm({
         installment_count: installment.installment_count,
         interest_rate: installment.interest_rate,
         category_id: installment.category_id,
+        payment_method: installment.payment_method || "cash",
+        account_id: installment.account_id,
         start_date: installment.start_date.split("T")[0],
         billing_day: installment.billing_day,
         note: installment.note || "",
@@ -110,6 +127,25 @@ export function InstallmentForm({
 
   // 篩選支出類別
   const expenseCategories = categories.filter((c) => c.type === "expense");
+
+  // 根據付款方式取得帳戶選項
+  const getAccountOptions = () => {
+    if (paymentMethod === "bank_account") {
+      return bankAccounts.map((account) => ({
+        id: account.id,
+        name: `${account.bank_name} - ${account.account_type} (${account.account_number_last4})`,
+      }));
+    }
+    if (paymentMethod === "credit_card") {
+      return creditCards.map((card) => ({
+        id: card.id,
+        name: `${card.issuing_bank} - ${card.card_name}`,
+      }));
+    }
+    return [];
+  };
+
+  const accountOptions = getAccountOptions();
 
   return (
     <Form {...form}>
@@ -278,6 +314,80 @@ export function InstallmentForm({
             </FormItem>
           )}
         />
+
+        {/* 付款方式 */}
+        <FormField
+          control={form.control}
+          name="payment_method"
+          rules={{ required: "請選擇付款方式" }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>付款方式</FormLabel>
+              <Select
+                onValueChange={(value: PaymentMethod) => {
+                  field.onChange(value);
+                  // 切換付款方式時清除帳戶選擇
+                  if (value === "cash") {
+                    form.setValue("account_id", undefined);
+                  }
+                }}
+                value={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="選擇付款方式" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="cash">現金</SelectItem>
+                  <SelectItem value="bank_account">銀行帳戶</SelectItem>
+                  <SelectItem value="credit_card">信用卡</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 帳戶選擇（當付款方式為銀行帳戶或信用卡時顯示） */}
+        {paymentMethod !== "cash" && accountOptions.length > 0 && (
+          <FormField
+            control={form.control}
+            name="account_id"
+            rules={{ required: "請選擇帳戶" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {paymentMethod === "bank_account" ? "銀行帳戶" : "信用卡"}
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          paymentMethod === "bank_account"
+                            ? "選擇銀行帳戶"
+                            : "選擇信用卡"
+                        }
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {accountOptions.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* 開始日期 */}
         <FormField

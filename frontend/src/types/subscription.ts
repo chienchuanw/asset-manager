@@ -11,6 +11,11 @@ export type BillingCycle = "monthly" | "quarterly" | "yearly";
 export type SubscriptionStatus = "active" | "cancelled";
 
 /**
+ * 付款方式類型
+ */
+export type PaymentMethod = "cash" | "bank_account" | "credit_card";
+
+/**
  * 訂閱資料結構
  */
 export interface Subscription {
@@ -23,6 +28,8 @@ export interface Subscription {
   category_id: string;
   category_name?: string;
   category_type?: string;
+  payment_method: PaymentMethod;
+  account_id?: string;
   start_date: string;
   end_date?: string;
   auto_renew: boolean;
@@ -42,6 +49,8 @@ export interface CreateSubscriptionInput {
   billing_cycle: BillingCycle;
   billing_day: number;
   category_id: string;
+  payment_method: PaymentMethod;
+  account_id?: string;
   start_date: string;
   end_date?: string;
   auto_renew: boolean;
@@ -57,6 +66,8 @@ export interface UpdateSubscriptionInput {
   billing_cycle?: BillingCycle;
   billing_day?: number;
   category_id?: string;
+  payment_method?: PaymentMethod;
+  account_id?: string;
   end_date?: string;
   auto_renew?: boolean;
   note?: string;

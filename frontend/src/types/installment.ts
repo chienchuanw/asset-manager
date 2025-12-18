@@ -1,5 +1,7 @@
 // 分期相關型別定義
 
+import { PaymentMethod } from "./subscription";
+
 /**
  * 分期狀態
  */
@@ -21,6 +23,8 @@ export interface Installment {
   category_id: string;
   category_name?: string;
   category_type?: string;
+  payment_method: PaymentMethod;
+  account_id?: string;
   start_date: string;
   billing_day: number;
   status: InstallmentStatus;
@@ -39,6 +43,8 @@ export interface CreateInstallmentInput {
   installment_count: number;
   interest_rate: number;
   category_id: string;
+  payment_method: PaymentMethod;
+  account_id?: string;
   start_date: string;
   billing_day: number;
   note?: string;
@@ -50,6 +56,8 @@ export interface CreateInstallmentInput {
 export interface UpdateInstallmentInput {
   name?: string;
   billing_day?: number;
+  payment_method?: PaymentMethod;
+  account_id?: string;
   note?: string;
 }
 

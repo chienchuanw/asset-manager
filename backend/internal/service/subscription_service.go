@@ -79,6 +79,16 @@ func (s *subscriptionService) CreateSubscription(input *models.CreateSubscriptio
 		return nil, fmt.Errorf("end date must be after start date")
 	}
 
+	// 驗證付款方式
+	if !input.PaymentMethod.Validate() {
+		return nil, fmt.Errorf("invalid payment method: %s", input.PaymentMethod)
+	}
+
+	// 驗證帳戶 ID（當付款方式需要帳戶時）
+	if input.PaymentMethod.RequiresAccountID() && input.AccountID == nil {
+		return nil, fmt.Errorf("account ID is required for payment method: %s", input.PaymentMethod)
+	}
+
 	// 呼叫 repository 建立訂閱
 	subscription, err := s.repo.Create(input)
 	if err != nil {
@@ -152,6 +162,18 @@ func (s *subscriptionService) UpdateSubscription(id uuid.UUID, input *models.Upd
 	// 驗證日期
 	if input.EndDate != nil && input.EndDate.Before(existing.StartDate) {
 		return nil, fmt.Errorf("end date must be after start date")
+	}
+
+	// 驗證付款方式
+	if input.PaymentMethod != nil {
+		if !input.PaymentMethod.Validate() {
+			return nil, fmt.Errorf("invalid payment method: %s", *input.PaymentMethod)
+		}
+
+		// 驗證帳戶 ID（當付款方式需要帳戶時）
+		if input.PaymentMethod.RequiresAccountID() && input.AccountID == nil {
+			return nil, fmt.Errorf("account ID is required for payment method: %s", *input.PaymentMethod)
+		}
 	}
 
 	// 呼叫 repository 更新訂閱

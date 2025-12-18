@@ -28,6 +28,8 @@ type Installment struct {
 	PaidCount         int               `json:"paid_count" db:"paid_count"`
 	BillingDay        int               `json:"billing_day" db:"billing_day"`
 	CategoryID        uuid.UUID         `json:"category_id" db:"category_id"`
+	PaymentMethod     PaymentMethod     `json:"payment_method" db:"payment_method"` // 付款方式
+	AccountID         *uuid.UUID        `json:"account_id,omitempty" db:"account_id"` // 帳戶 ID
 	StartDate         time.Time         `json:"start_date" db:"start_date"`
 	Status            InstallmentStatus `json:"status" db:"status"`
 	Note              *string           `json:"note,omitempty" db:"note"`
@@ -40,24 +42,29 @@ type Installment struct {
 
 // CreateInstallmentInput 建立分期的輸入資料
 type CreateInstallmentInput struct {
-	Name             string    `json:"name" binding:"required,max=255"`
-	TotalAmount      float64   `json:"total_amount" binding:"required,gt=0"`
-	InstallmentCount int       `json:"installment_count" binding:"required,gt=0"`
-	InterestRate     float64   `json:"interest_rate" binding:"gte=0"`
-	BillingDay       int       `json:"billing_day" binding:"required,min=1,max=31"`
-	CategoryID       uuid.UUID `json:"category_id" binding:"required"`
-	StartDate        time.Time `json:"start_date" binding:"required"`
-	Note             *string   `json:"note,omitempty"`
+	Name             string        `json:"name" binding:"required,max=255"`
+	TotalAmount      float64       `json:"total_amount" binding:"required,gt=0"`
+	InstallmentCount int           `json:"installment_count" binding:"required,gt=0"`
+	InterestRate     float64       `json:"interest_rate" binding:"gte=0"`
+	BillingDay       int           `json:"billing_day" binding:"required,min=1,max=31"`
+	CategoryID       uuid.UUID     `json:"category_id" binding:"required"`
+	PaymentMethod    PaymentMethod `json:"payment_method" binding:"required"` // 付款方式
+	AccountID        *uuid.UUID    `json:"account_id,omitempty"`              // 帳戶 ID
+	StartDate        time.Time     `json:"start_date" binding:"required"`
+	Note             *string       `json:"note,omitempty"`
 }
 
 // UpdateInstallmentInput 更新分期的輸入資料
 type UpdateInstallmentInput struct {
-	Name         *string            `json:"name,omitempty" binding:"omitempty,max=255"`
-	InterestRate *float64           `json:"interest_rate,omitempty" binding:"omitempty,gte=0"`
-	CategoryID   *uuid.UUID         `json:"category_id,omitempty"`
-	PaidCount    *int               `json:"paid_count,omitempty" binding:"omitempty,gte=0"`
-	Status       *InstallmentStatus `json:"status,omitempty"`
-	Note         *string            `json:"note,omitempty"`
+	Name          *string            `json:"name,omitempty" binding:"omitempty,max=255"`
+	InterestRate  *float64           `json:"interest_rate,omitempty" binding:"omitempty,gte=0"`
+	BillingDay    *int               `json:"billing_day,omitempty" binding:"omitempty,min=1,max=31"`
+	CategoryID    *uuid.UUID         `json:"category_id,omitempty"`
+	PaymentMethod *PaymentMethod     `json:"payment_method,omitempty"` // 付款方式
+	AccountID     *uuid.UUID         `json:"account_id,omitempty"`     // 帳戶 ID
+	PaidCount     *int               `json:"paid_count,omitempty" binding:"omitempty,gte=0"`
+	Status        *InstallmentStatus `json:"status,omitempty"`
+	Note          *string            `json:"note,omitempty"`
 }
 
 // Validate 驗證 InstallmentStatus 是否有效
@@ -135,3 +142,18 @@ func (i *Installment) IsActive() bool {
 	return true
 }
 
+// ValidatePaymentMethod 驗證付款方式設定是否正確
+// 當付款方式需要帳戶 ID 時，必須提供有效的帳戶 ID
+func (i *Installment) ValidatePaymentMethod() bool {
+	// 先驗證付款方式本身是否有效
+	if !i.PaymentMethod.Validate() {
+		return false
+	}
+
+	// 如果付款方式需要帳戶 ID，檢查是否有提供
+	if i.PaymentMethod.RequiresAccountID() {
+		return i.AccountID != nil
+	}
+
+	return true
+}
