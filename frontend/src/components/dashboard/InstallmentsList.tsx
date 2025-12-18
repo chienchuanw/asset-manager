@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Installment } from "@/types/installment";
+import type { PaymentMethod } from "@/types/subscription";
 
 interface InstallmentsListProps {
   installments?: Installment[];
@@ -50,6 +51,18 @@ function formatDate(dateString: string): string {
  */
 function calculateProgress(paidCount: number, totalCount: number): number {
   return Math.round((paidCount / totalCount) * 100);
+}
+
+/**
+ * 格式化付款方式
+ */
+function formatPaymentMethod(method: PaymentMethod): string {
+  const methodMap: Record<PaymentMethod, string> = {
+    cash: "現金",
+    bank_account: "銀行帳戶",
+    credit_card: "信用卡",
+  };
+  return methodMap[method] || method;
 }
 
 export function InstallmentsList({
@@ -82,10 +95,11 @@ export function InstallmentsList({
         <TableHeader>
           <TableRow>
             <TableHead>名稱</TableHead>
+            <TableHead>分類</TableHead>
             <TableHead>總金額</TableHead>
             <TableHead>每期金額</TableHead>
+            <TableHead>付款方式</TableHead>
             <TableHead>進度</TableHead>
-            <TableHead>剩餘期數</TableHead>
             <TableHead>狀態</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
@@ -102,15 +116,9 @@ export function InstallmentsList({
             return (
               <TableRow key={installment.id}>
                 <TableCell className="font-medium">
-                  <div>
-                    <p>{installment.name}</p>
-                    {installment.category_name && (
-                      <p className="text-xs text-muted-foreground">
-                        {installment.category_name}
-                      </p>
-                    )}
-                  </div>
+                  {installment.name}
                 </TableCell>
+                <TableCell>{installment.category?.name || "-"}</TableCell>
                 <TableCell className="tabular-nums">
                   <div>
                     <p>
@@ -131,18 +139,20 @@ export function InstallmentsList({
                     "0"}
                 </TableCell>
                 <TableCell>
+                  {formatPaymentMethod(installment.payment_method)}
+                </TableCell>
+                <TableCell>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
                         {installment.paid_count} /{" "}
-                        {installment.installment_count}
+                        {installment.installment_count} 期
                       </span>
                       <span className="font-medium">{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
                   </div>
                 </TableCell>
-                <TableCell className="tabular-nums">{remaining} 期</TableCell>
                 <TableCell>
                   <Badge
                     variant={

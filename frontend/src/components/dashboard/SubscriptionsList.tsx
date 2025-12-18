@@ -29,7 +29,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Subscription, BillingCycle } from "@/types/subscription";
+import type {
+  Subscription,
+  BillingCycle,
+  PaymentMethod,
+} from "@/types/subscription";
 
 interface SubscriptionsListProps {
   subscriptions?: Subscription[];
@@ -49,6 +53,18 @@ function formatBillingCycle(cycle: BillingCycle): string {
     yearly: "每年",
   };
   return cycleMap[cycle] || cycle;
+}
+
+/**
+ * 格式化付款方式
+ */
+function formatPaymentMethod(method: PaymentMethod): string {
+  const methodMap: Record<PaymentMethod, string> = {
+    cash: "現金",
+    bank_account: "銀行帳戶",
+    credit_card: "信用卡",
+  };
+  return methodMap[method] || method;
 }
 
 /**
@@ -123,9 +139,10 @@ export function SubscriptionsList({
         <TableHeader>
           <TableRow>
             <TableHead>名稱</TableHead>
+            <TableHead>分類</TableHead>
             <TableHead>金額</TableHead>
             <TableHead>計費週期</TableHead>
-            <TableHead>扣款日</TableHead>
+            <TableHead>付款方式</TableHead>
             <TableHead>下次扣款</TableHead>
             <TableHead>狀態</TableHead>
             <TableHead className="w-[50px]"></TableHead>
@@ -134,24 +151,17 @@ export function SubscriptionsList({
         <TableBody>
           {subscriptions.map((subscription) => (
             <TableRow key={subscription.id}>
-              <TableCell className="font-medium">
-                <div>
-                  <p>{subscription.name}</p>
-                  {subscription.category_name && (
-                    <p className="text-xs text-muted-foreground">
-                      {subscription.category_name}
-                    </p>
-                  )}
-                </div>
-              </TableCell>
+              <TableCell className="font-medium">{subscription.name}</TableCell>
+              <TableCell>{subscription.category?.name || "-"}</TableCell>
               <TableCell className="tabular-nums">
-                {subscription.currency} {subscription.amount.toLocaleString("zh-TW")}
+                {subscription.currency}{" "}
+                {subscription.amount.toLocaleString("zh-TW")}
               </TableCell>
               <TableCell>
                 {formatBillingCycle(subscription.billing_cycle)}
               </TableCell>
-              <TableCell className="tabular-nums">
-                每月 {subscription.billing_day} 日
+              <TableCell>
+                {formatPaymentMethod(subscription.payment_method)}
               </TableCell>
               <TableCell className="tabular-nums">
                 {subscription.status === "active"
@@ -176,17 +186,13 @@ export function SubscriptionsList({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {onEdit && (
-                      <DropdownMenuItem
-                        onClick={() => onEdit(subscription)}
-                      >
+                      <DropdownMenuItem onClick={() => onEdit(subscription)}>
                         <PencilIcon className="mr-2 h-4 w-4" />
                         編輯
                       </DropdownMenuItem>
                     )}
                     {onCancel && subscription.status === "active" && (
-                      <DropdownMenuItem
-                        onClick={() => onCancel(subscription)}
-                      >
+                      <DropdownMenuItem onClick={() => onCancel(subscription)}>
                         <XCircleIcon className="mr-2 h-4 w-4" />
                         取消訂閱
                       </DropdownMenuItem>
@@ -210,4 +216,3 @@ export function SubscriptionsList({
     </div>
   );
 }
-

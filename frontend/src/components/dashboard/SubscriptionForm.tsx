@@ -55,32 +55,10 @@ export function SubscriptionForm({
   const { data: bankAccounts = [] } = useBankAccounts();
   const { data: creditCards = [] } = useCreditCards();
 
-  const form = useForm<CreateSubscriptionInput>({
-    defaultValues: {
-      name: "",
-      amount: 0,
-      currency: "TWD",
-      billing_cycle: "monthly",
-      billing_day: 1,
-      category_id: "",
-      payment_method: "cash",
-      account_id: undefined,
-      start_date: new Date().toISOString().split("T")[0],
-      auto_renew: true,
-      note: "",
-    },
-  });
-
-  // 監聽付款方式變化
-  const paymentMethod = useWatch({
-    control: form.control,
-    name: "payment_method",
-  });
-
-  // 如果是編輯模式，填入現有資料
-  useEffect(() => {
+  // 根據是否為編輯模式設定初始值
+  const getDefaultValues = (): CreateSubscriptionInput => {
     if (subscription) {
-      form.reset({
+      return {
         name: subscription.name,
         amount: subscription.amount,
         currency: subscription.currency,
@@ -93,9 +71,32 @@ export function SubscriptionForm({
         end_date: subscription.end_date?.split("T")[0],
         auto_renew: subscription.auto_renew,
         note: subscription.note || "",
-      });
+      };
     }
-  }, [subscription, form]);
+    return {
+      name: "",
+      amount: 0,
+      currency: "TWD",
+      billing_cycle: "monthly",
+      billing_day: 1,
+      category_id: "",
+      payment_method: "cash",
+      account_id: undefined,
+      start_date: new Date().toISOString().split("T")[0],
+      auto_renew: true,
+      note: "",
+    };
+  };
+
+  const form = useForm<CreateSubscriptionInput>({
+    defaultValues: getDefaultValues(),
+  });
+
+  // 監聽付款方式變化
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: "payment_method",
+  });
 
   // 篩選支出類別
   const expenseCategories = categories.filter((c) => c.type === "expense");

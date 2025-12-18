@@ -16,6 +16,18 @@ export type SubscriptionStatus = "active" | "cancelled";
 export type PaymentMethod = "cash" | "bank_account" | "credit_card";
 
 /**
+ * 分類資訊（用於關聯資料）
+ */
+export interface CategoryInfo {
+  id: string;
+  name: string;
+  type: string;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * 訂閱資料結構
  */
 export interface Subscription {
@@ -26,8 +38,7 @@ export interface Subscription {
   billing_cycle: BillingCycle;
   billing_day: number;
   category_id: string;
-  category_name?: string;
-  category_type?: string;
+  category?: CategoryInfo; // 後端 JOIN 回傳的分類資料
   payment_method: PaymentMethod;
   account_id?: string;
   start_date: string;

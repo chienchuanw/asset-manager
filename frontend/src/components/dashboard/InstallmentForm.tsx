@@ -51,8 +51,29 @@ export function InstallmentForm({
   const { data: bankAccounts = [] } = useBankAccounts();
   const { data: creditCards = [] } = useCreditCards();
 
-  const form = useForm<CreateInstallmentInput>({
-    defaultValues: {
+  // 根據是否為編輯模式設定初始值
+  const getDefaultValues = (): CreateInstallmentInput => {
+    if (installment) {
+      return {
+        name: installment.name,
+        total_amount: installment.total_amount,
+        currency: installment.currency,
+        installment_count: installment.installment_count,
+        interest_rate: installment.interest_rate,
+        category_id: installment.category_id,
+        payment_method: installment.payment_method || "cash",
+        account_id: installment.account_id,
+        start_date: installment.start_date.split("T")[0],
+        billing_day: installment.billing_day,
+        note: installment.note || "",
+      };
+    }
+    // 使用本地時間格式化日期，避免時區轉換問題
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return {
       name: "",
       total_amount: 0,
       currency: "TWD",
@@ -61,17 +82,14 @@ export function InstallmentForm({
       category_id: "",
       payment_method: "cash",
       account_id: undefined,
-      start_date: (() => {
-        // 使用本地時間格式化日期，避免時區轉換問題
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, "0");
-        const day = String(now.getDate()).padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      })(),
+      start_date: `${year}-${month}-${day}`,
       billing_day: 1,
       note: "",
-    },
+    };
+  };
+
+  const form = useForm<CreateInstallmentInput>({
+    defaultValues: getDefaultValues(),
   });
 
   // 監聽付款方式變化
@@ -105,25 +123,6 @@ export function InstallmentForm({
       });
     }
   }, [totalAmount, installmentCount, interestRate]);
-
-  // 如果是編輯模式，填入現有資料
-  useEffect(() => {
-    if (installment) {
-      form.reset({
-        name: installment.name,
-        total_amount: installment.total_amount,
-        currency: installment.currency,
-        installment_count: installment.installment_count,
-        interest_rate: installment.interest_rate,
-        category_id: installment.category_id,
-        payment_method: installment.payment_method || "cash",
-        account_id: installment.account_id,
-        start_date: installment.start_date.split("T")[0],
-        billing_day: installment.billing_day,
-        note: installment.note || "",
-      });
-    }
-  }, [installment, form]);
 
   // 篩選支出類別
   const expenseCategories = categories.filter((c) => c.type === "expense");

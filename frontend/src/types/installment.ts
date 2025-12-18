@@ -1,6 +1,6 @@
 // 分期相關型別定義
 
-import { PaymentMethod } from "./subscription";
+import { PaymentMethod, CategoryInfo } from "./subscription";
 
 /**
  * 分期狀態
@@ -21,8 +21,7 @@ export interface Installment {
   interest_rate: number;
   total_interest: number;
   category_id: string;
-  category_name?: string;
-  category_type?: string;
+  category?: CategoryInfo; // 後端 JOIN 回傳的分類資料
   payment_method: PaymentMethod;
   account_id?: string;
   start_date: string;

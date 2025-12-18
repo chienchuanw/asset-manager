@@ -332,7 +332,9 @@ export default function RecurringPage() {
               {editingSubscription ? "編輯訂閱" : "新增訂閱"}
             </DialogTitle>
           </DialogHeader>
+          {/* key 屬性確保每次編輯不同訂閱時表單重新掛載 */}
           <SubscriptionForm
+            key={editingSubscription?.id ?? "new"}
             subscription={editingSubscription}
             categories={categories}
             onSubmit={handleSubmitSubscription}
@@ -355,7 +357,9 @@ export default function RecurringPage() {
               {editingInstallment ? "編輯分期" : "新增分期"}
             </DialogTitle>
           </DialogHeader>
+          {/* key 屬性確保每次編輯不同分期時表單重新掛載 */}
           <InstallmentForm
+            key={editingInstallment?.id ?? "new"}
             installment={editingInstallment}
             categories={categories}
             onSubmit={handleSubmitInstallment}
