@@ -51,6 +51,7 @@ export interface CashFlowCategory {
   name: string;
   type: CashFlowType;
   is_system: boolean;
+  sort_order: number;
   created_at: string; // ISO 8601 格式
   updated_at: string; // ISO 8601 格式
 }
@@ -132,6 +133,21 @@ export interface CreateCategoryInput {
  */
 export interface UpdateCategoryInput {
   name: string;
+}
+
+/**
+ * 分類排序項目
+ */
+export interface CategoryOrderItem {
+  id: string;
+  sort_order: number;
+}
+
+/**
+ * 重新排序分類的輸入資料
+ */
+export interface ReorderCategoryInput {
+  orders: CategoryOrderItem[];
 }
 
 /**
