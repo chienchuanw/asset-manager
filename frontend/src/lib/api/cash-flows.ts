@@ -7,6 +7,7 @@ import type {
   UpdateCashFlowInput,
   CreateCategoryInput,
   UpdateCategoryInput,
+  ReorderCategoryInput,
   CashFlowFilters,
   CashFlowType,
 } from "@/types/cash-flow";
@@ -20,6 +21,7 @@ const ENDPOINTS = {
   CASH_FLOW_SUMMARY: "/api/cash-flows/summary",
   CATEGORIES: "/api/categories",
   CATEGORY_BY_ID: (id: string) => `/api/categories/${id}`,
+  CATEGORIES_REORDER: "/api/categories/reorder",
 } as const;
 
 /**
@@ -147,5 +149,13 @@ export const categoriesAPI = {
   delete: async (id: string): Promise<void> => {
     return apiClient.delete<void>(ENDPOINTS.CATEGORY_BY_ID(id));
   },
-};
 
+  /**
+   * 重新排序分類
+   * @param data 排序資料
+   * @returns void
+   */
+  reorder: async (data: ReorderCategoryInput): Promise<void> => {
+    return apiClient.put<void>(ENDPOINTS.CATEGORIES_REORDER, data);
+  },
+};
