@@ -231,3 +231,44 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// ReorderCategories 批次更新分類排序
+// @Summary 重新排序分類
+// @Description 批次更新分類的排序順序
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param orders body models.ReorderCategoryInput true "排序資料"
+// @Success 200 {object} APIResponse
+// @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 500 {object} APIResponse{error=APIError}
+// @Router /api/categories/reorder [put]
+func (h *CategoryHandler) ReorderCategories(c *gin.Context) {
+	var input models.ReorderCategoryInput
+
+	// 綁定並驗證請求資料
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{
+			Error: &APIError{
+				Code:    "INVALID_INPUT",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	// 呼叫 service 重新排序
+	if err := h.service.ReorderCategories(&input); err != nil {
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			Error: &APIError{
+				Code:    "REORDER_FAILED",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Data: nil,
+	})
+}
+

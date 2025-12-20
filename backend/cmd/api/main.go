@@ -456,6 +456,7 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		{
 			categories.POST("", categoryHandler.CreateCategory)
 			categories.GET("", categoryHandler.ListCategories)
+			categories.PUT("/reorder", categoryHandler.ReorderCategories)
 			categories.GET("/:id", categoryHandler.GetCategory)
 			categories.PUT("/:id", categoryHandler.UpdateCategory)
 			categories.DELETE("/:id", categoryHandler.DeleteCategory)
