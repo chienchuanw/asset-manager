@@ -15,6 +15,7 @@ type CategoryService interface {
 	ListCategories(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error)
 	UpdateCategory(id uuid.UUID, input *models.UpdateCategoryInput) (*models.CashFlowCategory, error)
 	DeleteCategory(id uuid.UUID) error
+	ReorderCategories(input *models.ReorderCategoryInput) error
 }
 
 // categoryService 現金流分類業務邏輯實作
@@ -106,6 +107,22 @@ func (s *categoryService) DeleteCategory(id uuid.UUID) error {
 	err = s.repo.Delete(id)
 	if err != nil {
 		return fmt.Errorf("failed to delete category: %w", err)
+	}
+
+	return nil
+}
+
+// ReorderCategories 批次更新分類排序
+func (s *categoryService) ReorderCategories(input *models.ReorderCategoryInput) error {
+	// 驗證輸入
+	if len(input.Orders) == 0 {
+		return fmt.Errorf("at least one category order is required")
+	}
+
+	// 呼叫 repository 更新排序
+	err := s.repo.Reorder(input)
+	if err != nil {
+		return fmt.Errorf("failed to reorder categories: %w", err)
 	}
 
 	return nil
