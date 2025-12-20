@@ -34,6 +34,7 @@ type CashFlowCategory struct {
 	Name      string       `json:"name" db:"name"`
 	Type      CashFlowType `json:"type" db:"type"`
 	IsSystem  bool         `json:"is_system" db:"is_system"`
+	SortOrder int          `json:"sort_order" db:"sort_order"`
 	CreatedAt time.Time    `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at" db:"updated_at"`
 }
@@ -95,6 +96,17 @@ type CreateCategoryInput struct {
 // UpdateCategoryInput 更新分類的輸入資料
 type UpdateCategoryInput struct {
 	Name string `json:"name" binding:"required,max=20"`
+}
+
+// CategoryOrderItem 單筆分類排序項目
+type CategoryOrderItem struct {
+	ID        uuid.UUID `json:"id" binding:"required"`
+	SortOrder int       `json:"sort_order" binding:"gte=0"`
+}
+
+// ReorderCategoryInput 批次更新分類排序的輸入資料
+type ReorderCategoryInput struct {
+	Orders []CategoryOrderItem `json:"orders" binding:"required,min=1,dive"`
 }
 
 // Validate 驗證 CashFlowType 是否有效
