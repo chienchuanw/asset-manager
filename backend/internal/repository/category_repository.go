@@ -16,6 +16,8 @@ type CategoryRepository interface {
 	Update(id uuid.UUID, input *models.UpdateCategoryInput) (*models.CashFlowCategory, error)
 	Delete(id uuid.UUID) error
 	IsInUse(id uuid.UUID) (bool, error)
+	Reorder(input *models.ReorderCategoryInput) error
+	GetMaxSortOrder(flowType models.CashFlowType) (int, error)
 }
 
 // categoryRepository 現金流分類資料存取實作

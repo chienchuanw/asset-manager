@@ -292,3 +292,178 @@ func TestCategoryRepository_Delete_SystemCategory(t *testing.T) {
 	assert.Contains(t, err.Error(), "system category")
 }
 
+// TestCategoryRepository_Reorder 測試批次更新分類排序
+func TestCategoryRepository_Reorder(t *testing.T) {
+	db, err := setupTestDB()
+	require.NoError(t, err)
+	defer db.Close()
+
+	require.NoError(t, cleanupCategories(db))
+
+	repo := NewCategoryRepository(db)
+
+	// 建立測試分類
+	cat1, err := repo.Create(&models.CreateCategoryInput{
+		Name: "分類A",
+		Type: models.CashFlowTypeExpense,
+	})
+	require.NoError(t, err)
+
+	cat2, err := repo.Create(&models.CreateCategoryInput{
+		Name: "分類B",
+		Type: models.CashFlowTypeExpense,
+	})
+	require.NoError(t, err)
+
+	cat3, err := repo.Create(&models.CreateCategoryInput{
+		Name: "分類C",
+		Type: models.CashFlowTypeExpense,
+	})
+	require.NoError(t, err)
+
+	// 執行重新排序：C -> A -> B
+	reorderInput := &models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{
+			{ID: cat3.ID, SortOrder: 0},
+			{ID: cat1.ID, SortOrder: 1},
+			{ID: cat2.ID, SortOrder: 2},
+		},
+	}
+
+	err = repo.Reorder(reorderInput)
+	assert.NoError(t, err)
+
+	// 驗證排序結果
+	expenseType := models.CashFlowTypeExpense
+	categories, err := repo.GetAll(&expenseType)
+	require.NoError(t, err)
+
+	// 過濾出自訂分類（非系統分類）
+	var customCategories []*models.CashFlowCategory
+	for _, c := range categories {
+		if !c.IsSystem {
+			customCategories = append(customCategories, c)
+		}
+	}
+
+	require.Len(t, customCategories, 3)
+	assert.Equal(t, cat3.ID, customCategories[0].ID, "第一個應該是分類C")
+	assert.Equal(t, cat1.ID, customCategories[1].ID, "第二個應該是分類A")
+	assert.Equal(t, cat2.ID, customCategories[2].ID, "第三個應該是分類B")
+}
+
+// TestCategoryRepository_GetAll_SortBySortOrder 測試 GetAll 按 sort_order 排序
+func TestCategoryRepository_GetAll_SortBySortOrder(t *testing.T) {
+	db, err := setupTestDB()
+	require.NoError(t, err)
+	defer db.Close()
+
+	require.NoError(t, cleanupCategories(db))
+	ensureSystemCategories(db)
+
+	repo := NewCategoryRepository(db)
+
+	// 建立測試分類並設定不同的 sort_order
+	cat1, err := repo.Create(&models.CreateCategoryInput{
+		Name: "第三個",
+		Type: models.CashFlowTypeIncome,
+	})
+	require.NoError(t, err)
+
+	cat2, err := repo.Create(&models.CreateCategoryInput{
+		Name: "第一個",
+		Type: models.CashFlowTypeIncome,
+	})
+	require.NoError(t, err)
+
+	cat3, err := repo.Create(&models.CreateCategoryInput{
+		Name: "第二個",
+		Type: models.CashFlowTypeIncome,
+	})
+	require.NoError(t, err)
+
+	// 重新排序
+	err = repo.Reorder(&models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{
+			{ID: cat2.ID, SortOrder: 100}, // 第一個
+			{ID: cat3.ID, SortOrder: 101}, // 第二個
+			{ID: cat1.ID, SortOrder: 102}, // 第三個
+		},
+	})
+	require.NoError(t, err)
+
+	// 取得所有收入分類
+	incomeType := models.CashFlowTypeIncome
+	categories, err := repo.GetAll(&incomeType)
+	require.NoError(t, err)
+
+	// 過濾自訂分類
+	var customCategories []*models.CashFlowCategory
+	for _, c := range categories {
+		if !c.IsSystem {
+			customCategories = append(customCategories, c)
+		}
+	}
+
+	require.Len(t, customCategories, 3)
+	assert.Equal(t, "第一個", customCategories[0].Name)
+	assert.Equal(t, "第二個", customCategories[1].Name)
+	assert.Equal(t, "第三個", customCategories[2].Name)
+}
+
+// TestCategoryRepository_GetMaxSortOrder 測試取得最大 sort_order
+func TestCategoryRepository_GetMaxSortOrder(t *testing.T) {
+	db, err := setupTestDB()
+	require.NoError(t, err)
+	defer db.Close()
+
+	require.NoError(t, cleanupCategories(db))
+
+	repo := NewCategoryRepository(db)
+
+	// 空資料庫應該回傳 -1
+	maxOrder, err := repo.GetMaxSortOrder(models.CashFlowTypeIncome)
+	assert.NoError(t, err)
+	assert.Equal(t, -1, maxOrder)
+
+	// 建立分類
+	_, err = repo.Create(&models.CreateCategoryInput{
+		Name: "測試分類",
+		Type: models.CashFlowTypeIncome,
+	})
+	require.NoError(t, err)
+
+	// 應該回傳 0（新分類的預設 sort_order）
+	maxOrder, err = repo.GetMaxSortOrder(models.CashFlowTypeIncome)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, maxOrder, 0)
+}
+
+// TestCategoryRepository_Create_WithSortOrder 測試新建分類自動設定 sort_order
+func TestCategoryRepository_Create_WithSortOrder(t *testing.T) {
+	db, err := setupTestDB()
+	require.NoError(t, err)
+	defer db.Close()
+
+	require.NoError(t, cleanupCategories(db))
+
+	repo := NewCategoryRepository(db)
+
+	// 建立第一個分類
+	cat1, err := repo.Create(&models.CreateCategoryInput{
+		Name: "第一個分類",
+		Type: models.CashFlowTypeExpense,
+	})
+	require.NoError(t, err)
+	firstSortOrder := cat1.SortOrder
+
+	// 建立第二個分類，sort_order 應該比第一個大
+	cat2, err := repo.Create(&models.CreateCategoryInput{
+		Name: "第二個分類",
+		Type: models.CashFlowTypeExpense,
+	})
+	require.NoError(t, err)
+
+	assert.Greater(t, cat2.SortOrder, firstSortOrder, "第二個分類的 sort_order 應該比第一個大")
+}
+
