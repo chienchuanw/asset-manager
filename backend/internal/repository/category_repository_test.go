@@ -421,22 +421,24 @@ func TestCategoryRepository_GetMaxSortOrder(t *testing.T) {
 
 	repo := NewCategoryRepository(db)
 
-	// 空資料庫應該回傳 -1
-	maxOrder, err := repo.GetMaxSortOrder(models.CashFlowTypeIncome)
+	// 取得目前的最大 sort_order（可能有系統分類）
+	initialMaxOrder, err := repo.GetMaxSortOrder(models.CashFlowTypeIncome)
 	assert.NoError(t, err)
-	assert.Equal(t, -1, maxOrder)
 
-	// 建立分類
-	_, err = repo.Create(&models.CreateCategoryInput{
+	// 建立新分類
+	newCat, err := repo.Create(&models.CreateCategoryInput{
 		Name: "測試分類",
 		Type: models.CashFlowTypeIncome,
 	})
 	require.NoError(t, err)
 
-	// 應該回傳 0（新分類的預設 sort_order）
-	maxOrder, err = repo.GetMaxSortOrder(models.CashFlowTypeIncome)
+	// 新分類的 sort_order 應該是 initialMaxOrder + 1
+	assert.Equal(t, initialMaxOrder+1, newCat.SortOrder)
+
+	// 再次取得最大 sort_order，應該等於新分類的 sort_order
+	newMaxOrder, err := repo.GetMaxSortOrder(models.CashFlowTypeIncome)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, maxOrder, 0)
+	assert.Equal(t, newCat.SortOrder, newMaxOrder)
 }
 
 // TestCategoryRepository_Create_WithSortOrder 測試新建分類自動設定 sort_order

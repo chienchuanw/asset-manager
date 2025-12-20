@@ -30,24 +30,33 @@ func NewCategoryRepository(db *sql.DB) CategoryRepository {
 	return &categoryRepository{db: db}
 }
 
-// Create 建立新的分類
+// Create 建立新的分類（自動設定 sort_order 為該類型的最大值 + 1）
 func (r *categoryRepository) Create(input *models.CreateCategoryInput) (*models.CashFlowCategory, error) {
+	// 取得該類型目前最大的 sort_order
+	maxOrder, err := r.GetMaxSortOrder(input.Type)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get max sort order: %w", err)
+	}
+	newSortOrder := maxOrder + 1
+
 	query := `
-		INSERT INTO cash_flow_categories (name, type, is_system)
-		VALUES ($1, $2, false)
-		RETURNING id, name, type, is_system, created_at, updated_at
+		INSERT INTO cash_flow_categories (name, type, is_system, sort_order)
+		VALUES ($1, $2, false, $3)
+		RETURNING id, name, type, is_system, sort_order, created_at, updated_at
 	`
 
 	category := &models.CashFlowCategory{}
-	err := r.db.QueryRow(
+	err = r.db.QueryRow(
 		query,
 		input.Name,
 		input.Type,
+		newSortOrder,
 	).Scan(
 		&category.ID,
 		&category.Name,
 		&category.Type,
 		&category.IsSystem,
+		&category.SortOrder,
 		&category.CreatedAt,
 		&category.UpdatedAt,
 	)
@@ -62,7 +71,7 @@ func (r *categoryRepository) Create(input *models.CreateCategoryInput) (*models.
 // GetByID 根據 ID 取得分類
 func (r *categoryRepository) GetByID(id uuid.UUID) (*models.CashFlowCategory, error) {
 	query := `
-		SELECT id, name, type, is_system, created_at, updated_at
+		SELECT id, name, type, is_system, sort_order, created_at, updated_at
 		FROM cash_flow_categories
 		WHERE id = $1
 	`
@@ -73,6 +82,7 @@ func (r *categoryRepository) GetByID(id uuid.UUID) (*models.CashFlowCategory, er
 		&category.Name,
 		&category.Type,
 		&category.IsSystem,
+		&category.SortOrder,
 		&category.CreatedAt,
 		&category.UpdatedAt,
 	)
@@ -87,10 +97,10 @@ func (r *categoryRepository) GetByID(id uuid.UUID) (*models.CashFlowCategory, er
 	return category, nil
 }
 
-// GetAll 取得所有分類（可選擇性篩選類型）
+// GetAll 取得所有分類（可選擇性篩選類型，按 sort_order 排序）
 func (r *categoryRepository) GetAll(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error) {
 	query := `
-		SELECT id, name, type, is_system, created_at, updated_at
+		SELECT id, name, type, is_system, sort_order, created_at, updated_at
 		FROM cash_flow_categories
 		WHERE 1=1
 	`
@@ -103,8 +113,8 @@ func (r *categoryRepository) GetAll(flowType *models.CashFlowType) ([]*models.Ca
 		args = append(args, *flowType)
 	}
 
-	// 排序：系統分類優先，然後按名稱排序
-	query += " ORDER BY is_system DESC, name ASC"
+	// 排序：按 sort_order 升序排列
+	query += " ORDER BY sort_order ASC"
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
@@ -120,6 +130,7 @@ func (r *categoryRepository) GetAll(flowType *models.CashFlowType) ([]*models.Ca
 			&category.Name,
 			&category.Type,
 			&category.IsSystem,
+			&category.SortOrder,
 			&category.CreatedAt,
 			&category.UpdatedAt,
 		)
@@ -142,7 +153,7 @@ func (r *categoryRepository) Update(id uuid.UUID, input *models.UpdateCategoryIn
 		UPDATE cash_flow_categories
 		SET name = $1
 		WHERE id = $2 AND is_system = false
-		RETURNING id, name, type, is_system, created_at, updated_at
+		RETURNING id, name, type, is_system, sort_order, created_at, updated_at
 	`
 
 	category := &models.CashFlowCategory{}
@@ -151,6 +162,7 @@ func (r *categoryRepository) Update(id uuid.UUID, input *models.UpdateCategoryIn
 		&category.Name,
 		&category.Type,
 		&category.IsSystem,
+		&category.SortOrder,
 		&category.CreatedAt,
 		&category.UpdatedAt,
 	)
@@ -201,4 +213,59 @@ func (r *categoryRepository) IsInUse(id uuid.UUID) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+// Reorder 批次更新分類排序
+func (r *categoryRepository) Reorder(input *models.ReorderCategoryInput) error {
+	// 使用交易確保原子性
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query := `UPDATE cash_flow_categories SET sort_order = $1 WHERE id = $2`
+
+	for _, order := range input.Orders {
+		result, err := tx.Exec(query, order.SortOrder, order.ID)
+		if err != nil {
+			return fmt.Errorf("failed to update sort order for category %s: %w", order.ID, err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to get rows affected: %w", err)
+		}
+
+		if rowsAffected == 0 {
+			return fmt.Errorf("category not found: %s", order.ID)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// GetMaxSortOrder 取得指定類型分類的最大 sort_order（若無分類則回傳 -1）
+func (r *categoryRepository) GetMaxSortOrder(flowType models.CashFlowType) (int, error) {
+	query := `
+		SELECT COALESCE(MAX(sort_order), -1)
+		FROM cash_flow_categories
+		WHERE type = $1
+	`
+
+	var maxOrder int
+	err := r.db.QueryRow(query, flowType).Scan(&maxOrder)
+	if err != nil {
+		return -1, fmt.Errorf("failed to get max sort order: %w", err)
+	}
+
+	return maxOrder, nil
 }
