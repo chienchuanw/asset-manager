@@ -330,3 +330,68 @@ func TestDeleteCategory_CheckInUseFailed(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to check if category is in use")
 	mockRepo.AssertExpectations(t)
 }
+
+// TestReorderCategories_Success 測試成功重新排序分類
+func TestReorderCategories_Success(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	input := &models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{
+			{ID: uuid.New(), SortOrder: 0},
+			{ID: uuid.New(), SortOrder: 1},
+			{ID: uuid.New(), SortOrder: 2},
+		},
+	}
+
+	mockRepo.On("Reorder", input).Return(nil)
+
+	// Act
+	err := service.ReorderCategories(input)
+
+	// Assert
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+// TestReorderCategories_EmptyOrders 測試空的排序列表
+func TestReorderCategories_EmptyOrders(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	input := &models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{},
+	}
+
+	// Act
+	err := service.ReorderCategories(input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "at least one category order is required")
+}
+
+// TestReorderCategories_RepositoryError 測試 repository 錯誤
+func TestReorderCategories_RepositoryError(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCategoryRepository)
+	service := NewCategoryService(mockRepo)
+
+	input := &models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{
+			{ID: uuid.New(), SortOrder: 0},
+		},
+	}
+
+	mockRepo.On("Reorder", input).Return(fmt.Errorf("database error"))
+
+	// Act
+	err := service.ReorderCategories(input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to reorder categories")
+	mockRepo.AssertExpectations(t)
+}
