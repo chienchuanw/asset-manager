@@ -14,6 +14,7 @@ import type {
   UpdateCashFlowInput,
   CreateCategoryInput,
   UpdateCategoryInput,
+  ReorderCategoryInput,
   CashFlowFilters,
   CashFlowType,
 } from "@/types/cash-flow";
@@ -490,6 +491,54 @@ export function useDeleteCategory(
       });
 
       // 等待 refetch 完成後，再執行使用者傳入的 onSuccess
+      if (userOnSuccess) {
+        // @ts-expect-error - React Query v5 類型定義問題，onSuccess 實際上接受 3 個參數
+        userOnSuccess(data, variables, undefined);
+      }
+    },
+    ...restOptions,
+  });
+}
+
+/**
+ * 重新排序分類
+ *
+ * @param options React Query mutation 選項
+ * @returns 重新排序分類的 mutation
+ *
+ * @example
+ * ```tsx
+ * const reorderMutation = useReorderCategories({
+ *   onSuccess: () => {
+ *     toast.success("排序更新成功");
+ *   },
+ * });
+ *
+ * reorderMutation.mutate({
+ *   orders: [
+ *     { id: "category-1", sort_order: 0 },
+ *     { id: "category-2", sort_order: 1 },
+ *   ],
+ * });
+ * ```
+ */
+export function useReorderCategories(
+  options?: UseMutationOptions<void, APIError, ReorderCategoryInput>
+) {
+  const queryClient = useQueryClient();
+
+  const { onSuccess: userOnSuccess, ...restOptions } = options || {};
+
+  return useMutation<void, APIError, ReorderCategoryInput>({
+    mutationFn: categoriesAPI.reorder,
+    onSuccess: async (data, variables) => {
+      // 立即重新取得所有分類列表（包含所有 type 的變體）
+      await queryClient.refetchQueries({
+        queryKey: categoryKeys.lists(),
+        type: "active",
+      });
+
+      // 執行使用者傳入的 onSuccess
       if (userOnSuccess) {
         // @ts-expect-error - React Query v5 類型定義問題，onSuccess 實際上接受 3 個參數
         userOnSuccess(data, variables, undefined);

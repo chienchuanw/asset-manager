@@ -39,6 +39,7 @@ export {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
+  useReorderCategories,
   cashFlowKeys,
   categoryKeys,
 } from "./useCashFlows";
