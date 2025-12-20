@@ -57,6 +57,11 @@ func (m *MockCategoryService) DeleteCategory(id uuid.UUID) error {
 	return args.Error(0)
 }
 
+func (m *MockCategoryService) ReorderCategories(input *models.ReorderCategoryInput) error {
+	args := m.Called(input)
+	return args.Error(0)
+}
+
 // setupCategoryTestRouter 設定測試用的 router
 func setupCategoryTestRouter(handler *CategoryHandler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -68,6 +73,7 @@ func setupCategoryTestRouter(handler *CategoryHandler) *gin.Engine {
 		{
 			categories.POST("", handler.CreateCategory)
 			categories.GET("", handler.ListCategories)
+			categories.PUT("/reorder", handler.ReorderCategories)
 			categories.GET("/:id", handler.GetCategory)
 			categories.PUT("/:id", handler.UpdateCategory)
 			categories.DELETE("/:id", handler.DeleteCategory)
@@ -267,6 +273,106 @@ func TestDeleteCategory_Success(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, http.StatusNoContent, w.Code)
+	mockService.AssertExpectations(t)
+}
+
+// TestReorderCategories_Success 測試成功重新排序分類
+func TestReorderCategories_Success(t *testing.T) {
+	// Arrange
+	mockService := new(MockCategoryService)
+	handler := NewCategoryHandler(mockService)
+	router := setupCategoryTestRouter(handler)
+
+	input := models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{
+			{ID: uuid.New(), SortOrder: 0},
+			{ID: uuid.New(), SortOrder: 1},
+			{ID: uuid.New(), SortOrder: 2},
+		},
+	}
+
+	mockService.On("ReorderCategories", &input).Return(nil)
+
+	// 準備請求
+	body, _ := json.Marshal(input)
+	req, _ := http.NewRequest("PUT", "/api/categories/reorder", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Nil(t, response.Error)
+
+	mockService.AssertExpectations(t)
+}
+
+// TestReorderCategories_InvalidInput 測試無效的輸入資料
+func TestReorderCategories_InvalidInput(t *testing.T) {
+	// Arrange
+	mockService := new(MockCategoryService)
+	handler := NewCategoryHandler(mockService)
+	router := setupCategoryTestRouter(handler)
+
+	// 無效的 JSON
+	invalidJSON := []byte(`{"invalid": json}`)
+
+	req, _ := http.NewRequest("PUT", "/api/categories/reorder", bytes.NewBuffer(invalidJSON))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.NotNil(t, response.Error)
+	assert.Equal(t, "INVALID_INPUT", response.Error.Code)
+}
+
+// TestReorderCategories_ServiceError 測試 service 錯誤
+func TestReorderCategories_ServiceError(t *testing.T) {
+	// Arrange
+	mockService := new(MockCategoryService)
+	handler := NewCategoryHandler(mockService)
+	router := setupCategoryTestRouter(handler)
+
+	input := models.ReorderCategoryInput{
+		Orders: []models.CategoryOrderItem{
+			{ID: uuid.New(), SortOrder: 0},
+		},
+	}
+
+	mockService.On("ReorderCategories", &input).Return(fmt.Errorf("service error"))
+
+	// 準備請求
+	body, _ := json.Marshal(input)
+	req, _ := http.NewRequest("PUT", "/api/categories/reorder", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// Act
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	var response APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.NotNil(t, response.Error)
+	assert.Equal(t, "REORDER_FAILED", response.Error.Code)
+
 	mockService.AssertExpectations(t)
 }
 
