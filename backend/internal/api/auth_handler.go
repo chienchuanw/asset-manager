@@ -51,24 +51,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// 綁定並驗證請求 body
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, APIResponse{
-			Error: &APIError{
-				Code:    "INVALID_REQUEST",
-				Message: err.Error(),
-			},
-		})
+		RespondBadRequest(c, "INVALID_REQUEST", err.Error())
 		return
 	}
 
 	// 呼叫 service 進行登入驗證
 	token, err := h.authService.Login(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, APIResponse{
-			Error: &APIError{
-				Code:    "LOGIN_FAILED",
-				Message: err.Error(),
-			},
-		})
+		RespondUnauthorized(c, "LOGIN_FAILED", err.Error())
 		return
 	}
 
@@ -131,20 +121,13 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	// 從 context 取得使用者名稱 (由 AuthMiddleware 設定)
 	username, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, APIResponse{
-			Error: &APIError{
-				Code:    "UNAUTHORIZED",
-				Message: "User not authenticated",
-			},
-		})
+		RespondUnauthorized(c, "UNAUTHORIZED", "")
 		return
 	}
 
 	// 返回使用者資訊
-	c.JSON(http.StatusOK, APIResponse{
-		Data: UserResponse{
-			Username: username.(string),
-		},
+	RespondSuccess(c, 200, UserResponse{
+		Username: username.(string),
 	})
 }
 
