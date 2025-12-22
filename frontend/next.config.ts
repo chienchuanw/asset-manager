@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -12,4 +13,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// 設定 next-intl plugin，指定 i18n 請求配置檔案位置
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);
