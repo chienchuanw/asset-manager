@@ -15,6 +15,7 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/cache"
 	"github.com/chienchuanw/asset-manager/internal/client"
 	"github.com/chienchuanw/asset-manager/internal/db"
+	"github.com/chienchuanw/asset-manager/internal/i18n"
 	"github.com/chienchuanw/asset-manager/internal/middleware"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/chienchuanw/asset-manager/internal/scheduler"
@@ -30,7 +31,13 @@ func main() {
 	if err := godotenv.Load(".env.local"); err != nil {
 		log.Printf("Warning: .env.local file not found: %v", err)
 	}
-	
+
+	// 初始化 i18n
+	if err := i18n.Init(); err != nil {
+		log.Fatalf("Failed to initialize i18n: %v", err)
+	}
+	log.Println("i18n initialized successfully")
+
 	// 初始化資料庫連線
 	database, err := db.InitDB()
 	if err != nil {
@@ -316,11 +323,14 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Accept-Language"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true, // 重要：允許發送 cookies
 		MaxAge:           12 * 3600,
 	}))
+
+	// 添加 i18n middleware
+	router.Use(middleware.I18nMiddleware())
 
 	// Health check endpoint (不需要驗證)
 	router.GET("/health", func(c *gin.Context) {
