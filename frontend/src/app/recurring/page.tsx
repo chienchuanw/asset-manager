@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,10 @@ import type {
 import type { Installment, CreateInstallmentInput } from "@/types/installment";
 
 export default function RecurringPage() {
+  // i18n hooks
+  const t = useTranslations("recurring");
+  const tCommon = useTranslations("common");
+
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("subscriptions");
 
@@ -123,22 +128,22 @@ export default function RecurringPage() {
           data: formattedData,
         });
         toast({
-          title: "更新成功",
-          description: "訂閱已更新",
+          title: t("updateSuccess"),
+          description: t("subscriptionUpdated"),
         });
       } else {
         await createSubscription.mutateAsync(formattedData);
         toast({
-          title: "建立成功",
-          description: "訂閱已建立",
+          title: t("createSuccess"),
+          description: t("subscriptionCreated"),
         });
       }
       setSubscriptionDialogOpen(false);
       setEditingSubscription(undefined);
     } catch (error) {
       toast({
-        title: "操作失敗",
-        description: error instanceof Error ? error.message : "未知錯誤",
+        title: t("operationFailed"),
+        description: error instanceof Error ? error.message : t("unknownError"),
         variant: "destructive",
       });
     }
@@ -157,14 +162,14 @@ export default function RecurringPage() {
         data: { end_date: new Date().toISOString() },
       });
       toast({
-        title: "取消成功",
-        description: "訂閱已取消",
+        title: t("cancelSuccess"),
+        description: t("subscriptionCanceled"),
       });
       setCancelingSubscription(undefined);
     } catch (error) {
       toast({
-        title: "取消失敗",
-        description: error instanceof Error ? error.message : "未知錯誤",
+        title: t("cancelFailed"),
+        description: error instanceof Error ? error.message : t("unknownError"),
         variant: "destructive",
       });
     }
@@ -180,14 +185,14 @@ export default function RecurringPage() {
     try {
       await deleteSubscription.mutateAsync(deletingSubscriptionId);
       toast({
-        title: "刪除成功",
-        description: "訂閱已刪除",
+        title: t("deleteSuccess"),
+        description: t("subscriptionDeleted"),
       });
       setDeletingSubscriptionId(undefined);
     } catch (error) {
       toast({
-        title: "刪除失敗",
-        description: error instanceof Error ? error.message : "未知錯誤",
+        title: t("deleteFailed"),
+        description: error instanceof Error ? error.message : t("unknownError"),
         variant: "destructive",
       });
     }
@@ -224,22 +229,22 @@ export default function RecurringPage() {
           },
         });
         toast({
-          title: "更新成功",
-          description: "分期已更新",
+          title: t("updateSuccess"),
+          description: t("installmentUpdated"),
         });
       } else {
         await createInstallment.mutateAsync(formattedData);
         toast({
-          title: "建立成功",
-          description: "分期已建立",
+          title: t("createSuccess"),
+          description: t("installmentCreated"),
         });
       }
       setInstallmentDialogOpen(false);
       setEditingInstallment(undefined);
     } catch (error) {
       toast({
-        title: "操作失敗",
-        description: error instanceof Error ? error.message : "未知錯誤",
+        title: t("operationFailed"),
+        description: error instanceof Error ? error.message : t("unknownError"),
         variant: "destructive",
       });
     }
@@ -255,21 +260,21 @@ export default function RecurringPage() {
     try {
       await deleteInstallment.mutateAsync(deletingInstallmentId);
       toast({
-        title: "刪除成功",
-        description: "分期已刪除",
+        title: t("deleteSuccess"),
+        description: t("installmentDeleted"),
       });
       setDeletingInstallmentId(undefined);
     } catch (error) {
       toast({
-        title: "刪除失敗",
-        description: error instanceof Error ? error.message : "未知錯誤",
+        title: t("deleteFailed"),
+        description: error instanceof Error ? error.message : t("unknownError"),
         variant: "destructive",
       });
     }
   };
 
   return (
-    <AppLayout title="訂閱與分期" description="管理您的訂閱服務和分期付款">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
@@ -284,8 +289,12 @@ export default function RecurringPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center justify-between">
               <TabsList>
-                <TabsTrigger value="subscriptions">訂閱服務</TabsTrigger>
-                <TabsTrigger value="installments">分期付款</TabsTrigger>
+                <TabsTrigger value="subscriptions">
+                  {t("subscriptionServices")}
+                </TabsTrigger>
+                <TabsTrigger value="installments">
+                  {t("installmentPayments")}
+                </TabsTrigger>
               </TabsList>
               <Button
                 onClick={
@@ -295,7 +304,9 @@ export default function RecurringPage() {
                 }
               >
                 <PlusIcon className="mr-2 h-4 w-4" />
-                新增{activeTab === "subscriptions" ? "訂閱" : "分期"}
+                {activeTab === "subscriptions"
+                  ? t("addSubscription")
+                  : t("addInstallment")}
               </Button>
             </div>
 
@@ -329,7 +340,9 @@ export default function RecurringPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingSubscription ? "編輯訂閱" : "新增訂閱"}
+              {editingSubscription
+                ? t("editSubscription")
+                : t("addSubscription")}
             </DialogTitle>
           </DialogHeader>
           {/* key 屬性確保每次編輯不同訂閱時表單重新掛載 */}
@@ -354,7 +367,7 @@ export default function RecurringPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingInstallment ? "編輯分期" : "新增分期"}
+              {editingInstallment ? t("editInstallment") : t("addInstallment")}
             </DialogTitle>
           </DialogHeader>
           {/* key 屬性確保每次編輯不同分期時表單重新掛載 */}
@@ -378,16 +391,19 @@ export default function RecurringPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認取消訂閱</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("confirmCancelSubscription")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              確定要取消「{cancelingSubscription?.name}」的訂閱嗎？
-              取消後將不再自動扣款。
+              {t("cancelSubscriptionConfirmMessage", {
+                name: cancelingSubscription?.name ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmCancelSubscription}>
-              確認
+              {tCommon("confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -400,18 +416,18 @@ export default function RecurringPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認刪除</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除這個訂閱嗎？此操作無法復原。
+              {t("deleteSubscriptionConfirmMessage")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteSubscription}
               className="bg-destructive text-destructive-foreground"
             >
-              刪除
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -424,18 +440,18 @@ export default function RecurringPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認刪除</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除這個分期嗎？此操作無法復原。
+              {t("deleteInstallmentConfirmMessage")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteInstallment}
               className="bg-destructive text-destructive-foreground"
             >
-              刪除
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
