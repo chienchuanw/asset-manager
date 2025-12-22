@@ -21,7 +21,8 @@
     "noData": "無資料",
     "actions": "操作",
     "refresh": "重新整理",
-    "reload": "重新載入"
+    "reload": "重新載入",
+    "saveSettings": "儲存設定"
   },
   "auth": {
     "login": "登入",
