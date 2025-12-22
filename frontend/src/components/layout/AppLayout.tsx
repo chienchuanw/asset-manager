@@ -9,6 +9,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   HomeIcon,
   BarChart3Icon,
@@ -47,6 +48,8 @@ interface AppLayoutProps {
 export function AppLayout({ children, title, description }: AppLayoutProps) {
   const pathname = usePathname();
   const { logout } = useAuth();
+  const t = useTranslations("nav");
+  const tAuth = useTranslations("auth");
 
   // 從 cookie 讀取 sidebar 初始狀態
   const getInitialSidebarState = () => {
@@ -65,29 +68,34 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
 
   // 主要導航項目
   const mainNavItems = [
-    { id: "dashboard", label: "首頁", icon: HomeIcon, href: "/dashboard" },
+    { id: "dashboard", label: t("home"), icon: HomeIcon, href: "/dashboard" },
     {
       id: "cash-flows",
-      label: "現金流記錄",
+      label: t("cashFlows"),
       icon: TrendingUpIcon,
       href: "/cash-flows",
     },
-    { id: "holdings", label: "持倉明細", icon: WalletIcon, href: "/holdings" },
+    {
+      id: "holdings",
+      label: t("holdings"),
+      icon: WalletIcon,
+      href: "/holdings",
+    },
     {
       id: "transactions",
-      label: "交易記錄",
+      label: t("transactions"),
       icon: ArrowLeftRightIcon,
       href: "/transactions",
     },
     {
       id: "recurring",
-      label: "訂閱分期",
+      label: t("recurring"),
       icon: RepeatIcon,
       href: "/recurring",
     },
     {
       id: "analytics",
-      label: "分析報表",
+      label: t("analytics"),
       icon: BarChart3Icon,
       href: "/analytics",
     },
@@ -95,20 +103,24 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
 
   // 工具區項目
   const toolItems = [
-    { id: "settings", label: "設定", icon: SettingsIcon, href: "/settings" },
+    {
+      id: "settings",
+      label: t("settings"),
+      icon: SettingsIcon,
+      href: "/settings",
+    },
     {
       id: "notification",
-      label: "通知管理",
+      label: t("notification"),
       icon: BellIcon,
       href: "/notification",
     },
     {
       id: "user",
-      label: "使用者管理",
+      label: t("userManagement"),
       icon: UserIcon,
       href: "/user-management",
     },
-    // { id: "help", label: "幫助", icon: HelpCircleIcon, href: "#" },
   ];
 
   return (
@@ -131,10 +143,10 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      Asset Manager
+                      {t("appName")}
                     </span>
                     <span className="truncate text-xs text-muted-foreground">
-                      資產管理系統
+                      {t("appDescription")}
                     </span>
                   </div>
                 </Link>
@@ -146,7 +158,7 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
         {/* Content: 主要導航 */}
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>主要功能</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("mainFeatures")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {mainNavItems.map((item) => {
@@ -200,9 +212,12 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
 
             {/* 登出按鈕 */}
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="登出" onClick={handleLogout}>
+              <SidebarMenuButton
+                tooltip={tAuth("logout")}
+                onClick={handleLogout}
+              >
                 <LogOutIcon />
-                <span>登出</span>
+                <span>{tAuth("logout")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -228,7 +243,7 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="font-semibold">Asset Manager</span>
+              <span className="font-semibold">{t("appName")}</span>
             </div>
           )}
         </header>

@@ -42,7 +42,10 @@
     "analytics": "Analytics",
     "settings": "Settings",
     "userManagement": "User Management",
-    "notification": "Notifications"
+    "notification": "Notifications",
+    "mainFeatures": "Main Features",
+    "appName": "Asset Manager",
+    "appDescription": "Asset Management System"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -156,4 +159,3 @@
     "serverError": "Server error"
   }
 }
-
