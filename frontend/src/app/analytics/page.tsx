@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Card,
@@ -48,6 +49,11 @@ import { getAssetTypeLabel } from "@/types/transaction";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AnalyticsPage() {
+  // i18n hooks
+  const t = useTranslations("analytics");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
+
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [analysisType, setAnalysisType] = useState<"realized" | "unrealized">(
     "unrealized"
@@ -60,7 +66,7 @@ export default function AnalyticsPage() {
   const unrealizedData = useUnrealizedAnalytics(10);
 
   return (
-    <AppLayout title="分析報表" description="查看投資績效分析">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
@@ -72,8 +78,8 @@ export default function AnalyticsPage() {
             }
           >
             <TabsList>
-              <TabsTrigger value="unrealized">未實現損益</TabsTrigger>
-              <TabsTrigger value="realized">已實現損益</TabsTrigger>
+              <TabsTrigger value="unrealized">{t("unrealizedPL")}</TabsTrigger>
+              <TabsTrigger value="realized">{t("realizedPL")}</TabsTrigger>
             </TabsList>
 
             {/* 已實現損益 Tab */}
@@ -84,27 +90,26 @@ export default function AnalyticsPage() {
                 onValueChange={(value) => setTimeRange(value as TimeRange)}
               >
                 <TabsList>
-                  <TabsTrigger value="week">本週</TabsTrigger>
-                  <TabsTrigger value="month">本月</TabsTrigger>
-                  <TabsTrigger value="quarter">本季</TabsTrigger>
-                  <TabsTrigger value="year">本年</TabsTrigger>
-                  <TabsTrigger value="all">全部</TabsTrigger>
+                  <TabsTrigger value="week">{t("thisWeek")}</TabsTrigger>
+                  <TabsTrigger value="month">{t("thisMonth")}</TabsTrigger>
+                  <TabsTrigger value="quarter">{t("thisQuarter")}</TabsTrigger>
+                  <TabsTrigger value="year">{t("thisYear")}</TabsTrigger>
+                  <TabsTrigger value="all">{tCommon("all")}</TabsTrigger>
                 </TabsList>
               </Tabs>
 
               {/* Loading 狀態 */}
               {realizedData.isLoading && (
-                <Loading variant="inline" size="md" text="載入中..." />
+                <Loading variant="inline" size="md" text={tCommon("loading")} />
               )}
 
               {/* Error 狀態 */}
               {realizedData.isError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>載入失敗</AlertTitle>
+                  <AlertTitle>{tErrors("loadFailed")}</AlertTitle>
                   <AlertDescription>
-                    {realizedData.error?.message ||
-                      "無法載入分析資料，請稍後再試"}
+                    {realizedData.error?.message || t("loadAnalyticsError")}
                   </AlertDescription>
                 </Alert>
               )}
@@ -118,7 +123,9 @@ export default function AnalyticsPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>總成本基礎</CardDescription>
+                          <CardDescription>
+                            {t("totalCostBasis")}
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
@@ -128,14 +135,16 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            賣出交易成本
+                            {t("sellTransactionCost")}
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>總賣出金額</CardDescription>
+                          <CardDescription>
+                            {t("totalSellAmount")}
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
@@ -145,14 +154,14 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            實際賣出收入
+                            {t("actualSellIncome")}
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>已實現損益</CardDescription>
+                          <CardDescription>{t("realizedPL")}</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div
@@ -170,14 +179,16 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            實際獲利/虧損
+                            {t("actualProfitLoss")}
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>已實現報酬率</CardDescription>
+                          <CardDescription>
+                            {t("realizedReturnRate")}
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div
@@ -212,8 +223,10 @@ export default function AnalyticsPage() {
                               ) : (
                                 <TrendingDown className="h-3 w-3 mr-1" />
                               )}
-                              {realizedData.summary.data.transaction_count}{" "}
-                              筆交易
+                              {t("transactionCount", {
+                                count:
+                                  realizedData.summary.data.transaction_count,
+                              })}
                             </Badge>
                           </p>
                         </CardContent>
@@ -225,9 +238,9 @@ export default function AnalyticsPage() {
                       {/* 各資產報酬率長條圖 */}
                       <Card>
                         <CardHeader>
-                          <CardTitle>各資產類型績效</CardTitle>
+                          <CardTitle>{t("assetTypePerformance")}</CardTitle>
                           <CardDescription>
-                            不同資產類別的已實現損益比較
+                            {t("realizedPLComparison")}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -252,7 +265,7 @@ export default function AnalyticsPage() {
                                     fill: "hsl(var(--muted-foreground))",
                                   }}
                                   label={{
-                                    value: "報酬率 (%)",
+                                    value: t("returnRatePercent"),
                                     angle: -90,
                                     position: "insideLeft",
                                   }}
@@ -265,7 +278,7 @@ export default function AnalyticsPage() {
                                   }}
                                   formatter={(value: number) => [
                                     `${value.toFixed(2)}%`,
-                                    "報酬率",
+                                    t("returnRate"),
                                   ]}
                                 />
                                 <Bar
@@ -289,7 +302,7 @@ export default function AnalyticsPage() {
                             </ResponsiveContainer>
                           ) : (
                             <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                              目前沒有績效資料
+                              {t("noPerformanceData")}
                             </div>
                           )}
                         </CardContent>
@@ -298,9 +311,9 @@ export default function AnalyticsPage() {
                       {/* 各資產類型損益統計 */}
                       <Card>
                         <CardHeader>
-                          <CardTitle>各資產類型損益</CardTitle>
+                          <CardTitle>{t("assetTypePL")}</CardTitle>
                           <CardDescription>
-                            各資產類別的已實現損益統計
+                            {t("realizedPLStats")}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -315,7 +328,9 @@ export default function AnalyticsPage() {
                                   <div className="flex items-center gap-3">
                                     <Badge variant="outline">{item.name}</Badge>
                                     <span className="text-sm text-muted-foreground">
-                                      {item.transaction_count} 筆
+                                      {t("transactionCountShort", {
+                                        count: item.transaction_count,
+                                      })}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-4">
@@ -343,7 +358,7 @@ export default function AnalyticsPage() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                              目前沒有績效資料
+                              {t("noPerformanceData")}
                             </div>
                           )}
                         </CardContent>
@@ -355,10 +370,10 @@ export default function AnalyticsPage() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <TrendingUp className="h-5 w-5 text-red-600" />
-                          Top 表現資產
+                          {t("topPerformingAssets")}
                         </CardTitle>
                         <CardDescription>
-                          已實現損益最佳的投資標的
+                          {t("bestRealizedPLAssets")}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -367,19 +382,19 @@ export default function AnalyticsPage() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>代碼/名稱</TableHead>
-                                <TableHead>類別</TableHead>
+                                <TableHead>{t("symbolName")}</TableHead>
+                                <TableHead>{t("category")}</TableHead>
                                 <TableHead className="text-right">
-                                  成本
+                                  {t("cost")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  賣出金額
+                                  {t("sellAmount")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  損益
+                                  {t("profitLoss")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  報酬率
+                                  {t("returnRate")}
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
@@ -431,7 +446,7 @@ export default function AnalyticsPage() {
                           </Table>
                         ) : (
                           <div className="flex items-center justify-center h-32 text-muted-foreground">
-                            目前沒有資產資料
+                            {t("noAssetData")}
                           </div>
                         )}
                       </CardContent>
@@ -444,17 +459,16 @@ export default function AnalyticsPage() {
             <TabsContent value="unrealized" className="space-y-6 mt-6">
               {/* Loading 狀態 */}
               {unrealizedData.isLoading && (
-                <Loading variant="inline" size="md" text="載入中..." />
+                <Loading variant="inline" size="md" text={tCommon("loading")} />
               )}
 
               {/* Error 狀態 */}
               {unrealizedData.isError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>載入失敗</AlertTitle>
+                  <AlertTitle>{tErrors("loadFailed")}</AlertTitle>
                   <AlertDescription>
-                    {unrealizedData.error?.message ||
-                      "無法載入未實現損益資料，請稍後再試"}
+                    {unrealizedData.error?.message || t("loadUnrealizedError")}
                   </AlertDescription>
                 </Alert>
               )}
@@ -468,7 +482,7 @@ export default function AnalyticsPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>總成本</CardDescription>
+                          <CardDescription>{t("totalCost")}</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
@@ -478,14 +492,16 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            持倉成本基礎
+                            {t("holdingCostBasis")}
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>總市值</CardDescription>
+                          <CardDescription>
+                            {t("totalMarketValue")}
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
@@ -495,14 +511,14 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            當前市場價值
+                            {t("currentMarketValue")}
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>未實現損益</CardDescription>
+                          <CardDescription>{t("unrealizedPL")}</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div
@@ -520,14 +536,16 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            浮動損益
+                            {t("floatingPL")}
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardDescription>未實現報酬率</CardDescription>
+                          <CardDescription>
+                            {t("unrealizedReturnRate")}
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div
@@ -545,7 +563,10 @@ export default function AnalyticsPage() {
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             <Badge variant="outline">
-                              {unrealizedData.summary.data.holding_count} 個持倉
+                              {t("holdingCount", {
+                                count:
+                                  unrealizedData.summary.data.holding_count,
+                              })}
                             </Badge>
                           </p>
                         </CardContent>
@@ -557,9 +578,9 @@ export default function AnalyticsPage() {
                       {/* 各資產報酬率長條圖 */}
                       <Card>
                         <CardHeader>
-                          <CardTitle>各資產類型績效</CardTitle>
+                          <CardTitle>{t("assetTypePerformance")}</CardTitle>
                           <CardDescription>
-                            不同資產類別的未實現損益比較
+                            {t("unrealizedPLComparison")}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -584,7 +605,7 @@ export default function AnalyticsPage() {
                                     fill: "hsl(var(--muted-foreground))",
                                   }}
                                   label={{
-                                    value: "報酬率 (%)",
+                                    value: t("returnRatePercent"),
                                     angle: -90,
                                     position: "insideLeft",
                                   }}
@@ -597,7 +618,7 @@ export default function AnalyticsPage() {
                                   }}
                                   formatter={(value: number) => [
                                     `${value.toFixed(2)}%`,
-                                    "報酬率",
+                                    t("returnRate"),
                                   ]}
                                 />
                                 <Bar
@@ -621,7 +642,7 @@ export default function AnalyticsPage() {
                             </ResponsiveContainer>
                           ) : (
                             <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                              目前沒有績效資料
+                              {t("noPerformanceData")}
                             </div>
                           )}
                         </CardContent>
@@ -630,9 +651,9 @@ export default function AnalyticsPage() {
                       {/* 各資產類型損益統計 */}
                       <Card>
                         <CardHeader>
-                          <CardTitle>各資產類型損益</CardTitle>
+                          <CardTitle>{t("assetTypePL")}</CardTitle>
                           <CardDescription>
-                            各資產類別的未實現損益統計
+                            {t("unrealizedPLStats")}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -647,7 +668,9 @@ export default function AnalyticsPage() {
                                   <div className="flex items-center gap-3">
                                     <Badge variant="outline">{item.name}</Badge>
                                     <span className="text-sm text-muted-foreground">
-                                      {item.holding_count} 個持倉
+                                      {t("holdingCount", {
+                                        count: item.holding_count,
+                                      })}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-4">
@@ -678,7 +701,7 @@ export default function AnalyticsPage() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                              目前沒有績效資料
+                              {t("noPerformanceData")}
                             </div>
                           )}
                         </CardContent>
@@ -690,10 +713,10 @@ export default function AnalyticsPage() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <TrendingUp className="h-5 w-5 text-red-600" />
-                          Top 表現資產
+                          {t("topPerformingAssets")}
                         </CardTitle>
                         <CardDescription>
-                          未實現損益最佳的投資標的
+                          {t("bestUnrealizedPLAssets")}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -702,22 +725,22 @@ export default function AnalyticsPage() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>代碼/名稱</TableHead>
-                                <TableHead>類別</TableHead>
+                                <TableHead>{t("symbolName")}</TableHead>
+                                <TableHead>{t("category")}</TableHead>
                                 <TableHead className="text-right">
-                                  數量
+                                  {t("quantity")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  平均成本
+                                  {t("avgCost")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  當前價格
+                                  {t("currentPrice")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  損益
+                                  {t("profitLoss")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  報酬率
+                                  {t("returnRate")}
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
@@ -772,7 +795,7 @@ export default function AnalyticsPage() {
                           </Table>
                         ) : (
                           <div className="flex items-center justify-center h-32 text-muted-foreground">
-                            目前沒有資產資料
+                            {t("noAssetData")}
                           </div>
                         )}
                       </CardContent>
