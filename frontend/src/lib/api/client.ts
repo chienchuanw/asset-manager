@@ -1,9 +1,20 @@
 import type { APIResponse, APIWarning } from "@/types/transaction";
+import { LOCALE_STORAGE_KEY, defaultLocale } from "@/i18n/config";
 
 /**
  * API 基礎 URL
  */
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+/**
+ * 取得當前語言設定
+ */
+function getCurrentLocale(): string {
+  if (typeof window === "undefined") {
+    return defaultLocale;
+  }
+  return localStorage.getItem(LOCALE_STORAGE_KEY) || defaultLocale;
+}
 
 /**
  * API 錯誤類別
@@ -203,9 +214,10 @@ async function apiCall<T>(
   // 建立完整 URL
   const url = buildURL(path, params);
 
-  // 設定預設 headers
+  // 設定預設 headers（包含 Accept-Language）
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "Accept-Language": getCurrentLocale(),
     ...fetchOptions.headers,
   };
 
@@ -250,9 +262,10 @@ async function apiCallWithWarnings<T>(
   // 建立完整 URL
   const url = buildURL(path, params);
 
-  // 設定預設 headers
+  // 設定預設 headers（包含 Accept-Language）
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "Accept-Language": getCurrentLocale(),
     ...fetchOptions.headers,
   };
 
