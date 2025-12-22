@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -50,12 +51,39 @@ import {
   TransactionType,
   type Transaction,
   type TransactionFilters,
-  getAssetTypeLabel,
 } from "@/types/transaction";
 import { Search, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 export default function TransactionsPage() {
+  const t = useTranslations("transactions");
+  const tAssets = useTranslations("assetTypes");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
   const queryClient = useQueryClient();
+
+  // 取得資產類型的翻譯標籤
+  const getAssetLabel = (assetType: string): string => {
+    const keyMap: Record<string, string> = {
+      "tw-stock": "twStock",
+      "us-stock": "usStock",
+      crypto: "crypto",
+      cash: "cash",
+    };
+    const key = keyMap[assetType] || assetType;
+    return tAssets(key as keyof typeof tAssets);
+  };
+
+  // 取得交易類型的翻譯標籤
+  const getTransactionLabel = (type: string): string => {
+    const keyMap: Record<string, string> = {
+      buy: "buy",
+      sell: "sell",
+      dividend: "dividend",
+      fee: "feeType",
+    };
+    const key = keyMap[type] || type;
+    return t(key as keyof typeof t);
+  };
 
   // 狀態管理
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,7 +207,7 @@ export default function TransactionsPage() {
 
   // 處理刪除交易
   const handleDelete = (id: string) => {
-    if (confirm("確定要刪除這筆交易嗎？")) {
+    if (confirm(t("confirmDelete"))) {
       deleteMutation.mutate(id);
     }
   };
@@ -199,7 +227,7 @@ export default function TransactionsPage() {
   };
 
   return (
-    <AppLayout title="交易記錄" description="管理和查看交易記錄">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
         {/* 上半部：Tab + 統計卡片 */}
@@ -211,7 +239,7 @@ export default function TransactionsPage() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>交易次數</CardDescription>
+                <CardDescription>{t("totalTransactions")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -226,7 +254,7 @@ export default function TransactionsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>買入金額</CardDescription>
+                <CardDescription>{t("totalBuyAmount")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -241,7 +269,7 @@ export default function TransactionsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>賣出金額</CardDescription>
+                <CardDescription>{t("totalSellAmount")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -256,7 +284,7 @@ export default function TransactionsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>淨流入/流出</CardDescription>
+                <CardDescription>{t("netFlow")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -288,11 +316,13 @@ export default function TransactionsPage() {
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>交易記錄</CardTitle>
+                  <CardTitle>{t("title")}</CardTitle>
                   <CardDescription>
                     {isLoading
-                      ? "載入中..."
-                      : `共 ${filteredTransactions.length} 筆記錄`}
+                      ? tCommon("loading")
+                      : t("recordCount", {
+                          count: filteredTransactions.length,
+                        })}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -307,7 +337,7 @@ export default function TransactionsPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="搜尋代碼或名稱..."
+                    placeholder={t("searchPlaceholder")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
@@ -320,7 +350,7 @@ export default function TransactionsPage() {
               {/* 錯誤訊息 */}
               {error && (
                 <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg">
-                  <p className="font-medium">載入失敗</p>
+                  <p className="font-medium">{tErrors("loadFailed")}</p>
                   <p>{error.message}</p>
                 </div>
               )}
@@ -330,17 +360,21 @@ export default function TransactionsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>日期</TableHead>
-                      <TableHead>資產</TableHead>
-                      <TableHead>類型</TableHead>
-                      <TableHead className="text-right">數量</TableHead>
-                      <TableHead className="text-right">價格</TableHead>
-                      <TableHead className="text-right">金額</TableHead>
-                      <TableHead className="text-right hidden md:table-cell">
-                        手續費
+                      <TableHead>{t("date")}</TableHead>
+                      <TableHead>{t("assetType")}</TableHead>
+                      <TableHead>{t("type")}</TableHead>
+                      <TableHead className="text-right">
+                        {t("quantity")}
+                      </TableHead>
+                      <TableHead className="text-right">{t("price")}</TableHead>
+                      <TableHead className="text-right">
+                        {t("amount")}
                       </TableHead>
                       <TableHead className="text-right hidden md:table-cell">
-                        交易稅
+                        {t("fee")}
+                      </TableHead>
+                      <TableHead className="text-right hidden md:table-cell">
+                        {t("tax")}
                       </TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
@@ -385,8 +419,8 @@ export default function TransactionsPage() {
                         <TableCell colSpan={9} className="h-24 text-center">
                           <p className="text-muted-foreground">
                             {searchQuery
-                              ? "沒有符合條件的交易記錄"
-                              : "尚無交易記錄，點擊「新增交易」開始記錄"}
+                              ? t("noMatchingRecords")
+                              : t("noRecordsHint")}
                           </p>
                         </TableCell>
                       </TableRow>
@@ -401,15 +435,6 @@ export default function TransactionsPage() {
                             : transaction.type === "dividend"
                             ? "text-blue-600"
                             : "text-gray-600";
-
-                        const typeLabel =
-                          transaction.type === "buy"
-                            ? "買入"
-                            : transaction.type === "sell"
-                            ? "賣出"
-                            : transaction.type === "dividend"
-                            ? "股利"
-                            : "手續費";
 
                         return (
                           <TableRow key={transaction.id}>
@@ -430,7 +455,7 @@ export default function TransactionsPage() {
                                   variant="outline"
                                   className="w-fit mt-1 text-xs"
                                 >
-                                  {getAssetTypeLabel(transaction.asset_type)}
+                                  {getAssetLabel(transaction.asset_type)}
                                 </Badge>
                               </div>
                             </TableCell>
@@ -439,7 +464,7 @@ export default function TransactionsPage() {
                                 variant="outline"
                                 className={`${typeColor} border-current`}
                               >
-                                {typeLabel}
+                                {getTransactionLabel(transaction.type)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">
@@ -492,7 +517,7 @@ export default function TransactionsPage() {
                                     }
                                   >
                                     <Pencil className="h-4 w-4 mr-2" />
-                                    編輯
+                                    {tCommon("edit")}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => handleDelete(transaction.id)}
@@ -500,7 +525,7 @@ export default function TransactionsPage() {
                                     disabled={deleteMutation.isPending}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    刪除
+                                    {tCommon("delete")}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
