@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import {
@@ -34,6 +35,8 @@ import { Loader2, Send } from "lucide-react";
 import type { DiscordSettings, NotificationSettings } from "@/types/analytics";
 
 export default function NotificationPage() {
+  const t = useTranslations("notification");
+  const tCommon = useTranslations("common");
   const { data: settings, isLoading } = useSettings();
   const updateSettingsMutation = useUpdateSettings();
   const testDiscordMutation = useTestDiscord();
@@ -79,10 +82,11 @@ export default function NotificationPage() {
         discord: discordSettings,
         notification: notificationSettings,
       });
-      toast.success("儲存成功", { description: "通知設定已成功更新" });
+      toast.success(t("saveSuccess"), { description: t("settingsUpdated") });
     } catch (error) {
-      toast.error("儲存失敗", {
-        description: error instanceof Error ? error.message : "未知錯誤",
+      toast.error(t("saveFailed"), {
+        description:
+          error instanceof Error ? error.message : tCommon("unknownError"),
       });
     }
   };
@@ -94,19 +98,21 @@ export default function NotificationPage() {
       if (settings.notification) {
         setNotificationSettings(settings.notification);
       }
-      toast.info("已重置", { description: "設定已重置為上次儲存的值" });
+      toast.info(t("resetDone"), {
+        description: t("settingsResetToLastSaved"),
+      });
     }
   };
 
   // 處理測試 Discord
   const handleTestDiscord = async () => {
     if (!discordSettings.webhook_url) {
-      toast.error("測試失敗", { description: "請先設定 Discord Webhook URL" });
+      toast.error(t("testFailed"), { description: t("pleaseSetWebhookUrl") });
       return;
     }
     try {
       await testDiscordMutation.mutateAsync({
-        message: "（測試）資產管理系統的測試訊息!",
+        message: t("testMessage"),
       });
     } catch (error) {
       // 錯誤已在 mutation 的 onError 中處理
@@ -116,7 +122,7 @@ export default function NotificationPage() {
   // 處理發送每日報告
   const handleSendDailyReport = async () => {
     if (!discordSettings.webhook_url) {
-      toast.error("發送失敗", { description: "請先設定 Discord Webhook URL" });
+      toast.error(t("sendFailed"), { description: t("pleaseSetWebhookUrl") });
       return;
     }
     try {
@@ -129,7 +135,7 @@ export default function NotificationPage() {
   // 處理發送月度報告
   const handleSendMonthlyReport = async () => {
     if (!discordSettings.webhook_url) {
-      toast.error("發送失敗", { description: "請先設定 Discord Webhook URL" });
+      toast.error(t("sendFailed"), { description: t("pleaseSetWebhookUrl") });
       return;
     }
     const now = new Date();
@@ -148,7 +154,7 @@ export default function NotificationPage() {
   // 處理發送年度報告
   const handleSendYearlyReport = async () => {
     if (!discordSettings.webhook_url) {
-      toast.error("發送失敗", { description: "請先設定 Discord Webhook URL" });
+      toast.error(t("sendFailed"), { description: t("pleaseSetWebhookUrl") });
       return;
     }
     try {
@@ -163,16 +169,16 @@ export default function NotificationPage() {
 
   if (isLoading) {
     return (
-      <AppLayout title="通知管理" description="管理 Discord 通知和訂閱分期通知設定">
+      <AppLayout title={t("title")} description={t("description")}>
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
-          <Loading variant="page" size="lg" text="載入設定中..." />
+          <Loading variant="page" size="lg" text={tCommon("loading")} />
         </main>
       </AppLayout>
     );
   }
 
   return (
-    <AppLayout title="通知管理" description="管理 Discord 通知和訂閱分期通知設定">
+    <AppLayout title={t("title")} description={t("description")}>
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
           {/* Discord 設定和訂閱分期通知設定 - 並排顯示 */}
@@ -180,15 +186,13 @@ export default function NotificationPage() {
             {/* Discord 設定 */}
             <Card>
               <CardHeader>
-                <CardTitle>Discord 通知設定</CardTitle>
-                <CardDescription>
-                  設定 Discord Webhook 以接收每日報告
-                </CardDescription>
+                <CardTitle>{t("discordSettings")}</CardTitle>
+                <CardDescription>{t("discordSettingsDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Discord Webhook URL */}
                 <div className="space-y-2">
-                  <Label htmlFor="webhook-url">Webhook URL</Label>
+                  <Label htmlFor="webhook-url">{t("webhookUrl")}</Label>
                   <Input
                     id="webhook-url"
                     type="url"
@@ -202,16 +206,18 @@ export default function NotificationPage() {
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    在 Discord 伺服器設定中建立 Webhook 並貼上 URL
+                    {t("webhookUrlHint")}
                   </p>
                 </div>
 
                 {/* 啟用 Discord 通知 */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="discord-enabled">啟用每日報告</Label>
+                    <Label htmlFor="discord-enabled">
+                      {t("enableDailyReport")}
+                    </Label>
                     <p className="text-sm text-muted-foreground">
-                      每天自動發送投資組合報告到 Discord
+                      {t("enableDailyReportDesc")}
                     </p>
                   </div>
                   <Switch
@@ -228,7 +234,7 @@ export default function NotificationPage() {
 
                 {/* 報告時間 */}
                 <div className="space-y-2">
-                  <Label htmlFor="report-time">報告時間</Label>
+                  <Label htmlFor="report-time">{t("reportTime")}</Label>
                   <Input
                     id="report-time"
                     type="time"
@@ -241,7 +247,7 @@ export default function NotificationPage() {
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    每日報告發送時間（24 小時制）
+                    {t("reportTimeHint")}
                   </p>
                 </div>
 
@@ -252,10 +258,10 @@ export default function NotificationPage() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label htmlFor="monthly-report-enabled">
-                        啟用月度現金流報告
+                        {t("enableMonthlyReport")}
                       </Label>
                       <p className="text-sm text-muted-foreground">
-                        每月自動發送現金流摘要報告到 Discord
+                        {t("enableMonthlyReportDesc")}
                       </p>
                     </div>
                     <Switch
@@ -272,7 +278,9 @@ export default function NotificationPage() {
 
                   {discordSettings.monthly_report_enabled && (
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
-                      <Label htmlFor="monthly-report-day">每月發送日期</Label>
+                      <Label htmlFor="monthly-report-day">
+                        {t("monthlyReportDay")}
+                      </Label>
                       <Select
                         value={String(discordSettings.monthly_report_day || 1)}
                         onValueChange={(value) =>
@@ -292,14 +300,14 @@ export default function NotificationPage() {
                           {Array.from({ length: 10 }, (_, i) => i + 1).map(
                             (day) => (
                               <SelectItem key={day} value={String(day)}>
-                                每月 {day} 號
+                                {t("dayOfMonth", { day })}
                               </SelectItem>
                             )
                           )}
                         </SelectContent>
                       </Select>
                       <p className="text-sm text-muted-foreground">
-                        報告將於每月指定日期的 09:00 發送
+                        {t("monthlyReportHint")}
                       </p>
                     </div>
                   )}
@@ -312,10 +320,10 @@ export default function NotificationPage() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label htmlFor="yearly-report-enabled">
-                        啟用年度現金流報告
+                        {t("enableYearlyReport")}
                       </Label>
                       <p className="text-sm text-muted-foreground">
-                        每年自動發送現金流摘要報告到 Discord
+                        {t("enableYearlyReportDesc")}
                       </p>
                     </div>
                     <Switch
@@ -333,7 +341,9 @@ export default function NotificationPage() {
                   {discordSettings.yearly_report_enabled && (
                     <div className="space-y-4 pl-4 border-l-2 border-muted">
                       <div className="space-y-2">
-                        <Label htmlFor="yearly-report-month">發送月份</Label>
+                        <Label htmlFor="yearly-report-month">
+                          {t("yearlyReportMonth")}
+                        </Label>
                         <Select
                           value={String(
                             discordSettings.yearly_report_month || 1
@@ -355,7 +365,7 @@ export default function NotificationPage() {
                             {Array.from({ length: 12 }, (_, i) => i + 1).map(
                               (month) => (
                                 <SelectItem key={month} value={String(month)}>
-                                  {month} 月
+                                  {t("month", { month })}
                                 </SelectItem>
                               )
                             )}
@@ -364,7 +374,9 @@ export default function NotificationPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="yearly-report-day">發送日期</Label>
+                        <Label htmlFor="yearly-report-day">
+                          {t("yearlyReportDay")}
+                        </Label>
                         <Select
                           value={String(discordSettings.yearly_report_day || 1)}
                           onValueChange={(value) =>
@@ -384,7 +396,7 @@ export default function NotificationPage() {
                             {Array.from({ length: 10 }, (_, i) => i + 1).map(
                               (day) => (
                                 <SelectItem key={day} value={String(day)}>
-                                  {day} 號
+                                  {t("day", { day })}
                                 </SelectItem>
                               )
                             )}
@@ -393,8 +405,10 @@ export default function NotificationPage() {
                       </div>
 
                       <p className="text-sm text-muted-foreground">
-                        報告將於每年{discordSettings.yearly_report_month || 1}月
-                        {discordSettings.yearly_report_day || 1}號的 09:00 發送
+                        {t("yearlyReportHint", {
+                          month: discordSettings.yearly_report_month || 1,
+                          day: discordSettings.yearly_report_day || 1,
+                        })}
                       </p>
                     </div>
                   )}
@@ -404,7 +418,7 @@ export default function NotificationPage() {
 
                 {/* Discord 測試按鈕 */}
                 <div className="space-y-3">
-                  <Label>測試 Discord 功能</Label>
+                  <Label>{t("testDiscordFeatures")}</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       type="button"
@@ -418,12 +432,12 @@ export default function NotificationPage() {
                       {testDiscordMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          發送中...
+                          {t("sending")}
                         </>
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          測試訊息
+                          {t("testMessageBtn")}
                         </>
                       )}
                     </Button>
@@ -439,12 +453,12 @@ export default function NotificationPage() {
                       {sendDailyReportMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          發送中...
+                          {t("sending")}
                         </>
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          每日報告
+                          {t("dailyReportBtn")}
                         </>
                       )}
                     </Button>
@@ -460,12 +474,12 @@ export default function NotificationPage() {
                       {sendMonthlyReportMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          發送中...
+                          {t("sending")}
                         </>
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          月度報告
+                          {t("monthlyReportBtn")}
                         </>
                       )}
                     </Button>
@@ -481,19 +495,18 @@ export default function NotificationPage() {
                       {sendYearlyReportMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          發送中...
+                          {t("sending")}
                         </>
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          年度報告
+                          {t("yearlyReportBtn")}
                         </>
                       )}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    測試 Discord Webhook
-                    是否正常運作（月度/年度報告將發送上一期間的資料）
+                    {t("testDiscordHint")}
                   </p>
                 </div>
               </CardContent>
@@ -502,18 +515,20 @@ export default function NotificationPage() {
             {/* 訂閱分期通知設定 */}
             <Card>
               <CardHeader>
-                <CardTitle>訂閱分期通知設定</CardTitle>
-                <CardDescription>設定訂閱和分期相關的通知選項</CardDescription>
+                <CardTitle>{t("subscriptionSettings")}</CardTitle>
+                <CardDescription>
+                  {t("subscriptionSettingsDesc")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* 每日扣款通知 */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="notification-daily-billing">
-                      每日扣款通知
+                      {t("dailyBillingNotification")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      每天自動扣款後發送通知到 Discord
+                      {t("dailyBillingNotificationDesc")}
                     </p>
                   </div>
                   <Switch
@@ -534,10 +549,10 @@ export default function NotificationPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="notification-subscription-expiry">
-                      訂閱到期通知
+                      {t("subscriptionExpiryNotification")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      訂閱即將到期時發送提醒通知
+                      {t("subscriptionExpiryNotificationDesc")}
                     </p>
                   </div>
                   <Switch
@@ -558,10 +573,10 @@ export default function NotificationPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="notification-installment-completion">
-                      分期完成通知
+                      {t("installmentCompletionNotification")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      分期即將完成時發送提醒通知
+                      {t("installmentCompletionNotificationDesc")}
                     </p>
                   </div>
                   <Switch
@@ -580,7 +595,9 @@ export default function NotificationPage() {
 
                 {/* 到期提醒天數 */}
                 <div className="space-y-2">
-                  <Label htmlFor="notification-expiry-days">到期提醒天數</Label>
+                  <Label htmlFor="notification-expiry-days">
+                    {t("expiryReminderDays")}
+                  </Label>
                   <Input
                     id="notification-expiry-days"
                     type="number"
@@ -595,7 +612,7 @@ export default function NotificationPage() {
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    提前幾天發送到期提醒（1-30 天）
+                    {t("expiryReminderDaysHint")}
                   </p>
                 </div>
               </CardContent>
@@ -609,7 +626,7 @@ export default function NotificationPage() {
               onClick={handleReset}
               disabled={updateSettingsMutation.isPending}
             >
-              重置
+              {tCommon("reset")}
             </Button>
             <Button
               onClick={handleSave}
@@ -618,7 +635,7 @@ export default function NotificationPage() {
               {updateSettingsMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              儲存設定
+              {tCommon("saveSettings")}
             </Button>
           </div>
         </div>
