@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -64,6 +65,11 @@ function saveSelectedDate(date: Date): void {
 }
 
 export default function CashFlowsPage() {
+  // i18n hooks
+  const t = useTranslations("cashFlows");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
+
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
@@ -191,17 +197,21 @@ export default function CashFlowsPage() {
   }, [cashFlows, searchQuery]);
 
   return (
-    <AppLayout title="現金流記錄" description="追蹤和管理您的收入與支出">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
         {/* 當月/當週每日收入/支出圖表 - 置於頁面最上方 */}
         <Card>
           <CardHeader>
-            <CardTitle>{isMobile ? "當週" : "當月"}每日收入/支出統計</CardTitle>
+            <CardTitle>
+              {isMobile ? t("weeklyStats") : t("monthlyStats")}
+            </CardTitle>
             <CardDescription>
-              顯示 {new Date(selectedDate).getFullYear()} 年{" "}
-              {new Date(selectedDate).getMonth() + 1} 月{isMobile ? "當週" : ""}
-              的每日現金流動
+              {t("chartDescription", {
+                year: new Date(selectedDate).getFullYear(),
+                month: new Date(selectedDate).getMonth() + 1,
+                period: isMobile ? t("weekly") : "",
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -227,18 +237,18 @@ export default function CashFlowsPage() {
               <CardHeader>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <CardTitle>現金流記錄</CardTitle>
+                    <CardTitle>{t("records")}</CardTitle>
                     <CardDescription>
                       {isLoading
-                        ? "載入中..."
-                        : `共 ${filteredCashFlows.length} 筆記錄`}
+                        ? tCommon("loading")
+                        : t("recordCount", { count: filteredCashFlows.length })}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <AddCashFlowDialog onSuccess={handleRefreshData} />
                     <Button variant="outline" size="sm">
                       <Download className="h-4 w-4 mr-2" />
-                      匯出
+                      {t("export")}
                     </Button>
                   </div>
                 </div>
@@ -249,7 +259,7 @@ export default function CashFlowsPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="搜尋描述、備註或分類..."
+                      placeholder={t("searchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
@@ -271,7 +281,7 @@ export default function CashFlowsPage() {
                 {/* 錯誤訊息 */}
                 {error && (
                   <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg">
-                    <p className="font-medium">載入失敗</p>
+                    <p className="font-medium">{tErrors("loadFailed")}</p>
                     <p>{error.message}</p>
                   </div>
                 )}

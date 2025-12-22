@@ -174,11 +174,19 @@
   },
   "cashFlows": {
     "title": "Cash Flows",
-    "description": "Manage income and expenses",
+    "description": "Track and manage your income and expenses",
     "income": "Income",
     "expense": "Expense",
     "category": "Category",
-    "addCashFlow": "Add Cash Flow"
+    "addCashFlow": "Add Cash Flow",
+    "records": "Cash Flow Records",
+    "recordCount": "{count} records",
+    "searchPlaceholder": "Search description, notes or category...",
+    "export": "Export",
+    "monthlyStats": "Monthly Daily Income/Expense Statistics",
+    "weeklyStats": "Weekly Daily Income/Expense Statistics",
+    "weekly": "weekly",
+    "chartDescription": "Daily cash flow for {year}/{month}{period}"
   },
   "analytics": {
     "title": "Analytics",
