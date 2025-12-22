@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/providers/AuthProvider";
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -233,7 +234,7 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
 
           {/* 動態頁面標題 */}
           {title ? (
-            <div className="flex flex-col">
+            <div className="flex flex-col flex-1">
               <span className="font-semibold text-base">{title}</span>
               {description && (
                 <span className="text-xs text-muted-foreground hidden sm:block">
@@ -242,10 +243,13 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1">
               <span className="font-semibold">{t("appName")}</span>
             </div>
           )}
+
+          {/* 語言切換 */}
+          <LanguageSwitcher />
         </header>
 
         {/* 頁面內容 - 加入適當的 padding 和 overflow 處理 */}
