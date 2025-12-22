@@ -19,7 +19,9 @@
     "all": "All",
     "none": "None",
     "noData": "No data",
-    "actions": "Actions"
+    "actions": "Actions",
+    "refresh": "Refresh",
+    "reload": "Reload"
   },
   "auth": {
     "login": "Login",
@@ -105,29 +107,47 @@
   },
   "holdings": {
     "title": "Holdings",
-    "description": "View all holdings",
+    "description": "View detailed holdings information",
     "holdings": "Holdings",
     "holdingsCount": "Holdings",
+    "holdingsCountLabel": "{count} holdings",
     "asset": "Asset",
     "symbol": "Symbol",
     "name": "Name",
+    "symbolName": "Symbol/Name",
     "quantity": "Quantity",
     "avgCost": "Avg Cost",
     "currentPrice": "Current Price",
     "marketValue": "Market Value",
     "unrealizedPL": "Unrealized P/L",
+    "profitLoss": "P/L",
     "plPercent": "P/L %",
     "weight": "Weight",
+    "noHoldings": "No holdings",
     "noTwStockHoldings": "No TW stock holdings",
     "noUsStockHoldings": "No US stock holdings",
-    "noCryptoHoldings": "No crypto holdings"
+    "noCryptoHoldings": "No crypto holdings",
+    "totalMarketValue": "Total Market Value",
+    "totalCost": "Total Cost",
+    "returnRate": "Return Rate",
+    "twStockValue": "TW Stock Value",
+    "usStockValue": "US Stock Value",
+    "cryptoValue": "Crypto Value",
+    "availableCash": "Available Cash",
+    "searchPlaceholder": "Search symbol or name...",
+    "loadingHoldings": "Loading holdings...",
+    "loadError": "Failed to load holdings",
+    "fixSuccess": "Successfully fixed data inconsistency"
   },
   "assetTypes": {
     "twStock": "TW Stock",
     "usStock": "US Stock",
     "crypto": "Crypto",
     "cash": "Cash",
-    "total": "Total Assets"
+    "total": "Total Assets",
+    "twStockHoldings": "TW Stock Holdings",
+    "usStockHoldings": "US Stock Holdings",
+    "cryptoHoldings": "Crypto Holdings"
   },
   "recurring": {
     "title": "Recurring",
