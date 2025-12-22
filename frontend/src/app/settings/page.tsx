@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { useRefreshExchangeRate } from "@/hooks/useExchangeRates";
@@ -22,6 +23,9 @@ import { Loader2, RefreshCw } from "lucide-react";
 import type { AllocationSettings } from "@/types/analytics";
 
 export default function SettingsPage() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
+  const tAssetTypes = useTranslations("assetTypes");
   const { data: settings, isLoading } = useSettings();
   const updateSettingsMutation = useUpdateSettings();
   const refreshExchangeRateMutation = useRefreshExchangeRate();
@@ -56,8 +60,8 @@ export default function SettingsPage() {
       allocationSettings.us_stock +
       allocationSettings.crypto;
     if (Math.abs(total - 100) > 0.01) {
-      toast.error("驗證失敗", {
-        description: `資產配置總和必須為 100%，目前為 ${total.toFixed(2)}%`,
+      toast.error(t("validationFailed"), {
+        description: t("allocationSumError", { total: total.toFixed(2) }),
       });
       return;
     }
@@ -67,12 +71,12 @@ export default function SettingsPage() {
         allocation: allocationSettings,
       });
 
-      toast.success("儲存成功", {
-        description: "設定已成功更新",
+      toast.success(t("saveSuccess"), {
+        description: t("settingsUpdated"),
       });
     } catch (error) {
-      toast.error("儲存失敗", {
-        description: error instanceof Error ? error.message : "未知錯誤",
+      toast.error(t("saveFailed"), {
+        description: error instanceof Error ? error.message : t("unknownError"),
       });
     }
   };
@@ -81,8 +85,8 @@ export default function SettingsPage() {
   const handleReset = () => {
     if (settings) {
       setAllocationSettings(settings.allocation);
-      toast.info("已重置", {
-        description: "設定已重置為上次儲存的值",
+      toast.info(t("resetDone"), {
+        description: t("resetToLastSaved"),
       });
     }
   };
@@ -103,16 +107,16 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <AppLayout title="設定" description="管理系統設定和偏好">
+      <AppLayout title={t("title")} description={t("description")}>
         <main className="flex-1 p-4 md:p-6 bg-gray-50">
-          <Loading variant="page" size="lg" text="載入設定中..." />
+          <Loading variant="page" size="lg" text={t("loadingSettings")} />
         </main>
       </AppLayout>
     );
   }
 
   return (
-    <AppLayout title="設定" description="管理系統設定和偏好">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
@@ -121,16 +125,14 @@ export default function SettingsPage() {
             {/* 資產配置設定 */}
             <Card>
               <CardHeader>
-                <CardTitle>目標資產配置</CardTitle>
-                <CardDescription>
-                  設定各資產類型的目標配置百分比（總和必須為 100%）
-                </CardDescription>
+                <CardTitle>{t("targetAllocation")}</CardTitle>
+                <CardDescription>{t("targetAllocationDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* 台股配置 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="tw-stock">台股</Label>
+                    <Label htmlFor="tw-stock">{tAssetTypes("twStock")}</Label>
                     <span className="text-sm text-muted-foreground">
                       {allocationSettings.tw_stock}%
                     </span>
@@ -154,7 +156,7 @@ export default function SettingsPage() {
                 {/* 美股配置 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="us-stock">美股</Label>
+                    <Label htmlFor="us-stock">{tAssetTypes("usStock")}</Label>
                     <span className="text-sm text-muted-foreground">
                       {allocationSettings.us_stock}%
                     </span>
@@ -178,7 +180,7 @@ export default function SettingsPage() {
                 {/* 加密貨幣配置 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="crypto">加密貨幣</Label>
+                    <Label htmlFor="crypto">{tAssetTypes("crypto")}</Label>
                     <span className="text-sm text-muted-foreground">
                       {allocationSettings.crypto}%
                     </span>
@@ -203,7 +205,7 @@ export default function SettingsPage() {
 
                 {/* 總和顯示 */}
                 <div className="flex items-center justify-between font-medium">
-                  <span>總和</span>
+                  <span>{t("total")}</span>
                   <span
                     className={
                       Math.abs(
@@ -230,7 +232,9 @@ export default function SettingsPage() {
                 {/* 再平衡閾值 */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="rebalance-threshold">再平衡閾值</Label>
+                    <Label htmlFor="rebalance-threshold">
+                      {t("rebalanceThreshold")}
+                    </Label>
                     <span className="text-sm text-muted-foreground">
                       {allocationSettings.rebalance_threshold}%
                     </span>
@@ -250,7 +254,7 @@ export default function SettingsPage() {
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    當實際配置與目標配置偏差超過此百分比時，系統會發出再平衡提醒
+                    {t("rebalanceThresholdDesc")}
                   </p>
                 </div>
               </CardContent>
@@ -259,13 +263,15 @@ export default function SettingsPage() {
             {/* 匯率設定 */}
             <Card>
               <CardHeader>
-                <CardTitle>匯率設定</CardTitle>
-                <CardDescription>管理系統使用的匯率資料</CardDescription>
+                <CardTitle>{t("exchangeRateSettings")}</CardTitle>
+                <CardDescription>
+                  {t("exchangeRateSettingsDesc")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* 當前匯率資訊 */}
                 <div className="space-y-2">
-                  <Label>當前匯率</Label>
+                  <Label>{t("currentExchangeRate")}</Label>
                   <div className="flex items-center gap-2">
                     <div className="text-2xl font-bold">
                       {exchangeRateInfo
@@ -275,7 +281,7 @@ export default function SettingsPage() {
                     <Badge variant="secondary">ExchangeRate-API</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    即時匯率資料來源
+                    {t("exchangeRateSource")}
                   </p>
                 </div>
 
@@ -283,7 +289,7 @@ export default function SettingsPage() {
 
                 {/* 最後更新時間 */}
                 <div className="space-y-2">
-                  <Label>最後更新時間</Label>
+                  <Label>{t("lastUpdated")}</Label>
                   <div className="text-sm text-muted-foreground">
                     {exchangeRateInfo
                       ? new Date(exchangeRateInfo.updatedAt).toLocaleString(
@@ -297,7 +303,7 @@ export default function SettingsPage() {
                             second: "2-digit",
                           }
                         )
-                      : "尚未更新"}
+                      : t("notYetUpdated")}
                   </div>
                 </div>
 
@@ -313,12 +319,12 @@ export default function SettingsPage() {
                     {refreshExchangeRateMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        更新中...
+                        {t("updating")}
                       </>
                     ) : (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        更新匯率
+                        {t("updateExchangeRate")}
                       </>
                     )}
                   </Button>
@@ -334,7 +340,7 @@ export default function SettingsPage() {
               onClick={handleReset}
               disabled={updateSettingsMutation.isPending}
             >
-              重置
+              {tCommon("reset")}
             </Button>
             <Button
               onClick={handleSave}
@@ -343,7 +349,7 @@ export default function SettingsPage() {
               {updateSettingsMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              儲存設定
+              {t("saveSettings")}
             </Button>
           </div>
         </div>
