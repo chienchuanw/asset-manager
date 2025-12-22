@@ -173,12 +173,20 @@
     "installmentsCompletingAlert": "{count} 個分期即將在 3 個月內完成"
   },
   "cashFlows": {
-    "title": "現金流",
-    "description": "管理收入與支出",
+    "title": "現金流記錄",
+    "description": "追蹤和管理您的收入與支出",
     "income": "收入",
     "expense": "支出",
     "category": "類別",
-    "addCashFlow": "新增現金流"
+    "addCashFlow": "新增現金流",
+    "records": "現金流記錄",
+    "recordCount": "共 {count} 筆記錄",
+    "searchPlaceholder": "搜尋描述、備註或分類...",
+    "export": "匯出",
+    "monthlyStats": "當月每日收入/支出統計",
+    "weeklyStats": "當週每日收入/支出統計",
+    "weekly": "當週",
+    "chartDescription": "顯示 {year} 年 {month} 月{period}的每日現金流動"
   },
   "analytics": {
     "title": "分析",
