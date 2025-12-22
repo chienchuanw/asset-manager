@@ -21,7 +21,8 @@
     "noData": "No data",
     "actions": "Actions",
     "refresh": "Refresh",
-    "reload": "Reload"
+    "reload": "Reload",
+    "saveSettings": "Save Settings"
   },
   "auth": {
     "login": "Login",
