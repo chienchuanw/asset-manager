@@ -85,6 +85,7 @@
     "price": "價格",
     "amount": "金額",
     "fee": "手續費",
+    "tax": "交易稅",
     "notes": "備註",
     "assetType": "資產類別",
     "buy": "買入",
@@ -92,10 +93,15 @@
     "dividend": "股息",
     "feeType": "手續費",
     "noTransactions": "暫無交易記錄",
-    "totalTransactions": "總交易次數",
-    "totalBuyAmount": "總買入金額",
-    "totalSellAmount": "總賣出金額",
-    "netFlow": "淨流入/流出"
+    "totalTransactions": "交易次數",
+    "totalBuyAmount": "買入金額",
+    "totalSellAmount": "賣出金額",
+    "netFlow": "淨流入/流出",
+    "recordCount": "共 {count} 筆記錄",
+    "searchPlaceholder": "搜尋代碼或名稱...",
+    "noMatchingRecords": "沒有符合條件的交易記錄",
+    "noRecordsHint": "尚無交易記錄，點擊「新增交易」開始記錄",
+    "confirmDelete": "確定要刪除這筆交易嗎？"
   },
   "holdings": {
     "title": "持倉明細",

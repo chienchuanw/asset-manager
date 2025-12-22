@@ -85,6 +85,7 @@
     "price": "Price",
     "amount": "Amount",
     "fee": "Fee",
+    "tax": "Tax",
     "notes": "Notes",
     "assetType": "Asset Type",
     "buy": "Buy",
@@ -92,10 +93,15 @@
     "dividend": "Dividend",
     "feeType": "Fee",
     "noTransactions": "No transactions",
-    "totalTransactions": "Total Transactions",
-    "totalBuyAmount": "Total Buy Amount",
-    "totalSellAmount": "Total Sell Amount",
-    "netFlow": "Net Flow"
+    "totalTransactions": "Transactions",
+    "totalBuyAmount": "Buy Amount",
+    "totalSellAmount": "Sell Amount",
+    "netFlow": "Net Flow",
+    "recordCount": "{count} records",
+    "searchPlaceholder": "Search symbol or name...",
+    "noMatchingRecords": "No matching records",
+    "noRecordsHint": "No records yet. Click \"Add Transaction\" to start.",
+    "confirmDelete": "Are you sure you want to delete this transaction?"
   },
   "holdings": {
     "title": "Holdings",
