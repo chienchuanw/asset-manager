@@ -6,6 +6,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AssetTrendChart } from "@/components/dashboard/AssetTrendChart";
@@ -25,6 +26,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
+  const tErrors = useTranslations("errors");
   // 取得持倉資料（包含 warnings）
   const {
     data: holdingsResponse,
@@ -121,7 +124,7 @@ export default function DashboardPage() {
   // Loading 狀態
   if (holdingsLoading || transactionsLoading) {
     return (
-      <AppLayout title="首頁" description="資產概況總覽">
+      <AppLayout title={t("title")} description={t("description")}>
         <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
             {/* 統計卡片 Loading */}
@@ -171,14 +174,14 @@ export default function DashboardPage() {
   // Error 狀態
   if (holdingsError || transactionsError) {
     return (
-      <AppLayout title="首頁" description="資產概況總覽">
+      <AppLayout title={t("title")} description={t("description")}>
         <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-red-600">
                 <AlertCircle className="h-5 w-5" />
                 <p>
-                  載入資料失敗：
+                  {tErrors("loadFailed")}:{" "}
                   {holdingsError?.message || transactionsError?.message}
                 </p>
               </div>
@@ -190,7 +193,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppLayout title="首頁" description="資產概況總覽">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* 內容區域 */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
@@ -198,14 +201,16 @@ export default function DashboardPage() {
           {stalePriceInfo && (
             <Alert variant="default" className="border-amber-200 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-amber-900">價格資料警告</AlertTitle>
+              <AlertTitle className="text-amber-900">
+                {t("stalePriceWarning")}
+              </AlertTitle>
               <AlertDescription className="text-amber-800">
-                部分資產價格來自快取資料，可能不是最新價格。
+                {t("stalePriceDescription")}
                 <br />
                 <span className="text-sm">
-                  原因：{stalePriceInfo.reason}
+                  {t("stalePriceReason")}: {stalePriceInfo.reason}
                   <br />
-                  受影響的標的：{stalePriceInfo.symbols}
+                  {t("stalePriceAffected")}: {stalePriceInfo.symbols}
                 </span>
               </AlertDescription>
             </Alert>
@@ -214,23 +219,23 @@ export default function DashboardPage() {
           {/* 統計卡片區 - 響應式網格 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              title="總資產價值"
+              title={t("totalValue")}
               value={`TWD ${stats.totalValue.toLocaleString("zh-TW", {
                 maximumFractionDigits: 0,
               })}`}
               change={stats.totalPLPct}
-              description="所有持倉市值總和"
+              description={t("totalValueDesc")}
             />
             <StatCard
-              title="總成本"
+              title={t("totalCost")}
               value={`TWD ${stats.totalCost.toLocaleString("zh-TW", {
                 maximumFractionDigits: 0,
               })}`}
               change={0}
-              description="所有持倉成本總和"
+              description={t("totalCostDesc")}
             />
             <StatCard
-              title="未實現損益"
+              title={t("unrealizedPL")}
               value={`TWD ${stats.totalPL.toLocaleString("zh-TW", {
                 maximumFractionDigits: 0,
               })}`}
@@ -240,10 +245,10 @@ export default function DashboardPage() {
               }${stats.totalPLPct.toFixed(1)}%`}
             />
             <StatCard
-              title="持倉數量"
+              title={t("holdingsCount")}
               value={stats.holdingsCount.toString()}
               change={0}
-              description="目前持有標的數量"
+              description={t("holdingsCountDesc")}
             />
           </div>
 
