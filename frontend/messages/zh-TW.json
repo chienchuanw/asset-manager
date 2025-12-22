@@ -19,7 +19,9 @@
     "all": "全部",
     "none": "無",
     "noData": "無資料",
-    "actions": "操作"
+    "actions": "操作",
+    "refresh": "重新整理",
+    "reload": "重新載入"
   },
   "auth": {
     "login": "登入",
@@ -105,29 +107,47 @@
   },
   "holdings": {
     "title": "持倉明細",
-    "description": "查看所有持倉資產",
+    "description": "查看所有資產的詳細持倉資訊",
     "holdings": "持倉",
     "holdingsCount": "持倉數",
+    "holdingsCountLabel": "共 {count} 筆持倉",
     "asset": "資產",
     "symbol": "代碼",
     "name": "名稱",
+    "symbolName": "代碼/名稱",
     "quantity": "數量",
-    "avgCost": "平均成本",
+    "avgCost": "成交均價",
     "currentPrice": "現價",
     "marketValue": "市值",
     "unrealizedPL": "未實現損益",
+    "profitLoss": "損益",
     "plPercent": "損益比例",
     "weight": "權重",
+    "noHoldings": "目前無持倉",
     "noTwStockHoldings": "目前無台股持倉",
     "noUsStockHoldings": "目前無美股持倉",
-    "noCryptoHoldings": "目前無加密貨幣持倉"
+    "noCryptoHoldings": "目前無加密貨幣持倉",
+    "totalMarketValue": "總市值",
+    "totalCost": "總成本",
+    "returnRate": "報酬率",
+    "twStockValue": "台股市值",
+    "usStockValue": "美股市值",
+    "cryptoValue": "加密貨幣市值",
+    "availableCash": "可用現金",
+    "searchPlaceholder": "搜尋代碼或名稱...",
+    "loadingHoldings": "載入持倉資料中...",
+    "loadError": "無法載入持倉資料",
+    "fixSuccess": "成功修復資料不一致問題"
   },
   "assetTypes": {
     "twStock": "台股",
     "usStock": "美股",
     "crypto": "加密貨幣",
     "cash": "現金",
-    "total": "總資產"
+    "total": "總資產",
+    "twStockHoldings": "台股持倉",
+    "usStockHoldings": "美股持倉",
+    "cryptoHoldings": "加密貨幣持倉"
   },
   "recurring": {
     "title": "訂閱與分期",

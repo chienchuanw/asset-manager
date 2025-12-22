@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Card,
@@ -60,6 +61,14 @@ interface HoldingCardProps {
     order: "asc" | "desc";
   };
   onToggleSort: (field: "market_value" | "unrealized_pl" | "quantity") => void;
+  labels: {
+    holdingsCount: string;
+    symbolName: string;
+    quantity: string;
+    avgCost: string;
+    profitLoss: string;
+    noHoldings: string;
+  };
 }
 
 function HoldingCard({
@@ -67,6 +76,7 @@ function HoldingCard({
   holdings,
   showInTWD,
   onToggleSort,
+  labels,
 }: HoldingCardProps) {
   // 計算原幣別的市值和損益（從 TWD 反推）
   const getOriginalCurrencyValue = (holding: Holding) => {
@@ -92,26 +102,28 @@ function HoldingCard({
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>共 {holdings.length} 筆持倉</CardDescription>
+        <CardDescription>
+          {labels.holdingsCount.replace("{count}", String(holdings.length))}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>代碼/名稱</TableHead>
+                <TableHead>{labels.symbolName}</TableHead>
                 <TableHead
                   className="cursor-pointer"
                   onClick={() => onToggleSort("quantity")}
                 >
                   <div className="flex items-center gap-1">
-                    數量
+                    {labels.quantity}
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
                 </TableHead>
                 <TableHead className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    成交均價
+                    {labels.avgCost}
                   </div>
                 </TableHead>
                 <TableHead
@@ -119,7 +131,7 @@ function HoldingCard({
                   onClick={() => onToggleSort("unrealized_pl")}
                 >
                   <div className="flex items-center justify-end gap-1">
-                    損益
+                    {labels.profitLoss}
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
                 </TableHead>
@@ -129,7 +141,7 @@ function HoldingCard({
               {holdings.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    目前無持倉
+                    {labels.noHoldings}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -204,6 +216,12 @@ function HoldingCard({
 }
 
 export default function HoldingsPage() {
+  // i18n hooks
+  const t = useTranslations("holdings");
+  const tAssets = useTranslations("assetTypes");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showInTWD, setShowInTWD] = useState(false);
 
@@ -267,7 +285,7 @@ export default function HoldingsPage() {
       });
 
       // 顯示成功訊息
-      toast.success("成功修復資料不一致問題");
+      toast.success(t("fixSuccess"));
 
       // 重新載入資料
       await refetch();
@@ -374,13 +392,23 @@ export default function HoldingsPage() {
     }));
   };
 
+  // 共用的 labels 物件
+  const cardLabels = {
+    holdingsCount: t("holdingsCountLabel"),
+    symbolName: t("symbolName"),
+    quantity: t("quantity"),
+    avgCost: t("avgCost"),
+    profitLoss: t("profitLoss"),
+    noHoldings: t("noHoldings"),
+  };
+
   // Loading 狀態
   if (isLoading) {
     return (
-      <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
+      <AppLayout title={t("title")} description={t("description")}>
         <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="flex items-center justify-center h-96">
-            <Loading variant="page" size="lg" text="載入持倉資料中..." />
+            <Loading variant="page" size="lg" text={t("loadingHoldings")} />
           </div>
         </div>
       </AppLayout>
@@ -390,14 +418,16 @@ export default function HoldingsPage() {
   // 錯誤狀態
   if (error) {
     return (
-      <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
+      <AppLayout title={t("title")} description={t("description")}>
         <div className="flex-1 p-4 md:p-6 bg-gray-50">
           <div className="flex items-center justify-center h-96">
             <Card className="w-full max-w-md">
               <CardHeader>
-                <CardTitle className="text-red-600">載入失敗</CardTitle>
+                <CardTitle className="text-red-600">
+                  {tErrors("loadFailed")}
+                </CardTitle>
                 <CardDescription>
-                  無法載入持倉資料：{error.message}
+                  {t("loadError")}: {error.message}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -407,7 +437,7 @@ export default function HoldingsPage() {
                   className="w-full"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  重新載入
+                  {tCommon("reload")}
                 </Button>
               </CardContent>
             </Card>
@@ -418,7 +448,7 @@ export default function HoldingsPage() {
   }
 
   return (
-    <AppLayout title="持倉明細" description="查看所有資產的詳細持倉資訊">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
@@ -426,7 +456,7 @@ export default function HoldingsPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>總市值</CardDescription>
+                <CardDescription>{t("totalMarketValue")}</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">
                   NT$ {stats.totalMarketValue.toLocaleString()}
                 </CardTitle>
@@ -434,7 +464,7 @@ export default function HoldingsPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>總成本</CardDescription>
+                <CardDescription>{t("totalCost")}</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">
                   NT$ {stats.totalCost.toLocaleString()}
                 </CardTitle>
@@ -442,7 +472,7 @@ export default function HoldingsPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>未實現損益</CardDescription>
+                <CardDescription>{t("unrealizedPL")}</CardDescription>
                 <CardTitle
                   className={`text-2xl tabular-nums ${getProfitLossColor(
                     stats.totalProfitLoss
@@ -454,7 +484,7 @@ export default function HoldingsPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>報酬率</CardDescription>
+                <CardDescription>{t("returnRate")}</CardDescription>
                 <CardTitle
                   className={`text-2xl tabular-nums ${getProfitLossColor(
                     stats.totalProfitLossPercent
@@ -470,7 +500,7 @@ export default function HoldingsPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>台股市值</CardDescription>
+                <CardDescription>{t("twStockValue")}</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">
                   NT$ {stats.twStockValue.toLocaleString()}
                 </CardTitle>
@@ -478,7 +508,7 @@ export default function HoldingsPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>美股市值</CardDescription>
+                <CardDescription>{t("usStockValue")}</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">
                   NT$ {stats.usStockValue.toLocaleString()}
                 </CardTitle>
@@ -486,7 +516,7 @@ export default function HoldingsPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>加密貨幣市值</CardDescription>
+                <CardDescription>{t("cryptoValue")}</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">
                   NT$ {stats.cryptoValue.toLocaleString()}
                 </CardTitle>
@@ -494,7 +524,7 @@ export default function HoldingsPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>可用現金</CardDescription>
+                <CardDescription>{t("availableCash")}</CardDescription>
                 <CardTitle
                   className={`text-2xl tabular-nums ${getProfitLossColor(
                     stats.availableCash
@@ -513,7 +543,7 @@ export default function HoldingsPage() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜尋代碼或名稱..."
+                  placeholder={t("searchPlaceholder")}
                   className="pl-8 sm:w-[250px]"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -532,7 +562,7 @@ export default function HoldingsPage() {
                 <RefreshCw
                   className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
                 />
-                重新整理
+                {tCommon("refresh")}
               </Button>
 
               {/* 幣別切換開關 */}
@@ -556,33 +586,36 @@ export default function HoldingsPage() {
             {/* 台股持倉卡片 */}
             <div className="flex-1">
               <HoldingCard
-                title="台股持倉"
+                title={tAssets("twStockHoldings")}
                 holdings={holdingsByType.twStock}
                 showInTWD={showInTWD}
                 sortConfig={twStockSort}
                 onToggleSort={toggleTwStockSort}
+                labels={cardLabels}
               />
             </div>
 
             {/* 美股持倉卡片 */}
             <div className="flex-1">
               <HoldingCard
-                title="美股持倉"
+                title={tAssets("usStockHoldings")}
                 holdings={holdingsByType.usStock}
                 showInTWD={showInTWD}
                 sortConfig={usStockSort}
                 onToggleSort={toggleUsStockSort}
+                labels={cardLabels}
               />
             </div>
 
             {/* 加密貨幣持倉卡片 */}
             <div className="flex-1">
               <HoldingCard
-                title="加密貨幣持倉"
+                title={tAssets("cryptoHoldings")}
                 holdings={holdingsByType.crypto}
                 showInTWD={showInTWD}
                 sortConfig={cryptoSort}
                 onToggleSort={toggleCryptoSort}
+                labels={cardLabels}
               />
             </div>
           </div>
