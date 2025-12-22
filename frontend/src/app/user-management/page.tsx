@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,6 +63,8 @@ import type {
 } from "@/types/user-management";
 
 export default function UserManagementPage() {
+  const t = useTranslations("userManagement");
+  const tCommon = useTranslations("common");
   const { toast } = useToast();
 
   // 銀行帳戶相關狀態
@@ -127,22 +130,22 @@ export default function UserManagementPage() {
           data,
         });
         toast({
-          title: "更新成功",
-          description: "銀行帳戶已更新",
+          title: t("updateSuccess"),
+          description: t("bankAccountUpdated"),
         });
       } else {
         await createBankAccountMutation.mutateAsync(data);
         toast({
-          title: "新增成功",
-          description: "銀行帳戶已新增",
+          title: t("createSuccess"),
+          description: t("bankAccountCreated"),
         });
       }
       setBankAccountDialogOpen(false);
       setEditingBankAccount(undefined);
     } catch (error: any) {
       toast({
-        title: "操作失敗",
-        description: error.message || "請稍後再試",
+        title: t("operationFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -154,14 +157,14 @@ export default function UserManagementPage() {
     try {
       await deleteBankAccountMutation.mutateAsync(deletingBankAccountId);
       toast({
-        title: "刪除成功",
-        description: "銀行帳戶已刪除",
+        title: t("deleteSuccess"),
+        description: t("bankAccountDeleted"),
       });
       setDeletingBankAccountId(undefined);
     } catch (error: any) {
       toast({
-        title: "刪除失敗",
-        description: error.message || "請稍後再試",
+        title: t("deleteFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -187,22 +190,22 @@ export default function UserManagementPage() {
           data,
         });
         toast({
-          title: "更新成功",
-          description: "信用卡已更新",
+          title: t("updateSuccess"),
+          description: t("creditCardUpdated"),
         });
       } else {
         await createCreditCardMutation.mutateAsync(data);
         toast({
-          title: "新增成功",
-          description: "信用卡已新增",
+          title: t("createSuccess"),
+          description: t("creditCardCreated"),
         });
       }
       setCreditCardDialogOpen(false);
       setEditingCreditCard(undefined);
     } catch (error: any) {
       toast({
-        title: "操作失敗",
-        description: error.message || "請稍後再試",
+        title: t("operationFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -214,14 +217,14 @@ export default function UserManagementPage() {
     try {
       await deleteCreditCardMutation.mutateAsync(deletingCreditCardId);
       toast({
-        title: "刪除成功",
-        description: "信用卡已刪除",
+        title: t("deleteSuccess"),
+        description: t("creditCardDeleted"),
       });
       setDeletingCreditCardId(undefined);
     } catch (error: any) {
       toast({
-        title: "刪除失敗",
-        description: error.message || "請稍後再試",
+        title: t("deleteFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -251,22 +254,22 @@ export default function UserManagementPage() {
           },
         });
         toast({
-          title: "更新成功",
-          description: "信用卡群組已更新",
+          title: t("updateSuccess"),
+          description: t("groupUpdated"),
         });
       } else {
         await createGroupMutation.mutateAsync(data);
         toast({
-          title: "新增成功",
-          description: "信用卡群組已新增",
+          title: t("createSuccess"),
+          description: t("groupCreated"),
         });
       }
       setGroupDialogOpen(false);
       setEditingGroup(undefined);
     } catch (error: any) {
       toast({
-        title: "操作失敗",
-        description: error.message || "請稍後再試",
+        title: t("operationFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -278,14 +281,14 @@ export default function UserManagementPage() {
     try {
       await deleteGroupMutation.mutateAsync(deletingGroupId);
       toast({
-        title: "刪除成功",
-        description: "信用卡群組已解散，卡片已恢復為獨立狀態",
+        title: t("deleteSuccess"),
+        description: t("groupDisbanded"),
       });
       setDeletingGroupId(undefined);
     } catch (error: any) {
       toast({
-        title: "刪除失敗",
-        description: error.message || "請稍後再試",
+        title: t("deleteFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -298,13 +301,13 @@ export default function UserManagementPage() {
         data: { card_ids: [cardId] },
       });
       toast({
-        title: "移除成功",
-        description: "卡片已從群組移除",
+        title: t("removeSuccess"),
+        description: t("cardRemovedFromGroup"),
       });
     } catch (error: any) {
       toast({
-        title: "移除失敗",
-        description: error.message || "請稍後再試",
+        title: t("removeFailed"),
+        description: error.message || t("tryAgainLater"),
         variant: "destructive",
       });
     }
@@ -325,7 +328,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <AppLayout title="使用者管理" description="管理您的銀行帳戶和信用卡資訊">
+    <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50">
         <div className="flex flex-col gap-6">
@@ -336,10 +339,10 @@ export default function UserManagementPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>銀行帳戶</CardTitle>
+                <CardTitle>{t("bankAccounts")}</CardTitle>
                 <Button onClick={handleCreateBankAccount}>
                   <PlusIcon className="mr-2 h-4 w-4" />
-                  新增銀行帳戶
+                  {t("addBankAccount")}
                 </Button>
               </div>
             </CardHeader>
@@ -355,15 +358,15 @@ export default function UserManagementPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>信用卡</CardTitle>
+                <CardTitle>{t("creditCards")}</CardTitle>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={handleCreateGroup}>
                     <FolderPlusIcon className="mr-2 h-4 w-4" />
-                    建立群組
+                    {t("createGroup")}
                   </Button>
                   <Button onClick={handleCreateCreditCard}>
                     <PlusIcon className="mr-2 h-4 w-4" />
-                    新增信用卡
+                    {t("addCreditCard")}
                   </Button>
                 </div>
               </div>
@@ -390,7 +393,7 @@ export default function UserManagementPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingBankAccount ? "編輯銀行帳戶" : "新增銀行帳戶"}
+              {editingBankAccount ? t("editBankAccount") : t("addBankAccount")}
             </DialogTitle>
           </DialogHeader>
           <BankAccountForm
@@ -413,7 +416,7 @@ export default function UserManagementPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingCreditCard ? "編輯信用卡" : "新增信用卡"}
+              {editingCreditCard ? t("editCreditCard") : t("addCreditCard")}
             </DialogTitle>
           </DialogHeader>
           <CreditCardForm
@@ -435,18 +438,18 @@ export default function UserManagementPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認刪除</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除此銀行帳戶嗎？此操作無法復原。
+              {t("confirmDeleteBankAccount")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteBankAccount}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              刪除
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -459,18 +462,18 @@ export default function UserManagementPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認刪除</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除此信用卡嗎？此操作無法復原。
+              {t("confirmDeleteCreditCard")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteCreditCard}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              刪除
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -481,7 +484,7 @@ export default function UserManagementPage() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingGroup ? "編輯信用卡群組" : "建立信用卡群組"}
+              {editingGroup ? t("editGroup") : t("createGroup")}
             </DialogTitle>
           </DialogHeader>
           <CreditCardGroupForm
@@ -503,18 +506,18 @@ export default function UserManagementPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認解散群組</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmDisbandGroup")}</AlertDialogTitle>
             <AlertDialogDescription>
-              確定要解散此信用卡群組嗎？群組內的卡片將恢復為獨立狀態。此操作無法復原。
+              {t("confirmDisbandGroupDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteGroup}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              解散群組
+              {t("disbandGroup")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
