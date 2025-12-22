@@ -6,6 +6,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -27,6 +28,9 @@ import {
 import { useAssetTrend } from "@/hooks";
 
 export function AssetTrendChart() {
+  const t = useTranslations("dashboard");
+  const tAssets = useTranslations("assetTypes");
+  const tErrors = useTranslations("errors");
   // 使用 state 來延遲渲染圖表,避免 SSR 問題
   const [mounted, setMounted] = useState(false);
 
@@ -159,8 +163,8 @@ export function AssetTrendChart() {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>資產價值趨勢</CardTitle>
-        <CardDescription>最近 30 天的資產變化</CardDescription>
+        <CardTitle>{t("assetTrend")}</CardTitle>
+        <CardDescription>{t("assetTrendDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         {/* Loading 狀態 */}
@@ -175,7 +179,9 @@ export function AssetTrendChart() {
           <div className="h-[300px] w-full flex items-center justify-center">
             <div className="flex items-center gap-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
-              <p className="text-sm">載入資料失敗：{totalError.message}</p>
+              <p className="text-sm">
+                {tErrors("loadFailed")}: {totalError.message}
+              </p>
             </div>
           </div>
         )}
@@ -183,7 +189,7 @@ export function AssetTrendChart() {
         {/* 空資料狀態 */}
         {!isLoading && !totalError && chartData.length === 0 && (
           <div className="h-[300px] w-full flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">暫無資料</p>
+            <p className="text-sm text-muted-foreground">{t("noData")}</p>
           </div>
         )}
 
@@ -223,7 +229,7 @@ export function AssetTrendChart() {
                 <Line
                   type="monotone"
                   dataKey="total"
-                  name="總資產"
+                  name={tAssets("total")}
                   stroke="#111827"
                   strokeWidth={2}
                   dot={false}
@@ -231,7 +237,7 @@ export function AssetTrendChart() {
                 <Line
                   type="monotone"
                   dataKey="twStock"
-                  name="台股"
+                  name={tAssets("twStock")}
                   stroke="#3b82f6"
                   strokeWidth={1.5}
                   dot={false}
@@ -240,7 +246,7 @@ export function AssetTrendChart() {
                 <Line
                   type="monotone"
                   dataKey="usStock"
-                  name="美股"
+                  name={tAssets("usStock")}
                   stroke="#10b981"
                   strokeWidth={1.5}
                   dot={false}
@@ -249,7 +255,7 @@ export function AssetTrendChart() {
                 <Line
                   type="monotone"
                   dataKey="crypto"
-                  name="加密貨幣"
+                  name={tAssets("crypto")}
                   stroke="#f59e0b"
                   strokeWidth={1.5}
                   dot={false}

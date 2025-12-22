@@ -3,6 +3,9 @@
  * 顯示最近的交易記錄
  */
 
+"use client";
+
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -11,11 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Transaction } from "@/types/transaction";
-import {
-  getAssetTypeLabel,
-  getTransactionTypeLabel,
-} from "@/types/transaction";
+import { Transaction, AssetType, TransactionType } from "@/types/transaction";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 interface RecentTransactionsProps {
@@ -23,16 +22,44 @@ interface RecentTransactionsProps {
 }
 
 export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+  const t = useTranslations("dashboard");
+  const tTx = useTranslations("transactions");
+  const tAssets = useTranslations("assetTypes");
+
+  // 取得資產類型的翻譯標籤
+  const getAssetLabel = (assetType: string): string => {
+    const keyMap: Record<string, string> = {
+      "tw-stock": "twStock",
+      "us-stock": "usStock",
+      crypto: "crypto",
+      cash: "cash",
+    };
+    const key = keyMap[assetType] || assetType;
+    return tAssets(key as keyof typeof tAssets);
+  };
+
+  // 取得交易類型的翻譯標籤
+  const getTransactionLabel = (type: string): string => {
+    const keyMap: Record<string, string> = {
+      buy: "buy",
+      sell: "sell",
+      dividend: "dividend",
+      fee: "fee",
+    };
+    const key = keyMap[type] || type;
+    return tTx(key as keyof typeof tTx);
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>近期交易</CardTitle>
-        <CardDescription>最近的買賣記錄</CardDescription>
+        <CardTitle>{t("recentTransactions")}</CardTitle>
+        <CardDescription>{t("recentTransactionsDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            暫無交易記錄
+            {tTx("noTransactions")}
           </div>
         ) : (
           <div className="space-y-4">
@@ -64,11 +91,11 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                           {transaction.symbol}
                         </span>
                         <Badge variant="outline" className="text-xs">
-                          {getTransactionTypeLabel(transaction.type)}
+                          {getTransactionLabel(transaction.type)}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {getAssetTypeLabel(transaction.asset_type)}
+                        {getAssetLabel(transaction.asset_type)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(transaction.date).toLocaleDateString("zh-TW")}

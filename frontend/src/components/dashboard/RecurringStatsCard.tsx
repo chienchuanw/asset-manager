@@ -3,6 +3,9 @@
  * 顯示訂閱和分期的統計資訊
  */
 
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,6 +64,8 @@ export function RecurringStatsCard({
   installments = [],
   isLoading = false,
 }: RecurringStatsCardProps) {
+  const t = useTranslations("recurring");
+
   // 計算統計資料
   const activeSubscriptions = subscriptions.filter(
     (s) => s.status === "active"
@@ -96,7 +101,7 @@ export function RecurringStatsCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5" />
-            訂閱與分期
+            {t("title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -112,7 +117,7 @@ export function RecurringStatsCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
-          訂閱與分期
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -120,11 +125,11 @@ export function RecurringStatsCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-muted-foreground">
-              每月總支出
+              {t("monthlyTotal")}
             </p>
             <Badge variant="outline" className="gap-1">
               <TrendingUpIcon className="h-3 w-3" />
-              固定支出
+              {t("fixedExpense")}
             </Badge>
           </div>
           <div className="text-3xl font-bold tabular-nums">
@@ -135,13 +140,13 @@ export function RecurringStatsCard({
           </div>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <span>
-              訂閱: NT${" "}
+              {t("subscriptions")}: NT${" "}
               {monthlySubscriptionCost.toLocaleString("zh-TW", {
                 maximumFractionDigits: 0,
               })}
             </span>
             <span>
-              分期: NT${" "}
+              {t("installments")}: NT${" "}
               {monthlyInstallmentPayment.toLocaleString("zh-TW", {
                 maximumFractionDigits: 0,
               })}
@@ -153,20 +158,22 @@ export function RecurringStatsCard({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm font-medium">訂閱服務</p>
+            <p className="text-sm font-medium">{t("subscriptionServices")}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-2xl font-semibold tabular-nums">
                 {activeSubscriptions.length}
               </p>
-              <p className="text-xs text-muted-foreground">進行中</p>
+              <p className="text-xs text-muted-foreground">{t("active")}</p>
             </div>
             <div>
               <p className="text-2xl font-semibold tabular-nums">
                 {expiringSubscriptions.length}
               </p>
-              <p className="text-xs text-muted-foreground">即將到期</p>
+              <p className="text-xs text-muted-foreground">
+                {t("expiringSoon")}
+              </p>
             </div>
           </div>
         </div>
@@ -175,20 +182,22 @@ export function RecurringStatsCard({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm font-medium">分期付款</p>
+            <p className="text-sm font-medium">{t("installmentPayments")}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-2xl font-semibold tabular-nums">
                 {activeInstallments.length}
               </p>
-              <p className="text-xs text-muted-foreground">進行中</p>
+              <p className="text-xs text-muted-foreground">{t("active")}</p>
             </div>
             <div>
               <p className="text-2xl font-semibold tabular-nums">
                 {completingInstallments.length}
               </p>
-              <p className="text-xs text-muted-foreground">即將完成</p>
+              <p className="text-xs text-muted-foreground">
+                {t("completingSoon")}
+              </p>
             </div>
           </div>
         </div>
@@ -197,13 +206,21 @@ export function RecurringStatsCard({
         {(expiringSubscriptions.length > 0 ||
           completingInstallments.length > 0) && (
           <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-900">
-            <AlertCircleIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <AlertCircleIcon className="h-4 w-4 mt-0.5 shrink-0" />
             <div className="text-xs space-y-1">
               {expiringSubscriptions.length > 0 && (
-                <p>{expiringSubscriptions.length} 個訂閱即將在 30 天內到期</p>
+                <p>
+                  {t("subscriptionsExpiringAlert", {
+                    count: expiringSubscriptions.length,
+                  })}
+                </p>
               )}
               {completingInstallments.length > 0 && (
-                <p>{completingInstallments.length} 個分期即將在 3 個月內完成</p>
+                <p>
+                  {t("installmentsCompletingAlert", {
+                    count: completingInstallments.length,
+                  })}
+                </p>
               )}
             </div>
           </div>

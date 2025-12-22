@@ -58,11 +58,18 @@
     "totalCostDesc": "Total cost of all holdings",
     "holdingsCountDesc": "Number of current holdings",
     "recentTransactions": "Recent Transactions",
+    "recentTransactionsDesc": "Recent buy/sell records",
     "assetAllocation": "Asset Allocation",
-    "priceWarning": "Price Data Warning",
-    "priceWarningDesc": "Some asset prices are from cached data and may not be up-to-date.",
-    "reason": "Reason",
-    "affectedSymbols": "Affected Symbols"
+    "assetAllocationDesc": "Distribution of asset types",
+    "stalePriceWarning": "Price Data Warning",
+    "stalePriceDescription": "Some asset prices are from cached data and may not be up-to-date.",
+    "stalePriceReason": "Reason",
+    "stalePriceAffected": "Affected Symbols",
+    "assetTrend": "Asset Value Trend",
+    "assetTrendDesc": "Asset changes over the last 30 days",
+    "holdingsByType": "Holdings by Type",
+    "viewAll": "View All",
+    "noData": "No Data"
   },
   "transactions": {
     "title": "Transactions",
@@ -84,6 +91,7 @@
     "sell": "Sell",
     "dividend": "Dividend",
     "feeType": "Fee",
+    "noTransactions": "No transactions",
     "totalTransactions": "Total Transactions",
     "totalBuyAmount": "Total Buy Amount",
     "totalSellAmount": "Total Sell Amount",
@@ -92,6 +100,9 @@
   "holdings": {
     "title": "Holdings",
     "description": "View all holdings",
+    "holdings": "Holdings",
+    "holdingsCount": "Holdings",
+    "asset": "Asset",
     "symbol": "Symbol",
     "name": "Name",
     "quantity": "Quantity",
@@ -100,13 +111,17 @@
     "marketValue": "Market Value",
     "unrealizedPL": "Unrealized P/L",
     "plPercent": "P/L %",
-    "weight": "Weight"
+    "weight": "Weight",
+    "noTwStockHoldings": "No TW stock holdings",
+    "noUsStockHoldings": "No US stock holdings",
+    "noCryptoHoldings": "No crypto holdings"
   },
   "assetTypes": {
     "twStock": "TW Stock",
     "usStock": "US Stock",
     "crypto": "Crypto",
-    "cash": "Cash"
+    "cash": "Cash",
+    "total": "Total Assets"
   },
   "recurring": {
     "title": "Recurring",
@@ -121,7 +136,15 @@
     "status": "Status",
     "active": "Active",
     "cancelled": "Cancelled",
-    "completed": "Completed"
+    "completed": "Completed",
+    "monthlyTotal": "Monthly Total",
+    "fixedExpense": "Fixed Expense",
+    "subscriptionServices": "Subscription Services",
+    "installmentPayments": "Installment Payments",
+    "expiringSoon": "Expiring Soon",
+    "completingSoon": "Completing Soon",
+    "subscriptionsExpiringAlert": "{count} subscriptions expiring within 30 days",
+    "installmentsCompletingAlert": "{count} installments completing within 3 months"
   },
   "cashFlows": {
     "title": "Cash Flows",
