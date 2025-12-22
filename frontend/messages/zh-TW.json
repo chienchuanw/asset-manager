@@ -35,14 +35,17 @@
   "nav": {
     "home": "首頁",
     "dashboard": "儀表板",
-    "transactions": "交易紀錄",
-    "holdings": "持倉",
-    "cashFlows": "現金流",
-    "recurring": "訂閱與分期",
-    "analytics": "分析",
+    "transactions": "交易記錄",
+    "holdings": "持倉明細",
+    "cashFlows": "現金流記錄",
+    "recurring": "訂閱分期",
+    "analytics": "分析報表",
     "settings": "設定",
     "userManagement": "使用者管理",
-    "notification": "通知設定"
+    "notification": "通知管理",
+    "mainFeatures": "主要功能",
+    "appName": "Asset Manager",
+    "appDescription": "資產管理系統"
   },
   "dashboard": {
     "title": "首頁",
@@ -156,4 +159,3 @@
     "serverError": "伺服器錯誤"
   }
 }
-
