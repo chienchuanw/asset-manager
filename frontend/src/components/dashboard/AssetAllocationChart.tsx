@@ -6,6 +6,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -14,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AssetType, getAssetTypeLabel } from "@/types/transaction";
+import { AssetType } from "@/types/transaction";
 
 interface AssetAllocationData {
   name: string;
@@ -33,17 +34,33 @@ const ASSET_COLORS: Record<string, string> = {
 };
 
 export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
+  const t = useTranslations("dashboard");
+  const tAssets = useTranslations("assetTypes");
+
+  // 取得資產類型的翻譯標籤
+  const getAssetLabel = (assetType: string): string => {
+    const keyMap: Record<string, string> = {
+      "tw-stock": "twStock",
+      "us-stock": "usStock",
+      crypto: "crypto",
+      cash: "cash",
+    };
+    const key = keyMap[assetType] || assetType;
+    return tAssets(key as keyof typeof tAssets);
+  };
+
   // 計算總值和百分比
   const chartData = useMemo(() => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     return data.map((item) => ({
-      name: getAssetTypeLabel(item.name as AssetType),
+      name: getAssetLabel(item.name as AssetType),
       assetType: item.name,
       value: item.value,
       percentage: total > 0 ? (item.value / total) * 100 : 0,
       color: ASSET_COLORS[item.name] || "#6b7280",
     }));
-  }, [data]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, tAssets]);
 
   // 自訂 Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -76,13 +93,13 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>資產配置</CardTitle>
-        <CardDescription>各類資產佔比分布</CardDescription>
+        <CardTitle>{t("assetAllocation")}</CardTitle>
+        <CardDescription>{t("assetAllocationDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            暫無資料
+            {t("noData")}
           </div>
         ) : (
           <>

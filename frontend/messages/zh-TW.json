@@ -58,11 +58,18 @@
     "totalCostDesc": "所有持倉成本總和",
     "holdingsCountDesc": "目前持有標的數量",
     "recentTransactions": "近期交易",
+    "recentTransactionsDesc": "最近的買賣記錄",
     "assetAllocation": "資產配置",
-    "priceWarning": "價格資料警告",
-    "priceWarningDesc": "部分資產價格來自快取資料，可能不是最新價格。",
-    "reason": "原因",
-    "affectedSymbols": "受影響的標的"
+    "assetAllocationDesc": "各類資產佔比分布",
+    "stalePriceWarning": "價格資料警告",
+    "stalePriceDescription": "部分資產價格來自快取資料，可能不是最新價格。",
+    "stalePriceReason": "原因",
+    "stalePriceAffected": "受影響的標的",
+    "assetTrend": "資產價值趨勢",
+    "assetTrendDesc": "最近 30 天的資產變化",
+    "holdingsByType": "持倉明細",
+    "viewAll": "查看全部",
+    "noData": "暫無資料"
   },
   "transactions": {
     "title": "交易紀錄",
@@ -84,14 +91,18 @@
     "sell": "賣出",
     "dividend": "股息",
     "feeType": "手續費",
+    "noTransactions": "暫無交易記錄",
     "totalTransactions": "總交易次數",
     "totalBuyAmount": "總買入金額",
     "totalSellAmount": "總賣出金額",
     "netFlow": "淨流入/流出"
   },
   "holdings": {
-    "title": "持倉",
+    "title": "持倉明細",
     "description": "查看所有持倉資產",
+    "holdings": "持倉",
+    "holdingsCount": "持倉數",
+    "asset": "資產",
     "symbol": "代碼",
     "name": "名稱",
     "quantity": "數量",
@@ -100,13 +111,17 @@
     "marketValue": "市值",
     "unrealizedPL": "未實現損益",
     "plPercent": "損益比例",
-    "weight": "權重"
+    "weight": "權重",
+    "noTwStockHoldings": "目前無台股持倉",
+    "noUsStockHoldings": "目前無美股持倉",
+    "noCryptoHoldings": "目前無加密貨幣持倉"
   },
   "assetTypes": {
     "twStock": "台股",
     "usStock": "美股",
     "crypto": "加密貨幣",
-    "cash": "現金"
+    "cash": "現金",
+    "total": "總資產"
   },
   "recurring": {
     "title": "訂閱與分期",
@@ -121,7 +136,15 @@
     "status": "狀態",
     "active": "進行中",
     "cancelled": "已取消",
-    "completed": "已完成"
+    "completed": "已完成",
+    "monthlyTotal": "每月總支出",
+    "fixedExpense": "固定支出",
+    "subscriptionServices": "訂閱服務",
+    "installmentPayments": "分期付款",
+    "expiringSoon": "即將到期",
+    "completingSoon": "即將完成",
+    "subscriptionsExpiringAlert": "{count} 個訂閱即將在 30 天內到期",
+    "installmentsCompletingAlert": "{count} 個分期即將在 3 個月內完成"
   },
   "cashFlows": {
     "title": "現金流",

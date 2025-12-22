@@ -3,7 +3,16 @@
  * 將持倉分成台股、美股、加密貨幣三張獨立卡片
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+"use client";
+
+import { useTranslations } from "next-intl";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,10 +20,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Holding, getProfitLossColor } from '@/types/holding';
-import { AssetType } from '@/types/transaction';
+} from "@/components/ui/table";
+import { Holding, getProfitLossColor } from "@/types/holding";
+import { AssetType } from "@/types/transaction";
 
 interface HoldingsByAssetTypeProps {
   holdings: Holding[];
@@ -24,9 +32,23 @@ interface AssetTypeCardProps {
   title: string;
   holdings: Holding[];
   emptyMessage: string;
+  labels: {
+    holdingsCount: string;
+    marketValue: string;
+    profitLoss: string;
+    asset: string;
+    quantity: string;
+    costPrice: string;
+    currentPrice: string;
+  };
 }
 
-function AssetTypeCard({ title, holdings, emptyMessage }: AssetTypeCardProps) {
+function AssetTypeCard({
+  title,
+  holdings,
+  emptyMessage,
+  labels,
+}: AssetTypeCardProps) {
   // 計算總計
   const totals = holdings.reduce(
     (acc, holding) => ({
@@ -36,9 +58,10 @@ function AssetTypeCard({ title, holdings, emptyMessage }: AssetTypeCardProps) {
     { marketValue: 0, unrealizedPL: 0 }
   );
 
-  const totalPLPct = totals.marketValue > 0 
-    ? ((totals.unrealizedPL / (totals.marketValue - totals.unrealizedPL)) * 100)
-    : 0;
+  const totalPLPct =
+    totals.marketValue > 0
+      ? (totals.unrealizedPL / (totals.marketValue - totals.unrealizedPL)) * 100
+      : 0;
 
   const profitLossColor = getProfitLossColor(totals.unrealizedPL);
 
@@ -49,14 +72,24 @@ function AssetTypeCard({ title, holdings, emptyMessage }: AssetTypeCardProps) {
         <CardDescription>
           {holdings.length > 0 ? (
             <div className="flex items-center gap-4 mt-2">
-              <span>共 {holdings.length} 筆持倉</span>
+              <span>
+                {labels.holdingsCount}: {holdings.length}
+              </span>
               <span className="text-muted-foreground">|</span>
-              <span>市值: TWD {totals.marketValue.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</span>
+              <span>
+                {labels.marketValue}: TWD{" "}
+                {totals.marketValue.toLocaleString("zh-TW", {
+                  maximumFractionDigits: 0,
+                })}
+              </span>
               <span className="text-muted-foreground">|</span>
               <span className={profitLossColor}>
-                損益: {totals.unrealizedPL >= 0 ? '+' : ''}
-                {totals.unrealizedPL.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}
-                ({totals.unrealizedPL >= 0 ? '+' : ''}{totalPLPct.toFixed(2)}%)
+                {labels.profitLoss}: {totals.unrealizedPL >= 0 ? "+" : ""}
+                {totals.unrealizedPL.toLocaleString("zh-TW", {
+                  maximumFractionDigits: 0,
+                })}
+                ({totals.unrealizedPL >= 0 ? "+" : ""}
+                {totalPLPct.toFixed(2)}%)
               </span>
             </div>
           ) : (
@@ -74,18 +107,30 @@ function AssetTypeCard({ title, holdings, emptyMessage }: AssetTypeCardProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>資產</TableHead>
-                  <TableHead className="text-right">數量</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">成本價</TableHead>
-                  <TableHead className="text-right">現價</TableHead>
-                  <TableHead className="text-right">市值</TableHead>
-                  <TableHead className="text-right">損益</TableHead>
+                  <TableHead>{labels.asset}</TableHead>
+                  <TableHead className="text-right">
+                    {labels.quantity}
+                  </TableHead>
+                  <TableHead className="text-right hidden md:table-cell">
+                    {labels.costPrice}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {labels.currentPrice}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {labels.marketValue}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {labels.profitLoss}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {holdings.map((holding) => {
                   const isProfit = holding.unrealized_pl >= 0;
-                  const profitLossColor = getProfitLossColor(holding.unrealized_pl);
+                  const profitLossColor = getProfitLossColor(
+                    holding.unrealized_pl
+                  );
                   return (
                     <TableRow key={holding.symbol}>
                       <TableCell>
@@ -95,21 +140,37 @@ function AssetTypeCard({ title, holdings, emptyMessage }: AssetTypeCardProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {holding.quantity.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
+                        {holding.quantity.toLocaleString("zh-TW", {
+                          maximumFractionDigits: 2,
+                        })}
                       </TableCell>
                       <TableCell className="text-right tabular-nums hidden md:table-cell">
-                        {holding.avg_cost.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
+                        {holding.avg_cost.toLocaleString("zh-TW", {
+                          maximumFractionDigits: 2,
+                        })}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {holding.current_price_twd.toLocaleString('zh-TW', { maximumFractionDigits: 2 })}
+                        {holding.current_price_twd.toLocaleString("zh-TW", {
+                          maximumFractionDigits: 2,
+                        })}
                       </TableCell>
                       <TableCell className="text-right font-medium tabular-nums">
-                        {holding.market_value.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}
+                        {holding.market_value.toLocaleString("zh-TW", {
+                          maximumFractionDigits: 0,
+                        })}
                       </TableCell>
-                      <TableCell className={`text-right font-medium tabular-nums ${profitLossColor}`}>
-                        <div>{isProfit ? '+' : ''}{holding.unrealized_pl.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</div>
+                      <TableCell
+                        className={`text-right font-medium tabular-nums ${profitLossColor}`}
+                      >
+                        <div>
+                          {isProfit ? "+" : ""}
+                          {holding.unrealized_pl.toLocaleString("zh-TW", {
+                            maximumFractionDigits: 0,
+                          })}
+                        </div>
                         <div className="text-xs">
-                          {isProfit ? '+' : ''}{holding.unrealized_pl_pct.toFixed(2)}%
+                          {isProfit ? "+" : ""}
+                          {holding.unrealized_pl_pct.toFixed(2)}%
                         </div>
                       </TableCell>
                     </TableRow>
@@ -125,29 +186,51 @@ function AssetTypeCard({ title, holdings, emptyMessage }: AssetTypeCardProps) {
 }
 
 export function HoldingsByAssetType({ holdings }: HoldingsByAssetTypeProps) {
+  const t = useTranslations("holdings");
+  const tAssets = useTranslations("assetTypes");
+
   // 依資產類別分組
-  const twStockHoldings = holdings.filter(h => h.asset_type === AssetType.TW_STOCK);
-  const usStockHoldings = holdings.filter(h => h.asset_type === AssetType.US_STOCK);
-  const cryptoHoldings = holdings.filter(h => h.asset_type === AssetType.CRYPTO);
+  const twStockHoldings = holdings.filter(
+    (h) => h.asset_type === AssetType.TW_STOCK
+  );
+  const usStockHoldings = holdings.filter(
+    (h) => h.asset_type === AssetType.US_STOCK
+  );
+  const cryptoHoldings = holdings.filter(
+    (h) => h.asset_type === AssetType.CRYPTO
+  );
+
+  // 共用的標籤
+  const labels = {
+    holdingsCount: t("holdingsCount"),
+    marketValue: t("marketValue"),
+    profitLoss: t("unrealizedPL"),
+    asset: t("asset"),
+    quantity: t("quantity"),
+    costPrice: t("avgCost"),
+    currentPrice: t("currentPrice"),
+  };
 
   return (
     <div className="space-y-4">
       <AssetTypeCard
-        title="台股持倉"
+        title={`${tAssets("twStock")} ${t("holdings")}`}
         holdings={twStockHoldings}
-        emptyMessage="目前無台股持倉"
+        emptyMessage={t("noTwStockHoldings")}
+        labels={labels}
       />
       <AssetTypeCard
-        title="美股持倉"
+        title={`${tAssets("usStock")} ${t("holdings")}`}
         holdings={usStockHoldings}
-        emptyMessage="目前無美股持倉"
+        emptyMessage={t("noUsStockHoldings")}
+        labels={labels}
       />
       <AssetTypeCard
-        title="加密貨幣持倉"
+        title={`${tAssets("crypto")} ${t("holdings")}`}
         holdings={cryptoHoldings}
-        emptyMessage="目前無加密貨幣持倉"
+        emptyMessage={t("noCryptoHoldings")}
+        labels={labels}
       />
     </div>
   );
 }
-
