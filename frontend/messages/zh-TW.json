@@ -1,0 +1,159 @@
+{
+  "common": {
+    "loading": "載入中...",
+    "error": "發生錯誤",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "edit": "編輯",
+    "add": "新增",
+    "confirm": "確認",
+    "back": "返回",
+    "search": "搜尋",
+    "filter": "篩選",
+    "reset": "重設",
+    "submit": "提交",
+    "close": "關閉",
+    "yes": "是",
+    "no": "否",
+    "all": "全部",
+    "none": "無",
+    "noData": "無資料",
+    "actions": "操作"
+  },
+  "auth": {
+    "login": "登入",
+    "logout": "登出",
+    "username": "帳號",
+    "password": "密碼",
+    "loginTitle": "資產管理系統",
+    "loginDescription": "請輸入您的帳號密碼以登入系統",
+    "usernamePlaceholder": "請輸入帳號",
+    "passwordPlaceholder": "請輸入密碼",
+    "loggingIn": "登入中..."
+  },
+  "nav": {
+    "home": "首頁",
+    "dashboard": "儀表板",
+    "transactions": "交易紀錄",
+    "holdings": "持倉",
+    "cashFlows": "現金流",
+    "recurring": "訂閱與分期",
+    "analytics": "分析",
+    "settings": "設定",
+    "userManagement": "使用者管理",
+    "notification": "通知設定"
+  },
+  "dashboard": {
+    "title": "首頁",
+    "description": "資產概況總覽",
+    "totalValue": "總資產價值",
+    "totalCost": "總成本",
+    "unrealizedPL": "未實現損益",
+    "holdingsCount": "持倉數量",
+    "totalValueDesc": "所有持倉市值總和",
+    "totalCostDesc": "所有持倉成本總和",
+    "holdingsCountDesc": "目前持有標的數量",
+    "recentTransactions": "近期交易",
+    "assetAllocation": "資產配置",
+    "priceWarning": "價格資料警告",
+    "priceWarningDesc": "部分資產價格來自快取資料，可能不是最新價格。",
+    "reason": "原因",
+    "affectedSymbols": "受影響的標的"
+  },
+  "transactions": {
+    "title": "交易紀錄",
+    "description": "管理所有交易記錄",
+    "addTransaction": "新增交易",
+    "editTransaction": "編輯交易",
+    "deleteTransaction": "刪除交易",
+    "date": "日期",
+    "symbol": "代碼",
+    "name": "名稱",
+    "type": "交易類型",
+    "quantity": "數量",
+    "price": "價格",
+    "amount": "金額",
+    "fee": "手續費",
+    "notes": "備註",
+    "assetType": "資產類別",
+    "buy": "買入",
+    "sell": "賣出",
+    "dividend": "股息",
+    "feeType": "手續費",
+    "totalTransactions": "總交易次數",
+    "totalBuyAmount": "總買入金額",
+    "totalSellAmount": "總賣出金額",
+    "netFlow": "淨流入/流出"
+  },
+  "holdings": {
+    "title": "持倉",
+    "description": "查看所有持倉資產",
+    "symbol": "代碼",
+    "name": "名稱",
+    "quantity": "數量",
+    "avgCost": "平均成本",
+    "currentPrice": "現價",
+    "marketValue": "市值",
+    "unrealizedPL": "未實現損益",
+    "plPercent": "損益比例",
+    "weight": "權重"
+  },
+  "assetTypes": {
+    "twStock": "台股",
+    "usStock": "美股",
+    "crypto": "加密貨幣",
+    "cash": "現金"
+  },
+  "recurring": {
+    "title": "訂閱與分期",
+    "description": "管理訂閱服務和分期付款",
+    "subscriptions": "訂閱服務",
+    "installments": "分期付款",
+    "addSubscription": "新增訂閱",
+    "addInstallment": "新增分期",
+    "monthlyExpense": "每月支出",
+    "billingCycle": "計費週期",
+    "nextBilling": "下次扣款",
+    "status": "狀態",
+    "active": "進行中",
+    "cancelled": "已取消",
+    "completed": "已完成"
+  },
+  "cashFlows": {
+    "title": "現金流",
+    "description": "管理收入與支出",
+    "income": "收入",
+    "expense": "支出",
+    "category": "類別",
+    "addCashFlow": "新增現金流"
+  },
+  "analytics": {
+    "title": "分析",
+    "description": "資產績效分析"
+  },
+  "settings": {
+    "title": "設定",
+    "description": "系統設定",
+    "language": "語言",
+    "theme": "主題",
+    "currency": "幣別"
+  },
+  "userManagement": {
+    "title": "使用者管理",
+    "description": "管理系統使用者"
+  },
+  "notification": {
+    "title": "通知設定",
+    "description": "設定通知偏好"
+  },
+  "errors": {
+    "loadFailed": "載入資料失敗",
+    "saveFailed": "儲存失敗",
+    "deleteFailed": "刪除失敗",
+    "networkError": "網路連線錯誤",
+    "unauthorized": "未授權，請重新登入",
+    "serverError": "伺服器錯誤"
+  }
+}
+

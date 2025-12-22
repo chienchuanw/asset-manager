@@ -1,0 +1,159 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "confirm": "Confirm",
+    "back": "Back",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "submit": "Submit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "none": "None",
+    "noData": "No data",
+    "actions": "Actions"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "username": "Username",
+    "password": "Password",
+    "loginTitle": "Asset Manager",
+    "loginDescription": "Please enter your credentials to login",
+    "usernamePlaceholder": "Enter username",
+    "passwordPlaceholder": "Enter password",
+    "loggingIn": "Logging in..."
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "holdings": "Holdings",
+    "cashFlows": "Cash Flows",
+    "recurring": "Recurring",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "userManagement": "User Management",
+    "notification": "Notifications"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Asset Overview",
+    "totalValue": "Total Value",
+    "totalCost": "Total Cost",
+    "unrealizedPL": "Unrealized P/L",
+    "holdingsCount": "Holdings Count",
+    "totalValueDesc": "Total market value of all holdings",
+    "totalCostDesc": "Total cost of all holdings",
+    "holdingsCountDesc": "Number of current holdings",
+    "recentTransactions": "Recent Transactions",
+    "assetAllocation": "Asset Allocation",
+    "priceWarning": "Price Data Warning",
+    "priceWarningDesc": "Some asset prices are from cached data and may not be up-to-date.",
+    "reason": "Reason",
+    "affectedSymbols": "Affected Symbols"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "description": "Manage all transaction records",
+    "addTransaction": "Add Transaction",
+    "editTransaction": "Edit Transaction",
+    "deleteTransaction": "Delete Transaction",
+    "date": "Date",
+    "symbol": "Symbol",
+    "name": "Name",
+    "type": "Type",
+    "quantity": "Quantity",
+    "price": "Price",
+    "amount": "Amount",
+    "fee": "Fee",
+    "notes": "Notes",
+    "assetType": "Asset Type",
+    "buy": "Buy",
+    "sell": "Sell",
+    "dividend": "Dividend",
+    "feeType": "Fee",
+    "totalTransactions": "Total Transactions",
+    "totalBuyAmount": "Total Buy Amount",
+    "totalSellAmount": "Total Sell Amount",
+    "netFlow": "Net Flow"
+  },
+  "holdings": {
+    "title": "Holdings",
+    "description": "View all holdings",
+    "symbol": "Symbol",
+    "name": "Name",
+    "quantity": "Quantity",
+    "avgCost": "Avg Cost",
+    "currentPrice": "Current Price",
+    "marketValue": "Market Value",
+    "unrealizedPL": "Unrealized P/L",
+    "plPercent": "P/L %",
+    "weight": "Weight"
+  },
+  "assetTypes": {
+    "twStock": "TW Stock",
+    "usStock": "US Stock",
+    "crypto": "Crypto",
+    "cash": "Cash"
+  },
+  "recurring": {
+    "title": "Recurring",
+    "description": "Manage subscriptions and installments",
+    "subscriptions": "Subscriptions",
+    "installments": "Installments",
+    "addSubscription": "Add Subscription",
+    "addInstallment": "Add Installment",
+    "monthlyExpense": "Monthly Expense",
+    "billingCycle": "Billing Cycle",
+    "nextBilling": "Next Billing",
+    "status": "Status",
+    "active": "Active",
+    "cancelled": "Cancelled",
+    "completed": "Completed"
+  },
+  "cashFlows": {
+    "title": "Cash Flows",
+    "description": "Manage income and expenses",
+    "income": "Income",
+    "expense": "Expense",
+    "category": "Category",
+    "addCashFlow": "Add Cash Flow"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "description": "Asset Performance Analysis"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "System Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "currency": "Currency"
+  },
+  "userManagement": {
+    "title": "User Management",
+    "description": "Manage system users"
+  },
+  "notification": {
+    "title": "Notifications",
+    "description": "Configure notification preferences"
+  },
+  "errors": {
+    "loadFailed": "Failed to load data",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete",
+    "networkError": "Network connection error",
+    "unauthorized": "Unauthorized, please login again",
+    "serverError": "Server error"
+  }
+}
+
