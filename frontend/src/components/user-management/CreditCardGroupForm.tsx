@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -42,6 +43,8 @@ export function CreditCardGroupForm({
   onCancel,
   isSubmitting = false,
 }: CreditCardGroupFormProps) {
+  const t = useTranslations("userManagement");
+  const tCommon = useTranslations("common");
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
 
   const form = useForm<CreateCreditCardGroupInput>({
@@ -125,14 +128,14 @@ export function CreditCardGroupForm({
         <FormField
           control={form.control}
           name="name"
-          rules={{ required: "請輸入群組名稱" }}
+          rules={{ required: t("groupNameRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>群組名稱</FormLabel>
+              <FormLabel>{t("groupName")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：玉山銀行共同額度" {...field} />
+                <Input placeholder={t("groupNamePlaceholder")} {...field} />
               </FormControl>
-              <FormDescription>為這個信用卡群組命名</FormDescription>
+              <FormDescription>{t("groupNameDesc")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -140,14 +143,12 @@ export function CreditCardGroupForm({
 
         {/* 選擇卡片 */}
         <div className="space-y-3">
-          <Label>選擇卡片</Label>
-          <FormDescription>
-            選擇要加入群組的信用卡（必須為同一銀行且額度相同）
-          </FormDescription>
+          <Label>{t("selectCards")}</Label>
+          <FormDescription>{t("selectCardsDesc")}</FormDescription>
           <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-4">
             {filteredCards.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                沒有可用的信用卡
+                {t("noAvailableCards")}
               </p>
             ) : (
               filteredCards.map((card) => {
@@ -169,7 +170,11 @@ export function CreditCardGroupForm({
                       isSelected
                         ? "bg-primary/5 border-primary"
                         : "hover:bg-muted/50"
-                    } ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    } ${
+                      isDisabled
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
                     onClick={() => !isDisabled && handleCardToggle(card.id)}
                   >
                     <input
@@ -187,12 +192,12 @@ export function CreditCardGroupForm({
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        額度:{" "}
+                        {t("creditLimit")}:{" "}
                         {card.credit_limit.toLocaleString("zh-TW", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
                         })}{" "}
-                        | 已用:{" "}
+                        | {t("usedCredit")}:{" "}
                         {card.used_credit.toLocaleString("zh-TW", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
@@ -205,7 +210,9 @@ export function CreditCardGroupForm({
             )}
           </div>
           {selectedCardIds.length === 0 && (
-            <p className="text-sm text-destructive">請至少選擇一張卡片</p>
+            <p className="text-sm text-destructive">
+              {t("selectAtLeastOneCard")}
+            </p>
           )}
         </div>
 
@@ -215,11 +222,11 @@ export function CreditCardGroupForm({
           name="issuing_bank"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>發卡銀行</FormLabel>
+              <FormLabel>{t("issuingBank")}</FormLabel>
               <FormControl>
                 <Input {...field} disabled />
               </FormControl>
-              <FormDescription>根據選擇的卡片自動填入</FormDescription>
+              <FormDescription>{t("autoFilledFromCards")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -231,7 +238,7 @@ export function CreditCardGroupForm({
           name="shared_credit_limit"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>共同額度</FormLabel>
+              <FormLabel>{t("sharedCreditLimit")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -240,7 +247,7 @@ export function CreditCardGroupForm({
                   disabled
                 />
               </FormControl>
-              <FormDescription>根據選擇的卡片自動填入</FormDescription>
+              <FormDescription>{t("autoFilledFromCards")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -252,10 +259,10 @@ export function CreditCardGroupForm({
           name="note"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>備註</FormLabel>
+              <FormLabel>{tCommon("note")}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="輸入備註（選填）"
+                  placeholder={tCommon("enterNoteOptional")}
                   className="resize-none"
                   {...field}
                 />
@@ -274,18 +281,21 @@ export function CreditCardGroupForm({
               onClick={onCancel}
               disabled={isSubmitting}
             >
-              取消
+              {tCommon("cancel")}
             </Button>
           )}
           <Button
             type="submit"
             disabled={isSubmitting || selectedCardIds.length === 0}
           >
-            {isSubmitting ? "處理中..." : group ? "更新群組" : "建立群組"}
+            {isSubmitting
+              ? tCommon("processing")
+              : group
+              ? t("updateGroup")
+              : t("createGroup")}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
-

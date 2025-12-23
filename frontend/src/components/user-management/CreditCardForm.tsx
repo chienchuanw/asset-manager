@@ -7,6 +7,7 @@
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -37,6 +38,9 @@ export function CreditCardForm({
   onCancel,
   isSubmitting = false,
 }: CreditCardFormProps) {
+  const t = useTranslations("userManagement");
+  const tCommon = useTranslations("common");
+
   const form = useForm<CreateCreditCardInput>({
     defaultValues: {
       issuing_bank: "",
@@ -73,12 +77,12 @@ export function CreditCardForm({
         <FormField
           control={form.control}
           name="issuing_bank"
-          rules={{ required: "請輸入發卡銀行" }}
+          rules={{ required: t("issuingBankRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>發卡銀行</FormLabel>
+              <FormLabel>{t("issuingBank")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：玉山銀行" {...field} />
+                <Input placeholder={t("issuingBankPlaceholder")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -89,12 +93,12 @@ export function CreditCardForm({
         <FormField
           control={form.control}
           name="card_name"
-          rules={{ required: "請輸入卡片名稱" }}
+          rules={{ required: t("cardNameRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>卡片名稱</FormLabel>
+              <FormLabel>{t("cardName")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：Pi 拍錢包信用卡" {...field} />
+                <Input placeholder={t("cardNamePlaceholder")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -106,15 +110,15 @@ export function CreditCardForm({
           control={form.control}
           name="card_number_last4"
           rules={{
-            required: "請輸入卡號後四碼",
+            required: t("cardLast4Required"),
             pattern: {
               value: /^\d{4}$/,
-              message: "請輸入正確的四位數字",
+              message: t("cardLast4Invalid"),
             },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>卡號後四碼</FormLabel>
+              <FormLabel>{t("cardLast4")}</FormLabel>
               <FormControl>
                 <Input
                   placeholder="5678"
@@ -137,13 +141,13 @@ export function CreditCardForm({
             control={form.control}
             name="billing_day"
             rules={{
-              required: "請輸入帳單日",
-              min: { value: 1, message: "帳單日必須在 1-31 之間" },
-              max: { value: 31, message: "帳單日必須在 1-31 之間" },
+              required: t("billingDayRequired"),
+              min: { value: 1, message: t("billingDayRange") },
+              max: { value: 31, message: t("billingDayRange") },
             }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>帳單日</FormLabel>
+                <FormLabel>{t("billingDay")}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -157,7 +161,7 @@ export function CreditCardForm({
                     }}
                   />
                 </FormControl>
-                <FormDescription>每月帳單結算日（1-31）</FormDescription>
+                <FormDescription>{t("billingDayDesc")}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -168,13 +172,13 @@ export function CreditCardForm({
             control={form.control}
             name="payment_due_day"
             rules={{
-              required: "請輸入繳款截止日",
-              min: { value: 1, message: "繳款截止日必須在 1-31 之間" },
-              max: { value: 31, message: "繳款截止日必須在 1-31 之間" },
+              required: t("paymentDueDayRequired"),
+              min: { value: 1, message: t("paymentDueDayRange") },
+              max: { value: 31, message: t("paymentDueDayRange") },
             }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>繳款截止日</FormLabel>
+                <FormLabel>{t("paymentDueDay")}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -188,7 +192,7 @@ export function CreditCardForm({
                     }}
                   />
                 </FormControl>
-                <FormDescription>每月繳款截止日（1-31）</FormDescription>
+                <FormDescription>{t("paymentDueDayDesc")}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -201,12 +205,12 @@ export function CreditCardForm({
             control={form.control}
             name="credit_limit"
             rules={{
-              required: "請輸入信用額度",
-              min: { value: 0.01, message: "信用額度必須大於 0" },
+              required: t("creditLimitRequired"),
+              min: { value: 0.01, message: t("creditLimitPositive") },
             }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>信用額度</FormLabel>
+                <FormLabel>{t("creditLimit")}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -231,13 +235,11 @@ export function CreditCardForm({
               name="used_credit"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>已使用額度</FormLabel>
+                  <FormLabel>{t("usedCredit")}</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    可手動編輯以覆蓋系統自動計算的值
-                  </FormDescription>
+                  <FormDescription>{t("usedCreditDesc")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -251,10 +253,10 @@ export function CreditCardForm({
           name="note"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>備註（選填）</FormLabel>
+              <FormLabel>{tCommon("noteOptional")}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="輸入備註..."
+                  placeholder={tCommon("enterNote")}
                   className="resize-none"
                   {...field}
                 />
@@ -268,11 +270,15 @@ export function CreditCardForm({
         <div className="flex justify-end gap-3">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              取消
+              {tCommon("cancel")}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "儲存中..." : creditCard ? "更新" : "新增"}
+            {isSubmitting
+              ? tCommon("saving")
+              : creditCard
+              ? tCommon("update")
+              : tCommon("create")}
           </Button>
         </div>
       </form>

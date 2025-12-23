@@ -3,6 +3,7 @@
  * 用於快速切換本週和本月的日期範圍（不包含今日）
  */
 
+import { useTranslations } from "next-intl";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type WeekMonthType = "week" | "month";
@@ -21,6 +22,8 @@ export function WeekMonthTabs({
   onValueChange,
   className,
 }: WeekMonthTabsProps) {
+  const t = useTranslations("common");
+
   // 處理 Tabs 元件的 onValueChange 類型轉換
   const handleValueChange = (newValue: string) => {
     // 確保值是有效的 WeekMonthType
@@ -32,10 +35,9 @@ export function WeekMonthTabs({
   return (
     <Tabs value={value} onValueChange={handleValueChange} className={className}>
       <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="week">本週</TabsTrigger>
-        <TabsTrigger value="month">本月</TabsTrigger>
+        <TabsTrigger value="week">{t("thisWeek")}</TabsTrigger>
+        <TabsTrigger value="month">{t("thisMonth")}</TabsTrigger>
       </TabsList>
     </Tabs>
   );
 }
-

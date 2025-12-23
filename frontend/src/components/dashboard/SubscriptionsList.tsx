@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -41,30 +41,6 @@ interface SubscriptionsListProps {
   onEdit?: (subscription: Subscription) => void;
   onDelete?: (id: string) => void;
   onCancel?: (subscription: Subscription) => void;
-}
-
-/**
- * 格式化計費週期
- */
-function formatBillingCycle(cycle: BillingCycle): string {
-  const cycleMap: Record<BillingCycle, string> = {
-    monthly: "每月",
-    quarterly: "每季",
-    yearly: "每年",
-  };
-  return cycleMap[cycle] || cycle;
-}
-
-/**
- * 格式化付款方式
- */
-function formatPaymentMethod(method: PaymentMethod): string {
-  const methodMap: Record<PaymentMethod, string> = {
-    cash: "現金",
-    bank_account: "銀行帳戶",
-    credit_card: "信用卡",
-  };
-  return methodMap[method] || method;
 }
 
 /**
@@ -115,6 +91,29 @@ export function SubscriptionsList({
   onDelete,
   onCancel,
 }: SubscriptionsListProps) {
+  const t = useTranslations("recurring");
+  const tCommon = useTranslations("common");
+
+  // 格式化計費週期
+  const formatBillingCycle = (cycle: BillingCycle): string => {
+    const cycleMap: Record<BillingCycle, string> = {
+      monthly: t("monthly"),
+      quarterly: t("quarterly"),
+      yearly: t("yearly"),
+    };
+    return cycleMap[cycle] || cycle;
+  };
+
+  // 格式化付款方式
+  const formatPaymentMethod = (method: PaymentMethod): string => {
+    const methodMap: Record<PaymentMethod, string> = {
+      cash: t("cash"),
+      bank_account: t("bankAccount"),
+      credit_card: t("creditCard"),
+    };
+    return methodMap[method] || method;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -128,7 +127,7 @@ export function SubscriptionsList({
   if (subscriptions.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p>尚無訂閱記錄</p>
+        <p>{t("noSubscriptions")}</p>
       </div>
     );
   }
@@ -138,13 +137,13 @@ export function SubscriptionsList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>名稱</TableHead>
-            <TableHead>分類</TableHead>
-            <TableHead>金額</TableHead>
-            <TableHead>計費週期</TableHead>
-            <TableHead>付款方式</TableHead>
-            <TableHead>下次扣款</TableHead>
-            <TableHead>狀態</TableHead>
+            <TableHead>{tCommon("name")}</TableHead>
+            <TableHead>{t("category")}</TableHead>
+            <TableHead>{t("amount")}</TableHead>
+            <TableHead>{t("billingCycle")}</TableHead>
+            <TableHead>{t("paymentMethod")}</TableHead>
+            <TableHead>{t("nextBilling")}</TableHead>
+            <TableHead>{tCommon("status")}</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -174,7 +173,9 @@ export function SubscriptionsList({
                     subscription.status === "active" ? "default" : "secondary"
                   }
                 >
-                  {subscription.status === "active" ? "進行中" : "已取消"}
+                  {subscription.status === "active"
+                    ? t("active")
+                    : t("cancelled")}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -188,13 +189,13 @@ export function SubscriptionsList({
                     {onEdit && (
                       <DropdownMenuItem onClick={() => onEdit(subscription)}>
                         <PencilIcon className="mr-2 h-4 w-4" />
-                        編輯
+                        {tCommon("edit")}
                       </DropdownMenuItem>
                     )}
                     {onCancel && subscription.status === "active" && (
                       <DropdownMenuItem onClick={() => onCancel(subscription)}>
                         <XCircleIcon className="mr-2 h-4 w-4" />
-                        取消訂閱
+                        {t("cancelSubscription")}
                       </DropdownMenuItem>
                     )}
                     {onDelete && (
@@ -203,7 +204,7 @@ export function SubscriptionsList({
                         className="text-destructive"
                       >
                         <TrashIcon className="mr-2 h-4 w-4" />
-                        刪除
+                        {tCommon("delete")}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>

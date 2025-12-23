@@ -5,6 +5,7 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -35,34 +36,10 @@ interface InstallmentsListProps {
 }
 
 /**
- * 格式化日期
- */
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
-/**
  * 計算進度百分比
  */
 function calculateProgress(paidCount: number, totalCount: number): number {
   return Math.round((paidCount / totalCount) * 100);
-}
-
-/**
- * 格式化付款方式
- */
-function formatPaymentMethod(method: PaymentMethod): string {
-  const methodMap: Record<PaymentMethod, string> = {
-    cash: "現金",
-    bank_account: "銀行帳戶",
-    credit_card: "信用卡",
-  };
-  return methodMap[method] || method;
 }
 
 export function InstallmentsList({
@@ -71,6 +48,19 @@ export function InstallmentsList({
   onEdit,
   onDelete,
 }: InstallmentsListProps) {
+  const t = useTranslations("recurring");
+  const tCommon = useTranslations("common");
+
+  // 格式化付款方式
+  const formatPaymentMethod = (method: PaymentMethod): string => {
+    const methodMap: Record<PaymentMethod, string> = {
+      cash: t("cash"),
+      bank_account: t("bankAccount"),
+      credit_card: t("creditCard"),
+    };
+    return methodMap[method] || method;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -84,7 +74,7 @@ export function InstallmentsList({
   if (installments.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p>尚無分期記錄</p>
+        <p>{t("noInstallments")}</p>
       </div>
     );
   }
@@ -94,13 +84,13 @@ export function InstallmentsList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>名稱</TableHead>
-            <TableHead>分類</TableHead>
-            <TableHead>總金額</TableHead>
-            <TableHead>每期金額</TableHead>
-            <TableHead>付款方式</TableHead>
-            <TableHead>進度</TableHead>
-            <TableHead>狀態</TableHead>
+            <TableHead>{tCommon("name")}</TableHead>
+            <TableHead>{t("category")}</TableHead>
+            <TableHead>{t("totalAmount")}</TableHead>
+            <TableHead>{t("monthlyPayment")}</TableHead>
+            <TableHead>{t("paymentMethod")}</TableHead>
+            <TableHead>{t("progress")}</TableHead>
+            <TableHead>{tCommon("status")}</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -110,8 +100,6 @@ export function InstallmentsList({
               installment.paid_count,
               installment.installment_count
             );
-            const remaining =
-              installment.installment_count - installment.paid_count;
 
             return (
               <TableRow key={installment.id}>
@@ -127,7 +115,7 @@ export function InstallmentsList({
                     </p>
                     {installment.total_interest > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        利息: {installment.currency}{" "}
+                        {t("interest")}: {installment.currency}{" "}
                         {installment.total_interest.toLocaleString("zh-TW")}
                       </p>
                     )}
@@ -146,7 +134,7 @@ export function InstallmentsList({
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
                         {installment.paid_count} /{" "}
-                        {installment.installment_count} 期
+                        {installment.installment_count} {t("periods")}
                       </span>
                       <span className="font-medium">{progress}%</span>
                     </div>
@@ -164,10 +152,10 @@ export function InstallmentsList({
                     }
                   >
                     {installment.status === "active"
-                      ? "進行中"
+                      ? t("active")
                       : installment.status === "completed"
-                      ? "已完成"
-                      : "已取消"}
+                      ? t("completed")
+                      : t("cancelled")}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -181,7 +169,7 @@ export function InstallmentsList({
                       {onEdit && (
                         <DropdownMenuItem onClick={() => onEdit(installment)}>
                           <PencilIcon className="mr-2 h-4 w-4" />
-                          編輯
+                          {tCommon("edit")}
                         </DropdownMenuItem>
                       )}
                       {onDelete && (
@@ -190,7 +178,7 @@ export function InstallmentsList({
                           className="text-destructive"
                         >
                           <TrashIcon className="mr-2 h-4 w-4" />
-                          刪除
+                          {tCommon("delete")}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

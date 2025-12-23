@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,6 +28,7 @@ export function DailyDateNavigator({
   date,
   onDateChange,
 }: DailyDateNavigatorProps) {
+  const t = useTranslations("common");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   // 格式化日期為 YYYY/MM/DD
@@ -66,7 +68,7 @@ export function DailyDateNavigator({
         variant="outline"
         size="icon"
         onClick={handlePreviousDay}
-        aria-label="前一天"
+        aria-label={t("previousDay")}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -96,7 +98,7 @@ export function DailyDateNavigator({
         variant="outline"
         size="icon"
         onClick={handleNextDay}
-        aria-label="後一天"
+        aria-label={t("nextDay")}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
