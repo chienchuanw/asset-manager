@@ -6,6 +6,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Pie, PieChart } from "recharts";
 import {
   Card,
@@ -40,6 +41,8 @@ export function ExpenseCategoryPieChart({
   cashFlows,
   period,
 }: ExpenseCategoryPieChartProps) {
+  const t = useTranslations("cashFlows");
+
   // 處理圓餅圖資料
   const { chartData, chartConfig, totalExpense } = useMemo(() => {
     // 步驟 1: 篩選出支出類型的記錄
@@ -59,7 +62,7 @@ export function ExpenseCategoryPieChart({
     let total = 0;
 
     expenses.forEach((cf) => {
-      const categoryName = cf.category?.name || "未分類";
+      const categoryName = cf.category?.name || t("uncategorized");
       const currentAmount = categoryMap.get(categoryName) || 0;
       categoryMap.set(categoryName, currentAmount + cf.amount);
       total += cf.amount;
@@ -80,7 +83,7 @@ export function ExpenseCategoryPieChart({
         (sum, cat) => sum + cat.amount,
         0
       );
-      topCategories.push({ name: "其他", amount: otherTotal });
+      topCategories.push({ name: t("others"), amount: otherTotal });
     }
 
     // 步驟 5: 轉換成圓餅圖需要的格式，並同時建立配置
@@ -112,19 +115,23 @@ export function ExpenseCategoryPieChart({
   }, [cashFlows]);
 
   // 取得期間標題
-  const periodLabel = period === "week" ? "本週" : "本月";
+  const periodLabel = period === "week" ? t("weekly") : t("monthly");
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>支出分類分析</CardTitle>
-        <CardDescription>{periodLabel}支出分類佔比</CardDescription>
+        <CardTitle>{t("expenseCategoryAnalysis")}</CardTitle>
+        <CardDescription>
+          {periodLabel}
+          {t("expenseCategoryRatio")}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         {chartData.length === 0 ? (
           // 空資料狀態
           <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-            {periodLabel}暫無支出記錄
+            {periodLabel}
+            {t("noExpenseRecords")}
           </div>
         ) : (
           <ChartContainer
@@ -144,7 +151,8 @@ export function ExpenseCategoryPieChart({
       {chartData.length > 0 && (
         <div className="flex-col gap-2 text-sm px-6 pb-4">
           <div className="text-muted-foreground text-center">
-            {periodLabel}總支出：${formatAmount(totalExpense)}
+            {periodLabel}
+            {t("totalExpenseAmount")}：${formatAmount(totalExpense)}
           </div>
         </div>
       )}

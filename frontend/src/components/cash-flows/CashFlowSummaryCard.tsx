@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCashFlowSummary } from "@/hooks";
 import { formatAmount } from "@/types/cash-flow";
@@ -27,6 +28,8 @@ export function CashFlowSummaryCard({
   incomeRecords,
   expenseRecords,
 }: CashFlowSummaryCardProps) {
+  const t = useTranslations("cashFlows");
+
   const { data: summary, isLoading } = useCashFlowSummary(startDate, endDate, {
     // 確保資料總是最新的
     staleTime: 0,
@@ -62,35 +65,45 @@ export function CashFlowSummaryCard({
       {/* 第一列第一欄：總收入 */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">總收入</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {t("totalIncome")}
+          </CardTitle>
           <TrendingUp className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
             ${formatAmount(summary.total_income)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">期間內的所有收入</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {t("totalIncomeDesc")}
+          </p>
         </CardContent>
       </Card>
 
       {/* 第一列第二欄：總支出 */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">總支出</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {t("totalExpense")}
+          </CardTitle>
           <TrendingDown className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-red-600">
             ${formatAmount(summary.total_expense)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">期間內的所有支出</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {t("totalExpenseDesc")}
+          </p>
         </CardContent>
       </Card>
 
       {/* 第一列第三欄：淨現金流 */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">淨現金流</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {t("netCashFlow")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div
@@ -101,21 +114,25 @@ export function CashFlowSummaryCard({
             {netCashFlowIsPositive ? "+" : ""}$
             {formatAmount(summary.net_cash_flow)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">收入減去支出</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {t("netCashFlowDesc")}
+          </p>
         </CardContent>
       </Card>
 
       {/* 第二列第一欄：收入記錄 */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">收入記錄</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {t("incomeRecords")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-600">
             {incomeRecords}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            期間內的收入交易筆數
+            {t("incomeRecordsDesc")}
           </p>
         </CardContent>
       </Card>
@@ -123,14 +140,16 @@ export function CashFlowSummaryCard({
       {/* 第二列第二欄：支出記錄 */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">支出記錄</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {t("expenseRecords")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-600">
             {expenseRecords}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            期間內的支出交易筆數
+            {t("expenseRecordsDesc")}
           </p>
         </CardContent>
       </Card>
@@ -138,12 +157,14 @@ export function CashFlowSummaryCard({
       {/* 第二列第三欄：總記錄數 */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">總記錄數</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {t("totalRecords")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-600">{totalRecords}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            期間內的所有交易記錄
+            {t("totalRecordsDesc")}
           </p>
         </CardContent>
       </Card>
