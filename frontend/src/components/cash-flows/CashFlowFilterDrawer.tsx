@@ -4,6 +4,7 @@
  */
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -43,6 +44,8 @@ export function CashFlowFilterDrawer({
   onDateRangeChange,
   onReset,
 }: CashFlowFilterDrawerProps) {
+  const t = useTranslations("cashFlows");
+
   const [open, setOpen] = useState(false);
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
     dateRange
@@ -68,7 +71,7 @@ export function CashFlowFilterDrawer({
       <DrawerTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           <Filter className="h-4 w-4 mr-2" />
-          篩選
+          {t("filter")}
           {hasActiveFilters && (
             <span className="absolute -top-1 -right-1 h-2 w-2 bg-blue-600 rounded-full" />
           )}
@@ -76,8 +79,8 @@ export function CashFlowFilterDrawer({
       </DrawerTrigger>
       <DrawerContent className="max-h-[85vh] sm:max-w-2xl sm:mx-auto">
         <DrawerHeader>
-          <DrawerTitle>進階篩選</DrawerTitle>
-          <DrawerDescription>設定篩選條件以縮小搜尋範圍</DrawerDescription>
+          <DrawerTitle>{t("advancedFilter")}</DrawerTitle>
+          <DrawerDescription>{t("setFilterConditions")}</DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-4 overflow-y-auto">
@@ -85,13 +88,13 @@ export function CashFlowFilterDrawer({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* 現金流類型篩選 */}
             <div className="space-y-2">
-              <Label htmlFor="filter-type">現金流類型</Label>
+              <Label htmlFor="filter-type">{t("selectCashFlowType")}</Label>
               <Select value={filterType} onValueChange={onFilterTypeChange}>
                 <SelectTrigger id="filter-type">
-                  <SelectValue placeholder="選擇現金流類型" />
+                  <SelectValue placeholder={t("selectCashFlowType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部類型</SelectItem>
+                  <SelectItem value="all">{t("allTypes")}</SelectItem>
                   <SelectItem value={CashFlowType.INCOME}>
                     {getCashFlowTypeLabel(CashFlowType.INCOME)}
                   </SelectItem>
@@ -104,7 +107,7 @@ export function CashFlowFilterDrawer({
 
             {/* 日期範圍篩選 - 跨兩欄 */}
             <div className="space-y-2 sm:col-span-2">
-              <Label>自訂日期範圍</Label>
+              <Label>{t("date")}</Label>
               <div className="flex flex-col items-center">
                 <Calendar
                   mode="range"
@@ -133,11 +136,11 @@ export function CashFlowFilterDrawer({
             disabled={!hasActiveFilters}
           >
             <X className="h-4 w-4 mr-2" />
-            重置
+            {t("reset")}
           </Button>
           <DrawerClose asChild>
             <Button onClick={handleApply} className="flex-1">
-              套用篩選
+              {t("applyFilter")}
             </Button>
           </DrawerClose>
         </DrawerFooter>

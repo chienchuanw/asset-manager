@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -55,6 +56,8 @@ interface AddTransactionDialogProps {
  * 使用 useCreateTransaction hook 送出資料
  */
 export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
+  const t = useTranslations("transactions");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
 
   // 建立交易 mutation
@@ -122,13 +125,13 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          新增交易
+          {t("addTransaction")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>新增交易記錄</DialogTitle>
-          <DialogDescription>填寫交易資訊以建立新的交易記錄</DialogDescription>
+          <DialogTitle>{t("addTransactionTitle")}</DialogTitle>
+          <DialogDescription>{t("addTransactionDesc")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -139,7 +142,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>日期</FormLabel>
+                  <FormLabel>{t("date")}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -154,14 +157,14 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               name="asset_type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>資產類型</FormLabel>
+                  <FormLabel>{t("assetTypeLabel")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="選擇資產類型" />
+                        <SelectValue placeholder={t("selectAssetType")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -184,7 +187,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="symbol"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>代碼</FormLabel>
+                    <FormLabel>{t("symbolLabel")}</FormLabel>
                     <FormControl>
                       <InstrumentCombobox
                         value={field.value}
@@ -198,13 +201,11 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                           form.setValue("symbol", instrument.symbol);
                           form.setValue("name", instrument.name);
                         }}
-                        placeholder="輸入或選擇代碼..."
-                        searchPlaceholder="搜尋代碼或名稱..."
+                        placeholder={t("symbolPlaceholder")}
+                        searchPlaceholder={t("symbolSearchPlaceholder")}
                       />
                     </FormControl>
-                    <FormDescription>
-                      可從清單選擇或手動輸入代碼
-                    </FormDescription>
+                    <FormDescription>{t("symbolDescription")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -215,13 +216,11 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>名稱</FormLabel>
+                    <FormLabel>{t("nameLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="例如: 台積電" {...field} />
+                      <Input placeholder={t("namePlaceholder")} {...field} />
                     </FormControl>
-                    <FormDescription>
-                      選擇代碼後自動帶入，可手動修改
-                    </FormDescription>
+                    <FormDescription>{t("nameDescription")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -234,14 +233,14 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>交易類型</FormLabel>
+                  <FormLabel>{t("typeLabel")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="選擇交易類型" />
+                        <SelectValue placeholder={t("selectType")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -273,7 +272,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
 
                   return (
                     <FormItem>
-                      <FormLabel>數量</FormLabel>
+                      <FormLabel>{t("quantityLabel")}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -297,7 +296,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>價格</FormLabel>
+                    <FormLabel>{t("priceLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -320,7 +319,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>金額</FormLabel>
+                    <FormLabel>{t("amountLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -348,7 +347,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="fee"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>手續費（選填）</FormLabel>
+                    <FormLabel>{t("feeOptional")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -373,7 +372,7 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="tax"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>交易稅（選填）</FormLabel>
+                    <FormLabel>{t("taxOptional")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -398,14 +397,14 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>幣別</FormLabel>
+                    <FormLabel>{t("currencyLabel")}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="選擇幣別" />
+                          <SelectValue placeholder={t("selectCurrency")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -427,10 +426,10 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
               name="note"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>備註（選填）</FormLabel>
+                  <FormLabel>{t("noteLabel")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="輸入備註..."
+                      placeholder={t("notePlaceholder")}
                       {...field}
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(e.target.value || null)}
@@ -448,13 +447,13 @@ export function AddTransactionDialog({ onSuccess }: AddTransactionDialogProps) {
                 onClick={() => setOpen(false)}
                 disabled={createMutation.isPending}
               >
-                取消
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                建立交易
+                {t("createTransaction")}
               </Button>
             </DialogFooter>
           </form>

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as authAPI from "@/lib/api/auth";
 import type { User, LoginRequest } from "@/lib/api/auth";
@@ -41,6 +42,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("auth");
   const [isInitialized, setIsInitialized] = useState(false);
 
   // 使用 React Query 查詢當前使用者
@@ -61,11 +63,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onSuccess: async () => {
       // 登入成功後，重新取得使用者資訊
       await refetch();
-      toast.success("登入成功");
+      toast.success(t("loginSuccess"));
       router.push("/dashboard");
     },
     onError: (error: Error) => {
-      toast.error(`登入失敗: ${error.message}`);
+      toast.error(t("loginError", { error: error.message }));
     },
   });
 
@@ -75,11 +77,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onSuccess: () => {
       // 清除所有 query cache
       queryClient.clear();
-      toast.success("登出成功");
+      toast.success(t("logoutSuccess"));
       router.push("/login");
     },
     onError: (error: Error) => {
-      toast.error(`登出失敗: ${error.message}`);
+      toast.error(t("logoutError", { error: error.message }));
     },
   });
 

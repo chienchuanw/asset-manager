@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Copy, Trash2, Loader2 } from "lucide-react";
@@ -66,6 +67,8 @@ export function BatchAddTransactionDialog({
   onOpenChange,
   initialTransactions,
 }: BatchAddTransactionDialogProps) {
+  const t = useTranslations("transactions");
+  const tCommon = useTranslations("common");
   const [internalOpen, setInternalOpen] = useState(false);
 
   // 如果有傳入 open prop，使用受控模式；否則使用內部狀態
@@ -77,8 +80,8 @@ export function BatchAddTransactionDialog({
     onSuccess: (data) => {
       // 顯示成功訊息，包含成功建立的筆數
       const successCount = data.length;
-      toast.success(`批次新增成功`, {
-        description: `成功建立 ${successCount} 筆交易記錄`,
+      toast.success(t("batchSuccessTitle"), {
+        description: t("batchSuccessDesc", { count: successCount }),
       });
       setOpen(false);
       form.reset();
@@ -86,8 +89,8 @@ export function BatchAddTransactionDialog({
     },
     onError: (error) => {
       // 顯示錯誤訊息
-      toast.error("批次新增失敗", {
-        description: error.message || "請稍後再試",
+      toast.error(t("batchErrorTitle"), {
+        description: error.message || t("batchErrorDesc"),
       });
     },
   });
@@ -220,15 +223,13 @@ export function BatchAddTransactionDialog({
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <Plus className="h-4 w-4 mr-2" />
-          批次新增交易
+          {t("batchAddButton")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>批次新增交易記錄</DialogTitle>
-          <DialogDescription>
-            一次新增多筆交易記錄，填寫完成後點擊「建立交易」
-          </DialogDescription>
+          <DialogTitle>{t("batchAddTitle")}</DialogTitle>
+          <DialogDescription>{t("batchAddDesc")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -237,7 +238,9 @@ export function BatchAddTransactionDialog({
             {errorSummary.length > 0 && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  <div className="font-semibold mb-2">請修正以下錯誤：</div>
+                  <div className="font-semibold mb-2">
+                    {t("batchErrorTitle")}：
+                  </div>
                   <ul className="list-disc list-inside space-y-1">
                     {errorSummary.map((item, idx) => (
                       <li key={idx}>
@@ -296,7 +299,7 @@ export function BatchAddTransactionDialog({
                 onClick={handleAddRow}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                新增一列
+                {t("addRow")}
               </Button>
             </div>
 
@@ -307,13 +310,13 @@ export function BatchAddTransactionDialog({
                 onClick={() => setOpen(false)}
                 disabled={createBatchMutation.isPending}
               >
-                取消
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={createBatchMutation.isPending}>
                 {createBatchMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                建立交易
+                {t("createTransaction")}
               </Button>
             </DialogFooter>
           </form>
@@ -341,6 +344,8 @@ function TransactionRow({
   onDelete,
   canDelete,
 }: TransactionRowProps) {
+  const t = useTranslations("transactions");
+
   // 監聽數量和價格變化，自動計算金額
   const quantity = form.watch(`transactions.${index}.quantity`);
   const price = form.watch(`transactions.${index}.price`);
@@ -654,7 +659,7 @@ function TransactionRow({
               <FormItem>
                 <FormControl>
                   <Input
-                    placeholder="輸入備註..."
+                    placeholder={t("notePlaceholder")}
                     {...field}
                     value={field.value ?? ""}
                     onChange={(e) => field.onChange(e.target.value || null)}
@@ -674,7 +679,7 @@ function TransactionRow({
               variant="ghost"
               size="sm"
               onClick={onCopy}
-              title="複製此列"
+              title={t("copyRow")}
             >
               <Copy className="h-4 w-4" />
             </Button>
@@ -684,7 +689,7 @@ function TransactionRow({
               size="sm"
               onClick={onDelete}
               disabled={!canDelete}
-              title="刪除此列"
+              title={t("deleteRow")}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
