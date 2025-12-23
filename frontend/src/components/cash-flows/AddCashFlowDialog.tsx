@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -70,18 +71,20 @@ interface AddCashFlowDialogProps {
  * 使用 useCreateCashFlow hook 送出資料
  */
 export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
+  const t = useTranslations("cashFlows");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
 
   // 建立現金流 mutation
   const createMutation = useCreateCashFlow({
     onSuccess: () => {
-      toast.success("記錄建立成功");
+      toast.success(t("successMessage"));
       setOpen(false);
       form.reset();
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error.message || "建立失敗");
+      toast.error(error.message || t("errorMessage"));
     },
   });
 
@@ -198,15 +201,13 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          新增記錄
+          {t("addRecord")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>新增現金流記錄</DialogTitle>
-          <DialogDescription>
-            記錄您的收入或支出，以便追蹤現金流動
-          </DialogDescription>
+          <DialogTitle>{t("addCashFlowTitle")}</DialogTitle>
+          <DialogDescription>{t("addCashFlowDesc")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -218,7 +219,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm text-muted-foreground">
-                    金額 (TWD)
+                    {t("amountCurrency")}
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
@@ -252,7 +253,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>類型</FormLabel>
+                    <FormLabel>{t("type")}</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -268,7 +269,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="選擇類型" />
+                          <SelectValue placeholder={t("selectType")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -290,17 +291,17 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                 name="category_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>分類</FormLabel>
+                    <FormLabel>{t("category")}</FormLabel>
                     <FormControl>
                       <CategorySelect
                         value={field.value}
                         onValueChange={field.onChange}
                         type={cashFlowType}
-                        placeholder="選擇分類"
+                        placeholder={t("selectCategory")}
                         autoSelectName={
                           cashFlowType === CashFlowType.TRANSFER_IN ||
                           cashFlowType === CashFlowType.TRANSFER_OUT
-                            ? "移轉"
+                            ? t("transfer")
                             : undefined
                         }
                       />
@@ -317,7 +318,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>日期</FormLabel>
+                  <FormLabel>{t("date")}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -332,7 +333,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               name="payment_method"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>付款方式</FormLabel>
+                  <FormLabel>{t("paymentMethod")}</FormLabel>
                   <FormControl>
                     <PaymentMethodSelect
                       value={field.value}
@@ -341,7 +342,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                         // 重置帳戶選擇
                         form.setValue("account_id", "");
                       }}
-                      placeholder="選擇付款方式"
+                      placeholder={t("selectPaymentMethod")}
                       disabled={
                         cashFlowType === CashFlowType.TRANSFER_IN ||
                         cashFlowType === CashFlowType.TRANSFER_OUT
@@ -352,7 +353,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                   {(cashFlowType === CashFlowType.TRANSFER_IN ||
                     cashFlowType === CashFlowType.TRANSFER_OUT) && (
                     <p className="text-sm text-muted-foreground">
-                      轉帳類型僅支援銀行帳戶
+                      {t("transferOnlyBankAccount")}
                     </p>
                   )}
                 </FormItem>
@@ -368,19 +369,19 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                   <FormItem>
                     <FormLabel>
                       {paymentMethod === PaymentMethodType.BANK_ACCOUNT
-                        ? "銀行帳戶"
-                        : "信用卡"}
+                        ? t("bankAccount")
+                        : t("creditCard")}
                     </FormLabel>
                     <FormControl>
                       <AccountSelect
                         value={field.value || ""}
                         onValueChange={field.onChange}
                         paymentMethodType={paymentMethod}
-                        placeholder={`選擇${
+                        placeholder={
                           paymentMethod === PaymentMethodType.BANK_ACCOUNT
-                            ? "銀行帳戶"
-                            : "信用卡"
-                        }`}
+                            ? t("selectBankAccount")
+                            : t("selectCreditCard")
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -399,7 +400,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                     name="target_payment_method"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>轉帳目標類型</FormLabel>
+                        <FormLabel>{t("transferTargetType")}</FormLabel>
                         <FormControl>
                           <PaymentMethodSelect
                             value={field.value}
@@ -408,13 +409,13 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                               // 重置目標帳戶選擇
                               form.setValue("target_account_id", "");
                             }}
-                            placeholder="選擇轉帳目標類型"
+                            placeholder={t("selectTransferTargetType")}
                             excludeCash={true}
                           />
                         </FormControl>
                         <FormMessage />
                         <p className="text-sm text-muted-foreground">
-                          選擇要轉入的目標（銀行帳戶或信用卡）
+                          {t("selectTransferTarget")}
                         </p>
                       </FormItem>
                     )}
@@ -430,20 +431,20 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                           <FormLabel>
                             {targetPaymentMethod ===
                             PaymentMethodType.BANK_ACCOUNT
-                              ? "目標銀行帳戶"
-                              : "目標信用卡"}
+                              ? t("targetBankAccount")
+                              : t("targetCreditCard")}
                           </FormLabel>
                           <FormControl>
                             <AccountSelect
                               value={field.value || ""}
                               onValueChange={field.onChange}
                               paymentMethodType={targetPaymentMethod}
-                              placeholder={`選擇${
+                              placeholder={
                                 targetPaymentMethod ===
                                 PaymentMethodType.BANK_ACCOUNT
-                                  ? "銀行帳戶"
-                                  : "信用卡"
-                              }`}
+                                  ? t("selectBankAccount")
+                                  : t("selectCreditCard")
+                              }
                             />
                           </FormControl>
                           <FormMessage />
@@ -460,9 +461,12 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>描述</FormLabel>
+                  <FormLabel>{t("description")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="例如: 十月薪資" {...field} />
+                    <Input
+                      placeholder={t("descriptionPlaceholder")}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -475,10 +479,10 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
               name="note"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>備註（可選）</FormLabel>
+                  <FormLabel>{tCommon("noteOptional")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="額外說明..."
+                      placeholder={t("notePlaceholder")}
                       className="resize-none"
                       {...field}
                       value={field.value || ""}
@@ -497,7 +501,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                 disabled={createMutation.isPending}
                 className="flex-1"
               >
-                取消
+                {tCommon("cancel")}
               </Button>
               <Button
                 type="submit"
@@ -507,7 +511,7 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
                 {createMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                建立
+                {tCommon("create")}
               </Button>
             </DialogFooter>
           </form>

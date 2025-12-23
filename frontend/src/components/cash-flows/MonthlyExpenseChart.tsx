@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartConfig,
@@ -28,6 +29,8 @@ interface MonthlyExpenseChartProps {
 export function MonthlyExpenseChart({
   selectedDate,
 }: MonthlyExpenseChartProps) {
+  const t = useTranslations("cashFlows");
+  const tCommon = useTranslations("common");
   const isMobile = useIsMobile();
 
   // 計算日期範圍（桌面=當月，手機=當週）
@@ -60,6 +63,15 @@ export function MonthlyExpenseChart({
         endDate: formatDate(weekEnd),
         days: 7,
         periodType: "week" as const,
+        weekDays: [
+          tCommon("monday"),
+          tCommon("tuesday"),
+          tCommon("wednesday"),
+          tCommon("thursday"),
+          tCommon("friday"),
+          tCommon("saturday"),
+          tCommon("sunday"),
+        ],
       };
     } else {
       // 桌面版：計算當月範圍
@@ -149,11 +161,11 @@ export function MonthlyExpenseChart({
   // 圖表配置
   const chartConfig = {
     income: {
-      label: "收入",
+      label: t("income"),
       color: "#22c55e", // 綠色
     },
     expense: {
-      label: "支出",
+      label: t("expense"),
       color: "#ef4444", // 紅色
     },
   } satisfies ChartConfig;
@@ -171,7 +183,10 @@ export function MonthlyExpenseChart({
   if (!cashFlows || cashFlows.length === 0) {
     return (
       <div className="w-full h-[200px] flex items-center justify-center text-muted-foreground">
-        <p>{periodType === "week" ? "本週" : "本月"}尚無現金流記錄</p>
+        <p>
+          {periodType === "week" ? t("weekly") : t("monthly")}
+          {t("noRecords")}
+        </p>
       </div>
     );
   }
