@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ interface CSVImportDialogProps {
 }
 
 export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
+  const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -36,7 +38,7 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
     if (selectedFile) {
       // 驗證檔案類型
       if (!selectedFile.name.endsWith(".csv")) {
-        toast.error("請選擇 CSV 檔案");
+        toast.error(t("csvErrorFileType"));
         return;
       }
       setFile(selectedFile);
@@ -56,9 +58,9 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error("登入已過期，請重新登入");
+          toast.error(t("csvErrorExpired"));
         } else {
-          toast.error(`下載樣板失敗 (${response.status})`);
+          toast.error(t("csvErrorDownload", { status: response.status }));
         }
         return;
       }
@@ -73,17 +75,17 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success("樣板下載成功");
+      toast.success(t("csvSuccessDownload"));
     } catch (error) {
       console.error("下載樣板失敗:", error);
-      toast.error("下載樣板失敗，請稍後再試");
+      toast.error(t("csvErrorDownloadRetry"));
     }
   };
 
   // 上傳並解析 CSV
   const handleUpload = async () => {
     if (!file) {
-      toast.error("請選擇檔案");
+      toast.error(t("csvErrorNoFile"));
       return;
     }
 
@@ -107,28 +109,28 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error("登入已過期，請重新登入");
+          toast.error(t("csvErrorExpired"));
           return;
         }
-        throw new Error(result.error?.message || "上傳失敗");
+        throw new Error(result.error?.message || t("csvErrorUpload"));
       }
 
       // 檢查解析結果
       if (!result.data.success) {
         setErrors(result.data.errors);
-        toast.error("CSV 檔案格式有誤，請檢查錯誤訊息");
+        toast.error(t("csvErrorValidation"));
         return;
       }
 
       // 解析成功，傳遞交易資料給父元件
-      toast.success("CSV 解析成功");
+      toast.success(t("csvSuccessUpload"));
       onSuccess(result.data.transactions);
       setOpen(false);
       setFile(null);
       setErrors([]);
     } catch (error: any) {
       console.error("上傳失敗:", error);
-      toast.error(error.message || "上傳失敗");
+      toast.error(error.message || t("csvErrorUpload"));
     } finally {
       setIsUploading(false);
     }
@@ -148,15 +150,13 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Upload className="h-4 w-4 mr-2" />
-          匯入
+          {t("csvImportButton")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>匯入交易記錄</DialogTitle>
-          <DialogDescription>
-            上傳 CSV 檔案以批量匯入交易記錄。請先下載樣板檔案並填寫資料。
-          </DialogDescription>
+          <DialogTitle>{t("csvImportTitle")}</DialogTitle>
+          <DialogDescription>{t("csvImportDesc")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -177,13 +177,13 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
               onClick={handleDownloadTemplate}
             >
               <Download className="h-4 w-4 mr-2" />
-              下載樣板
+              {t("downloadTemplate")}
             </Button>
           </div>
 
           {/* 檔案上傳區域 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">選擇 CSV 檔案</label>
+            <label className="text-sm font-medium">{t("selectFile")}</label>
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -200,7 +200,7 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
                 <div className="text-center">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm font-medium">
-                    {file ? file.name : "點擊選擇檔案"}
+                    {file ? file.name : t("selectFile")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     支援 .csv 格式
@@ -215,7 +215,7 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
                 onClick={handleReset}
                 className="w-full"
               >
-                清除檔案
+                {t("selectFile")}
               </Button>
             )}
           </div>
@@ -255,10 +255,10 @@ export function CSVImportDialog({ onSuccess }: CSVImportDialogProps) {
             }}
             disabled={isUploading}
           >
-            取消
+            {t("selectFile")}
           </Button>
           <Button onClick={handleUpload} disabled={!file || isUploading}>
-            {isUploading ? "上傳中..." : "上傳並解析"}
+            {isUploading ? t("selectFile") : t("uploadFile")}
           </Button>
         </div>
       </DialogContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -61,6 +62,9 @@ export function EditTransactionDialog({
   onOpenChange,
   onSuccess,
 }: EditTransactionDialogProps) {
+  const t = useTranslations("transactions");
+  const tCommon = useTranslations("common");
+
   // 更新交易 mutation
   const updateMutation = useUpdateTransaction({
     onSuccess: () => {
@@ -138,8 +142,8 @@ export function EditTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>編輯交易記錄</DialogTitle>
-          <DialogDescription>修改交易資訊並儲存變更</DialogDescription>
+          <DialogTitle>{t("editTransactionTitle")}</DialogTitle>
+          <DialogDescription>{t("editTransactionDesc")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -150,7 +154,7 @@ export function EditTransactionDialog({
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>日期</FormLabel>
+                  <FormLabel>{t("date")}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} value={field.value ?? ""} />
                   </FormControl>
@@ -165,11 +169,11 @@ export function EditTransactionDialog({
               name="asset_type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>資產類型</FormLabel>
+                  <FormLabel>{t("assetTypeLabel")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="選擇資產類型" />
+                        <SelectValue placeholder={t("selectAssetType")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -192,10 +196,10 @@ export function EditTransactionDialog({
                 name="symbol"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>代碼</FormLabel>
+                    <FormLabel>{t("symbolLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="例如: 2330"
+                        placeholder={t("symbolPlaceholder")}
                         {...field}
                         value={field.value ?? ""}
                       />
@@ -210,10 +214,10 @@ export function EditTransactionDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>名稱</FormLabel>
+                    <FormLabel>{t("nameLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="例如: 台積電"
+                        placeholder={t("namePlaceholder")}
                         {...field}
                         value={field.value ?? ""}
                       />
@@ -230,11 +234,11 @@ export function EditTransactionDialog({
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>交易類型</FormLabel>
+                  <FormLabel>{t("typeLabel")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="選擇交易類型" />
+                        <SelectValue placeholder={t("selectType")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -266,7 +270,7 @@ export function EditTransactionDialog({
 
                   return (
                     <FormItem>
-                      <FormLabel>數量</FormLabel>
+                      <FormLabel>{t("quantityLabel")}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -291,7 +295,7 @@ export function EditTransactionDialog({
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>價格</FormLabel>
+                    <FormLabel>{t("priceLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -315,7 +319,7 @@ export function EditTransactionDialog({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>金額</FormLabel>
+                    <FormLabel>{t("amountLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -344,7 +348,7 @@ export function EditTransactionDialog({
                 name="fee"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>手續費（選填）</FormLabel>
+                    <FormLabel>{t("feeOptional")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -369,7 +373,7 @@ export function EditTransactionDialog({
                 name="tax"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>交易稅（選填）</FormLabel>
+                    <FormLabel>{t("taxOptional")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -394,11 +398,11 @@ export function EditTransactionDialog({
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>幣別</FormLabel>
+                    <FormLabel>{t("currencyLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="選擇幣別" />
+                          <SelectValue placeholder={t("selectCurrency")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -420,10 +424,10 @@ export function EditTransactionDialog({
               name="note"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>備註（選填）</FormLabel>
+                  <FormLabel>{t("noteLabel")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="輸入備註..."
+                      placeholder={t("notePlaceholder")}
                       {...field}
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(e.target.value || null)}
@@ -441,13 +445,13 @@ export function EditTransactionDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={updateMutation.isPending}
               >
-                取消
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                儲存變更
+                {t("saveChanges")}
               </Button>
             </DialogFooter>
           </form>

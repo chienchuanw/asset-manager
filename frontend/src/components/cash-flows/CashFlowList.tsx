@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -48,6 +49,9 @@ interface CashFlowListProps {
  * 顯示現金流記錄的表格列表，支援編輯和刪除操作
  */
 export function CashFlowList({ filters }: CashFlowListProps) {
+  const t = useTranslations("cashFlows");
+  const tCommon = useTranslations("common");
+
   // 編輯狀態
   const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null);
 
@@ -60,12 +64,12 @@ export function CashFlowList({ filters }: CashFlowListProps) {
   // 刪除現金流 mutation
   const deleteMutation = useDeleteCashFlow({
     onError: (error) => {
-      toast.error(error.message || "刪除失敗");
+      toast.error(error.message || t("errorMessage"));
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm("確定要刪除這筆記錄嗎？")) {
+    if (confirm(t("confirmDelete"))) {
       deleteMutation.mutate(id);
     }
   };
@@ -75,11 +79,11 @@ export function CashFlowList({ filters }: CashFlowListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>類型</TableHead>
-            <TableHead>分類</TableHead>
-            <TableHead>付款方式</TableHead>
-            <TableHead>描述</TableHead>
-            <TableHead className="text-right">金額</TableHead>
+            <TableHead>{t("type")}</TableHead>
+            <TableHead>{t("category")}</TableHead>
+            <TableHead>{t("paymentMethod")}</TableHead>
+            <TableHead>{t("description")}</TableHead>
+            <TableHead className="text-right">{t("amount")}</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -112,7 +116,7 @@ export function CashFlowList({ filters }: CashFlowListProps) {
             // 無資料
             <TableRow>
               <TableCell colSpan={7} className="h-24 text-center">
-                <p className="text-muted-foreground">尚無現金流記錄</p>
+                <p className="text-muted-foreground">{t("noRecords")}</p>
               </TableCell>
             </TableRow>
           ) : (
@@ -194,7 +198,7 @@ export function CashFlowList({ filters }: CashFlowListProps) {
                           onClick={() => setEditingCashFlow(cashFlow)}
                         >
                           <Pencil className="h-4 w-4 mr-2" />
-                          編輯
+                          {tCommon("edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDelete(cashFlow.id)}
@@ -202,7 +206,7 @@ export function CashFlowList({ filters }: CashFlowListProps) {
                           disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          刪除
+                          {tCommon("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
