@@ -7,6 +7,7 @@
 
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -51,6 +52,9 @@ export function SubscriptionForm({
   onCancel,
   isSubmitting = false,
 }: SubscriptionFormProps) {
+  const t = useTranslations("recurring");
+  const tCommon = useTranslations("common");
+
   // 取得銀行帳戶和信用卡列表
   const { data: bankAccounts = [] } = useBankAccounts();
   const { data: creditCards = [] } = useCreditCards();
@@ -127,12 +131,12 @@ export function SubscriptionForm({
         <FormField
           control={form.control}
           name="name"
-          rules={{ required: "請輸入訂閱名稱" }}
+          rules={{ required: t("serviceNameRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>訂閱名稱</FormLabel>
+              <FormLabel>{t("serviceName")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：Netflix" {...field} />
+                <Input placeholder={t("serviceNamePlaceholder")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -144,12 +148,12 @@ export function SubscriptionForm({
           control={form.control}
           name="amount"
           rules={{
-            required: "請輸入金額",
-            min: { value: 0.01, message: "金額必須大於 0" },
+            required: t("amountRequired"),
+            min: { value: 0.01, message: t("amountPositive") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>金額</FormLabel>
+              <FormLabel>{t("amount")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -173,17 +177,17 @@ export function SubscriptionForm({
           name="billing_cycle"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>計費週期</FormLabel>
+              <FormLabel>{t("billingCycle")}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="選擇計費週期" />
+                    <SelectValue placeholder={t("selectCycle")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="monthly">每月</SelectItem>
-                  <SelectItem value="quarterly">每季</SelectItem>
-                  <SelectItem value="yearly">每年</SelectItem>
+                  <SelectItem value="monthly">{t("monthly")}</SelectItem>
+                  <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+                  <SelectItem value="yearly">{t("yearly")}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -196,13 +200,13 @@ export function SubscriptionForm({
           control={form.control}
           name="billing_day"
           rules={{
-            required: "請輸入扣款日",
-            min: { value: 1, message: "扣款日必須在 1-31 之間" },
-            max: { value: 31, message: "扣款日必須在 1-31 之間" },
+            required: t("billingDayRequired"),
+            min: { value: 1, message: t("billingDayRange") },
+            max: { value: 31, message: t("billingDayRange") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>每月扣款日</FormLabel>
+              <FormLabel>{t("billingDayLabel")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -216,7 +220,7 @@ export function SubscriptionForm({
                   }}
                 />
               </FormControl>
-              <FormDescription>每月的第幾天扣款（1-31）</FormDescription>
+              <FormDescription>{t("billingDayDesc")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -226,14 +230,14 @@ export function SubscriptionForm({
         <FormField
           control={form.control}
           name="category_id"
-          rules={{ required: "請選擇分類" }}
+          rules={{ required: t("categoryRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>分類</FormLabel>
+              <FormLabel>{t("category")}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="選擇分類" />
+                    <SelectValue placeholder={t("selectCategory")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -253,10 +257,10 @@ export function SubscriptionForm({
         <FormField
           control={form.control}
           name="payment_method"
-          rules={{ required: "請選擇付款方式" }}
+          rules={{ required: t("paymentMethodRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>付款方式</FormLabel>
+              <FormLabel>{t("paymentMethod")}</FormLabel>
               <Select
                 onValueChange={(value: PaymentMethod) => {
                   field.onChange(value);
@@ -269,13 +273,15 @@ export function SubscriptionForm({
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="選擇付款方式" />
+                    <SelectValue placeholder={t("selectPaymentMethod")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="cash">現金</SelectItem>
-                  <SelectItem value="bank_account">銀行帳戶</SelectItem>
-                  <SelectItem value="credit_card">信用卡</SelectItem>
+                  <SelectItem value="cash">{t("cash")}</SelectItem>
+                  <SelectItem value="bank_account">
+                    {t("bankAccount")}
+                  </SelectItem>
+                  <SelectItem value="credit_card">{t("creditCard")}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -288,11 +294,18 @@ export function SubscriptionForm({
           <FormField
             control={form.control}
             name="account_id"
-            rules={{ required: "請選擇帳戶" }}
+            rules={{
+              required:
+                paymentMethod === "bank_account"
+                  ? t("bankAccountRequired")
+                  : t("creditCardRequired"),
+            }}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  {paymentMethod === "bank_account" ? "銀行帳戶" : "信用卡"}
+                  {paymentMethod === "bank_account"
+                    ? t("bankAccount")
+                    : t("creditCard")}
                 </FormLabel>
                 <Select
                   onValueChange={field.onChange}
@@ -303,8 +316,8 @@ export function SubscriptionForm({
                       <SelectValue
                         placeholder={
                           paymentMethod === "bank_account"
-                            ? "選擇銀行帳戶"
-                            : "選擇信用卡"
+                            ? t("selectBankAccount")
+                            : t("selectCreditCard")
                         }
                       />
                     </SelectTrigger>
@@ -327,10 +340,10 @@ export function SubscriptionForm({
         <FormField
           control={form.control}
           name="start_date"
-          rules={{ required: "請選擇開始日期" }}
+          rules={{ required: t("startDateRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>開始日期</FormLabel>
+              <FormLabel>{t("startDate")}</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
@@ -345,13 +358,11 @@ export function SubscriptionForm({
           name="end_date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>結束日期（可選）</FormLabel>
+              <FormLabel>{t("endDateOptional")}</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
-              <FormDescription>
-                如果不設定，訂閱將持續到手動取消
-              </FormDescription>
+              <FormDescription>{t("endDateDesc")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -364,8 +375,8 @@ export function SubscriptionForm({
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
-                <FormLabel className="text-base">自動續約</FormLabel>
-                <FormDescription>到期後自動續約訂閱</FormDescription>
+                <FormLabel className="text-base">{t("autoRenew")}</FormLabel>
+                <FormDescription>{t("autoRenewDesc")}</FormDescription>
               </div>
               <FormControl>
                 <Switch
@@ -383,10 +394,10 @@ export function SubscriptionForm({
           name="note"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>備註（可選）</FormLabel>
+              <FormLabel>{tCommon("noteOptional")}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="輸入備註..."
+                  placeholder={tCommon("enterNote")}
                   className="resize-none"
                   {...field}
                 />
@@ -400,11 +411,15 @@ export function SubscriptionForm({
         <div className="flex gap-2 justify-end">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              取消
+              {tCommon("cancel")}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "儲存中..." : subscription ? "更新" : "建立"}
+            {isSubmitting
+              ? tCommon("saving")
+              : subscription
+              ? tCommon("update")
+              : tCommon("create")}
           </Button>
         </div>
       </form>

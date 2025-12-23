@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -47,6 +48,9 @@ export function InstallmentForm({
   onCancel,
   isSubmitting = false,
 }: InstallmentFormProps) {
+  const t = useTranslations("recurring");
+  const tCommon = useTranslations("common");
+
   // 取得銀行帳戶和信用卡列表
   const { data: bankAccounts = [] } = useBankAccounts();
   const { data: creditCards = [] } = useCreditCards();
@@ -153,12 +157,15 @@ export function InstallmentForm({
         <FormField
           control={form.control}
           name="name"
-          rules={{ required: "請輸入分期名稱" }}
+          rules={{ required: t("installmentNameRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>分期名稱</FormLabel>
+              <FormLabel>{t("installmentName")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：iPhone 15 Pro" {...field} />
+                <Input
+                  placeholder={t("installmentNamePlaceholder")}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -170,12 +177,12 @@ export function InstallmentForm({
           control={form.control}
           name="total_amount"
           rules={{
-            required: "請輸入總金額",
-            min: { value: 0.01, message: "總金額必須大於 0" },
+            required: t("totalAmountRequired"),
+            min: { value: 0.01, message: t("totalAmountPositive") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>總金額（本金）</FormLabel>
+              <FormLabel>{t("totalAmountLabel")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -198,12 +205,12 @@ export function InstallmentForm({
           control={form.control}
           name="installment_count"
           rules={{
-            required: "請輸入分期期數",
-            min: { value: 2, message: "分期期數至少為 2 期" },
+            required: t("installmentCountRequired"),
+            min: { value: 2, message: t("installmentCountMin") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>分期期數</FormLabel>
+              <FormLabel>{t("installmentCount")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -216,7 +223,7 @@ export function InstallmentForm({
                   }}
                 />
               </FormControl>
-              <FormDescription>分幾期付款</FormDescription>
+              <FormDescription>{t("installmentCountDesc")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -227,11 +234,11 @@ export function InstallmentForm({
           control={form.control}
           name="interest_rate"
           rules={{
-            min: { value: 0, message: "利率不能為負數" },
+            min: { value: 0, message: t("interestRateNonNegative") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>年利率 (%)</FormLabel>
+              <FormLabel>{t("annualInterestRate")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -244,7 +251,7 @@ export function InstallmentForm({
                   }}
                 />
               </FormControl>
-              <FormDescription>如果是無息分期，請輸入 0</FormDescription>
+              <FormDescription>{t("interestRateDesc")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -253,10 +260,10 @@ export function InstallmentForm({
         {/* 計算結果顯示 */}
         {calculatedValues.amountPerInstallment > 0 && (
           <div className="rounded-lg border p-4 space-y-2 bg-muted/50">
-            <p className="text-sm font-medium">計算結果</p>
+            <p className="text-sm font-medium">{t("calculationResult")}</p>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <p className="text-muted-foreground">每期金額</p>
+                <p className="text-muted-foreground">{t("monthlyPayment")}</p>
                 <p className="font-semibold tabular-nums">
                   TWD{" "}
                   {calculatedValues.amountPerInstallment.toLocaleString(
@@ -266,7 +273,7 @@ export function InstallmentForm({
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground">總利息</p>
+                <p className="text-muted-foreground">{t("totalInterest")}</p>
                 <p className="font-semibold tabular-nums">
                   TWD{" "}
                   {calculatedValues.totalInterest.toLocaleString("zh-TW", {
@@ -275,7 +282,9 @@ export function InstallmentForm({
                 </p>
               </div>
               <div className="col-span-2">
-                <p className="text-muted-foreground">總付款金額</p>
+                <p className="text-muted-foreground">
+                  {t("totalPaymentAmount")}
+                </p>
                 <p className="font-semibold tabular-nums">
                   TWD{" "}
                   {calculatedValues.totalWithInterest.toLocaleString("zh-TW", {
@@ -291,14 +300,14 @@ export function InstallmentForm({
         <FormField
           control={form.control}
           name="category_id"
-          rules={{ required: "請選擇分類" }}
+          rules={{ required: t("categoryRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>分類</FormLabel>
+              <FormLabel>{t("category")}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="選擇分類" />
+                    <SelectValue placeholder={t("selectCategory")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -318,10 +327,10 @@ export function InstallmentForm({
         <FormField
           control={form.control}
           name="payment_method"
-          rules={{ required: "請選擇付款方式" }}
+          rules={{ required: t("paymentMethodRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>付款方式</FormLabel>
+              <FormLabel>{t("paymentMethod")}</FormLabel>
               <Select
                 onValueChange={(value: PaymentMethod) => {
                   field.onChange(value);
@@ -334,13 +343,15 @@ export function InstallmentForm({
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="選擇付款方式" />
+                    <SelectValue placeholder={t("selectPaymentMethod")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="cash">現金</SelectItem>
-                  <SelectItem value="bank_account">銀行帳戶</SelectItem>
-                  <SelectItem value="credit_card">信用卡</SelectItem>
+                  <SelectItem value="cash">{t("cash")}</SelectItem>
+                  <SelectItem value="bank_account">
+                    {t("bankAccount")}
+                  </SelectItem>
+                  <SelectItem value="credit_card">{t("creditCard")}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -353,11 +364,18 @@ export function InstallmentForm({
           <FormField
             control={form.control}
             name="account_id"
-            rules={{ required: "請選擇帳戶" }}
+            rules={{
+              required:
+                paymentMethod === "bank_account"
+                  ? t("bankAccountRequired")
+                  : t("creditCardRequired"),
+            }}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  {paymentMethod === "bank_account" ? "銀行帳戶" : "信用卡"}
+                  {paymentMethod === "bank_account"
+                    ? t("bankAccount")
+                    : t("creditCard")}
                 </FormLabel>
                 <Select
                   onValueChange={field.onChange}
@@ -368,8 +386,8 @@ export function InstallmentForm({
                       <SelectValue
                         placeholder={
                           paymentMethod === "bank_account"
-                            ? "選擇銀行帳戶"
-                            : "選擇信用卡"
+                            ? t("selectBankAccount")
+                            : t("selectCreditCard")
                         }
                       />
                     </SelectTrigger>
@@ -392,10 +410,10 @@ export function InstallmentForm({
         <FormField
           control={form.control}
           name="start_date"
-          rules={{ required: "請選擇開始日期" }}
+          rules={{ required: t("startDateRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>開始日期</FormLabel>
+              <FormLabel>{t("startDate")}</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
@@ -409,13 +427,13 @@ export function InstallmentForm({
           control={form.control}
           name="billing_day"
           rules={{
-            required: "請輸入扣款日",
-            min: { value: 1, message: "扣款日必須在 1-31 之間" },
-            max: { value: 31, message: "扣款日必須在 1-31 之間" },
+            required: t("billingDayRequired"),
+            min: { value: 1, message: t("billingDayRange") },
+            max: { value: 31, message: t("billingDayRange") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>每月扣款日</FormLabel>
+              <FormLabel>{t("billingDayLabel")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -429,7 +447,7 @@ export function InstallmentForm({
                   }}
                 />
               </FormControl>
-              <FormDescription>每月的第幾天扣款（1-31）</FormDescription>
+              <FormDescription>{t("billingDayDesc")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -441,10 +459,10 @@ export function InstallmentForm({
           name="note"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>備註（可選）</FormLabel>
+              <FormLabel>{tCommon("noteOptional")}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="輸入備註..."
+                  placeholder={tCommon("enterNote")}
                   className="resize-none"
                   {...field}
                 />
@@ -458,11 +476,15 @@ export function InstallmentForm({
         <div className="flex gap-2 justify-end">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              取消
+              {tCommon("cancel")}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "儲存中..." : installment ? "更新" : "建立"}
+            {isSubmitting
+              ? tCommon("saving")
+              : installment
+              ? tCommon("update")
+              : tCommon("create")}
           </Button>
         </div>
       </form>

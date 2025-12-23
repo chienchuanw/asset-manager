@@ -7,6 +7,7 @@
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -43,6 +44,9 @@ export function BankAccountForm({
   onCancel,
   isSubmitting = false,
 }: BankAccountFormProps) {
+  const t = useTranslations("userManagement");
+  const tCommon = useTranslations("common");
+
   const form = useForm<CreateBankAccountInput>({
     defaultValues: {
       bank_name: "",
@@ -75,12 +79,12 @@ export function BankAccountForm({
         <FormField
           control={form.control}
           name="bank_name"
-          rules={{ required: "請輸入銀行名稱" }}
+          rules={{ required: t("bankNameRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>銀行名稱</FormLabel>
+              <FormLabel>{t("bankName")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：台灣銀行" {...field} />
+                <Input placeholder={t("bankNamePlaceholder")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -91,12 +95,12 @@ export function BankAccountForm({
         <FormField
           control={form.control}
           name="account_type"
-          rules={{ required: "請輸入帳戶類型" }}
+          rules={{ required: t("accountTypeRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>帳戶類型</FormLabel>
+              <FormLabel>{t("accountType")}</FormLabel>
               <FormControl>
-                <Input placeholder="例如：活存、定存、外幣帳戶" {...field} />
+                <Input placeholder={t("accountTypePlaceholder")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -108,15 +112,15 @@ export function BankAccountForm({
           control={form.control}
           name="account_number_last4"
           rules={{
-            required: "請輸入帳號後四碼",
+            required: t("accountLast4Required"),
             pattern: {
               value: /^\d{4}$/,
-              message: "請輸入正確的四位數字",
+              message: t("accountLast4Invalid"),
             },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>帳號後四碼</FormLabel>
+              <FormLabel>{t("accountLast4")}</FormLabel>
               <FormControl>
                 <Input
                   placeholder="1234"
@@ -137,14 +141,14 @@ export function BankAccountForm({
         <FormField
           control={form.control}
           name="currency"
-          rules={{ required: "請選擇幣別" }}
+          rules={{ required: t("currencyRequired") }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>幣別</FormLabel>
+              <FormLabel>{t("currency")}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="選擇幣別" />
+                    <SelectValue placeholder={t("selectCurrency")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -165,12 +169,12 @@ export function BankAccountForm({
           control={form.control}
           name="balance"
           rules={{
-            required: "請輸入餘額",
-            min: { value: 0, message: "餘額不能為負數" },
+            required: t("balanceRequired"),
+            min: { value: 0, message: t("balanceNonNegative") },
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>餘額</FormLabel>
+              <FormLabel>{t("balance")}</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -194,10 +198,10 @@ export function BankAccountForm({
           name="note"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>備註（選填）</FormLabel>
+              <FormLabel>{tCommon("noteOptional")}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="輸入備註..."
+                  placeholder={tCommon("enterNote")}
                   className="resize-none"
                   {...field}
                 />
@@ -211,15 +215,18 @@ export function BankAccountForm({
         <div className="flex justify-end gap-3">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              取消
+              {tCommon("cancel")}
             </Button>
           )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "儲存中..." : bankAccount ? "更新" : "新增"}
+            {isSubmitting
+              ? tCommon("saving")
+              : bankAccount
+              ? tCommon("update")
+              : tCommon("create")}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
-
