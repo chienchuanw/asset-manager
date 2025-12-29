@@ -197,7 +197,7 @@ export default function CashFlowsPage() {
   }, [cashFlows, searchQuery]);
 
   return (
-    <AppLayout title={t("title")} description={t("description")}>
+    <AppLayout title={t("title")} description={t("pageDescription")}>
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
         {/* 當月/當週每日收入/支出圖表 - 置於頁面最上方 */}

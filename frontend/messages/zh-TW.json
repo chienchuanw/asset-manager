@@ -48,7 +48,9 @@
     "friday": "週五",
     "saturday": "週六",
     "sunday": "週日",
-    "monthly": "本月"
+    "monthly": "本月",
+    "name": "名稱",
+    "status": "狀態"
   },
   "auth": {
     "login": "登入",
@@ -359,7 +361,7 @@
   },
   "cashFlows": {
     "title": "現金流記錄",
-    "description": "追蹤和管理您的收入與支出",
+    "pageDescription": "追蹤和管理您的收入與支出",
     "income": "收入",
     "expense": "支出",
     "category": "類別",
@@ -414,6 +416,7 @@
     "targetCreditCard": "目標信用卡",
     "description": "描述",
     "descriptionPlaceholder": "例如: 十月薪資",
+    "notePlaceholder": "輸入備註...",
     "successMessage": "記錄建立成功",
     "errorMessage": "建立失敗",
     "transfer": "移轉",

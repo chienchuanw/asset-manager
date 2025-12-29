@@ -336,7 +336,7 @@
   },
   "cashFlows": {
     "title": "Cash Flows",
-    "description": "Track and manage your income and expenses",
+    "pageDescription": "Track and manage your income and expenses",
     "income": "Income",
     "expense": "Expense",
     "category": "Category",
@@ -391,6 +391,7 @@
     "targetCreditCard": "Target Credit Card",
     "description": "Description",
     "descriptionPlaceholder": "e.g., October Salary",
+    "notePlaceholder": "Enter note...",
     "successMessage": "Record created successfully",
     "errorMessage": "Creation failed",
     "transfer": "Transfer",
