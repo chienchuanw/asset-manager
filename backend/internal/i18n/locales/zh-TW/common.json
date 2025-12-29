@@ -1,0 +1,23 @@
+{
+  "INVALID_REQUEST": "請求格式錯誤",
+  "INVALID_INPUT": "輸入資料格式錯誤",
+  "INVALID_ID": "ID 格式錯誤",
+  "INVALID_DATE": "日期格式錯誤",
+  "INVALID_PARAMETER": "參數錯誤",
+  "INVALID_FILE": "無法讀取上傳的檔案",
+  "NOT_FOUND": "資源不存在",
+  "CREATE_FAILED": "建立失敗",
+  "UPDATE_FAILED": "更新失敗",
+  "DELETE_FAILED": "刪除失敗",
+  "LIST_FAILED": "查詢失敗",
+  "LOGIN_FAILED": "登入失敗",
+  "UNAUTHORIZED": "未授權",
+  "FORBIDDEN": "禁止存取",
+  "INTERNAL_ERROR": "內部伺服器錯誤",
+  "BATCH_CREATE_FAILED": "批次建立失敗",
+  "UNKNOWN_ERROR": "未知錯誤",
+  "HTTP_ERROR": "HTTP 錯誤",
+  "NO_DATA": "伺服器未回傳資料",
+  "INVALID_RESPONSE": "伺服器回應格式錯誤"
+}
+

@@ -1,0 +1,7 @@
+{
+  "CREDIT_CARD_NOT_FOUND": "Credit card not found",
+  "CREDIT_CARD_CREATE_FAILED": "Failed to create credit card",
+  "CREDIT_CARD_UPDATE_FAILED": "Failed to update credit card",
+  "CREDIT_CARD_DELETE_FAILED": "Failed to delete credit card"
+}
+

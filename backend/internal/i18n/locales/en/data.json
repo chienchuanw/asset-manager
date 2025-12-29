@@ -1,0 +1,9 @@
+{
+  "EXCHANGE_RATE_NOT_FOUND": "Exchange rate not found",
+  "EXCHANGE_RATE_FETCH_FAILED": "Failed to fetch exchange rate",
+  "PRICE_FETCH_FAILED": "Failed to fetch price",
+  "SNAPSHOT_CREATE_FAILED": "Failed to create snapshot",
+  "ANALYTICS_FAILED": "Analytics calculation failed",
+  "REBALANCE_FAILED": "Rebalance calculation failed"
+}
+

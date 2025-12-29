@@ -4,10 +4,11 @@ package i18n
 import (
 	"embed"
 	"encoding/json"
+	"io/fs"
 	"sync"
 )
 
-//go:embed locales/*.json
+//go:embed locales/*/*.json
 var localesFS embed.FS
 
 // Locale represents a supported language
@@ -28,7 +29,7 @@ var (
 	initialized  bool
 )
 
-// Init loads all translation files
+// Init loads all translation files from locale subdirectories
 func Init() error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -40,17 +41,43 @@ func Init() error {
 	locales := []Locale{LocaleZhTW, LocaleEn}
 
 	for _, locale := range locales {
-		data, err := localesFS.ReadFile("locales/" + string(locale) + ".json")
+		// 初始化該語言的翻譯字典
+		translations[locale] = make(map[string]string)
+
+		// 掃描該語言的目錄下的所有 JSON 檔案
+		localeDir := "locales/" + string(locale)
+		entries, err := fs.ReadDir(localesFS, localeDir)
 		if err != nil {
 			return err
 		}
 
-		var msgs map[string]string
-		if err := json.Unmarshal(data, &msgs); err != nil {
-			return err
-		}
+		// 合併所有 JSON 檔案中的翻譯
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
 
-		translations[locale] = msgs
+			// 只處理 .json 檔案
+			if len(entry.Name()) < 5 || entry.Name()[len(entry.Name())-5:] != ".json" {
+				continue
+			}
+
+			filePath := localeDir + "/" + entry.Name()
+			data, err := localesFS.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+
+			var msgs map[string]string
+			if err := json.Unmarshal(data, &msgs); err != nil {
+				return err
+			}
+
+			// 合併到該語言的翻譯字典
+			for key, value := range msgs {
+				translations[locale][key] = value
+			}
+		}
 	}
 
 	initialized = true

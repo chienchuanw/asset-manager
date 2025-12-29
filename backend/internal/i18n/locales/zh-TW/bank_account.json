@@ -1,0 +1,7 @@
+{
+  "BANK_ACCOUNT_NOT_FOUND": "找不到銀行帳戶",
+  "BANK_ACCOUNT_CREATE_FAILED": "建立銀行帳戶失敗",
+  "BANK_ACCOUNT_UPDATE_FAILED": "更新銀行帳戶失敗",
+  "BANK_ACCOUNT_DELETE_FAILED": "刪除銀行帳戶失敗"
+}
+

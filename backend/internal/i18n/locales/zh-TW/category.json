@@ -1,0 +1,8 @@
+{
+  "CATEGORY_NOT_FOUND": "找不到分類",
+  "CATEGORY_CREATE_FAILED": "建立分類失敗",
+  "CATEGORY_UPDATE_FAILED": "更新分類失敗",
+  "CATEGORY_DELETE_FAILED": "刪除分類失敗",
+  "CATEGORY_HAS_CASH_FLOWS": "此分類下有現金流記錄，無法刪除"
+}
+

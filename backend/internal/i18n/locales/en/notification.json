@@ -1,0 +1,9 @@
+{
+  "MISSING_WEBHOOK_URL": "Missing webhook URL parameter",
+  "WEBHOOK_URL_REQUIRED": "Webhook URL is required",
+  "SEND_MESSAGE_FAILED": "Failed to send message",
+  "DISCORD_SEND_FAILED": "Failed to send Discord message",
+  "SCHEDULER_START_FAILED": "Failed to start scheduler",
+  "SCHEDULER_STOP_FAILED": "Failed to stop scheduler"
+}
+

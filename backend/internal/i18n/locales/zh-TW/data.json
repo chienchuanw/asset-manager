@@ -1,0 +1,9 @@
+{
+  "EXCHANGE_RATE_NOT_FOUND": "找不到匯率資料",
+  "EXCHANGE_RATE_FETCH_FAILED": "取得匯率失敗",
+  "PRICE_FETCH_FAILED": "取得價格失敗",
+  "SNAPSHOT_CREATE_FAILED": "建立快照失敗",
+  "ANALYTICS_FAILED": "分析計算失敗",
+  "REBALANCE_FAILED": "再平衡計算失敗"
+}
+

@@ -1,0 +1,7 @@
+{
+  "TRANSACTION_NOT_FOUND": "找不到交易記錄",
+  "TRANSACTION_CREATE_FAILED": "建立交易記錄失敗",
+  "TRANSACTION_UPDATE_FAILED": "更新交易記錄失敗",
+  "TRANSACTION_DELETE_FAILED": "刪除交易記錄失敗"
+}
+

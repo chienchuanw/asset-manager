@@ -1,0 +1,7 @@
+{
+  "CREDIT_CARD_NOT_FOUND": "找不到信用卡",
+  "CREDIT_CARD_CREATE_FAILED": "建立信用卡失敗",
+  "CREDIT_CARD_UPDATE_FAILED": "更新信用卡失敗",
+  "CREDIT_CARD_DELETE_FAILED": "刪除信用卡失敗"
+}
+

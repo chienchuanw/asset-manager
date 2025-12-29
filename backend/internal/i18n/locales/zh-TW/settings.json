@@ -1,0 +1,8 @@
+{
+  "SETTINGS_NOT_FOUND": "找不到設定",
+  "SETTINGS_UPDATE_FAILED": "更新設定失敗",
+  "SYMBOL_REQUIRED": "標的代碼為必填",
+  "PARSE_CSV_FAILED": "解析 CSV 失敗",
+  "FIX_FAILED": "修復失敗"
+}
+

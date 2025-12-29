@@ -1,0 +1,7 @@
+{
+  "CASH_FLOW_NOT_FOUND": "Cash flow not found",
+  "CASH_FLOW_CREATE_FAILED": "Failed to create cash flow",
+  "CASH_FLOW_UPDATE_FAILED": "Failed to update cash flow",
+  "CASH_FLOW_DELETE_FAILED": "Failed to delete cash flow"
+}
+

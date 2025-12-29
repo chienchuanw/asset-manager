@@ -1,0 +1,9 @@
+{
+  "MISSING_WEBHOOK_URL": "缺少 Webhook URL 參數",
+  "WEBHOOK_URL_REQUIRED": "Webhook URL 為必填",
+  "SEND_MESSAGE_FAILED": "發送訊息失敗",
+  "DISCORD_SEND_FAILED": "Discord 訊息發送失敗",
+  "SCHEDULER_START_FAILED": "排程啟動失敗",
+  "SCHEDULER_STOP_FAILED": "排程停止失敗"
+}
+

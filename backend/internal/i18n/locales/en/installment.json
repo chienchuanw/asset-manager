@@ -1,0 +1,7 @@
+{
+  "INSTALLMENT_NOT_FOUND": "Installment not found",
+  "INSTALLMENT_CREATE_FAILED": "Failed to create installment",
+  "INSTALLMENT_UPDATE_FAILED": "Failed to update installment",
+  "INSTALLMENT_DELETE_FAILED": "Failed to delete installment"
+}
+

@@ -1,0 +1,7 @@
+{
+  "SUBSCRIPTION_NOT_FOUND": "Subscription not found",
+  "SUBSCRIPTION_CREATE_FAILED": "Failed to create subscription",
+  "SUBSCRIPTION_UPDATE_FAILED": "Failed to update subscription",
+  "SUBSCRIPTION_DELETE_FAILED": "Failed to delete subscription"
+}
+

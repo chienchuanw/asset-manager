@@ -1,0 +1,7 @@
+{
+  "BANK_ACCOUNT_NOT_FOUND": "Bank account not found",
+  "BANK_ACCOUNT_CREATE_FAILED": "Failed to create bank account",
+  "BANK_ACCOUNT_UPDATE_FAILED": "Failed to update bank account",
+  "BANK_ACCOUNT_DELETE_FAILED": "Failed to delete bank account"
+}
+

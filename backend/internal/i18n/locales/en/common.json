@@ -1,0 +1,23 @@
+{
+  "INVALID_REQUEST": "Invalid request format",
+  "INVALID_INPUT": "Invalid input data format",
+  "INVALID_ID": "Invalid ID format",
+  "INVALID_DATE": "Invalid date format",
+  "INVALID_PARAMETER": "Invalid parameter",
+  "INVALID_FILE": "Unable to read uploaded file",
+  "NOT_FOUND": "Resource not found",
+  "CREATE_FAILED": "Create failed",
+  "UPDATE_FAILED": "Update failed",
+  "DELETE_FAILED": "Delete failed",
+  "LIST_FAILED": "Query failed",
+  "LOGIN_FAILED": "Login failed",
+  "UNAUTHORIZED": "Unauthorized",
+  "FORBIDDEN": "Forbidden",
+  "INTERNAL_ERROR": "Internal server error",
+  "BATCH_CREATE_FAILED": "Batch create failed",
+  "UNKNOWN_ERROR": "Unknown error",
+  "HTTP_ERROR": "HTTP error",
+  "NO_DATA": "Server returned no data",
+  "INVALID_RESPONSE": "Invalid server response format"
+}
+

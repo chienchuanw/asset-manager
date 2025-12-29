@@ -1,0 +1,8 @@
+{
+  "SETTINGS_NOT_FOUND": "Settings not found",
+  "SETTINGS_UPDATE_FAILED": "Failed to update settings",
+  "SYMBOL_REQUIRED": "Symbol is required",
+  "PARSE_CSV_FAILED": "Failed to parse CSV",
+  "FIX_FAILED": "Fix failed"
+}
+

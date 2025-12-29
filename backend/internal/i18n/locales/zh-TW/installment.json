@@ -1,0 +1,7 @@
+{
+  "INSTALLMENT_NOT_FOUND": "找不到分期",
+  "INSTALLMENT_CREATE_FAILED": "建立分期失敗",
+  "INSTALLMENT_UPDATE_FAILED": "更新分期失敗",
+  "INSTALLMENT_DELETE_FAILED": "刪除分期失敗"
+}
+

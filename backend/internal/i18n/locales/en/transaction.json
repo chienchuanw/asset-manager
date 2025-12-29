@@ -1,0 +1,7 @@
+{
+  "TRANSACTION_NOT_FOUND": "Transaction not found",
+  "TRANSACTION_CREATE_FAILED": "Failed to create transaction",
+  "TRANSACTION_UPDATE_FAILED": "Failed to update transaction",
+  "TRANSACTION_DELETE_FAILED": "Failed to delete transaction"
+}
+
