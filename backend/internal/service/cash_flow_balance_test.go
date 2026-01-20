@@ -287,8 +287,136 @@ func TestCashFlowService_CreateCashFlow_BankAccountNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "bank account not found")
 
 	// 驗證所有 mock 期望都被呼叫
-	mockCategoryRepo.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
 	mockBankAccountRepo.AssertExpectations(t)
+}
+
+// TestCashFlowService_CreateCashFlow_InsufficientCreditCardLimit 測試信用卡額度不足
+func TestCashFlowService_CreateCashFlow_InsufficientCreditCardLimit(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	categoryID := uuid.New()
+	creditCardID := uuid.New()
+	sourceType := models.SourceTypeCreditCard
+
+	category := &models.CashFlowCategory{
+		ID:   categoryID,
+		Name: "購物",
+		Type: models.CashFlowTypeExpense,
+	}
+
+	// 信用卡額度 10000，已使用 8000，可用額度只有 2000
+	creditCard := &models.CreditCard{
+		ID:          creditCardID,
+		IssuingBank: "玉山銀行",
+		CardName:    "Pi 拍錢包信用卡",
+		CreditLimit: 10000,
+		UsedCredit:  8000,
+	}
+
+	// 嘗試支出 5000（超過可用額度 2000）
+	input := &models.CreateCashFlowInput{
+		Date:        time.Date(2025, 10, 25, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeExpense,
+		CategoryID:  categoryID,
+		Amount:      5000,
+		Description: "網購",
+		SourceType:  &sourceType,
+		SourceID:    &creditCardID,
+	}
+
+	// 設定 mock 期望
+	mockCategoryRepo.On("GetByID", categoryID).Return(category, nil)
+	mockCreditCardRepo.On("GetByID", creditCardID).Return(creditCard, nil)
+
+	// Act
+	result, err := service.CreateCashFlow(input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "insufficient_credit")
+	assert.Contains(t, err.Error(), "2000.00") // 可用額度
+	assert.Contains(t, err.Error(), "5000.00") // 需要金額
+
+	// 驗證所有 mock 期望都被呼叫
+	mockCategoryRepo.AssertExpectations(t)
+	mockCreditCardRepo.AssertExpectations(t)
+	// 額度不足時不應該呼叫 UpdateUsedCredit
+	mockCreditCardRepo.AssertNotCalled(t, "UpdateUsedCredit")
+	// 也不應該建立現金流記錄
+	mockRepo.AssertNotCalled(t, "Create")
+}
+
+// TestCashFlowService_UpdateCashFlow_InsufficientCreditCardLimit 測試更新現金流時信用卡額度不足
+func TestCashFlowService_UpdateCashFlow_InsufficientCreditCardLimit(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	cashFlowID := uuid.New()
+	creditCardID := uuid.New()
+	sourceType := models.SourceTypeCreditCard
+
+	// 原始現金流記錄（支出 1000）
+	originalCashFlow := &models.CashFlow{
+		ID:          cashFlowID,
+		Date:        time.Date(2025, 10, 25, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeExpense,
+		Amount:      1000,
+		Description: "網購",
+		SourceType:  &sourceType,
+		SourceID:    &creditCardID,
+	}
+
+	// 嘗試更新金額為 10000（超過可用額度）
+	newAmount := float64(10000)
+	input := &models.UpdateCashFlowInput{
+		Amount: &newAmount,
+	}
+
+	// 信用卡額度 15000，已使用 10000，可用額度只有 5000
+	creditCard := &models.CreditCard{
+		ID:          creditCardID,
+		IssuingBank: "玉山銀行",
+		CardName:    "Pi 拍錢包信用卡",
+		CreditLimit: 15000,
+		UsedCredit:  10000,
+	}
+
+	mockRepo.On("GetByID", cashFlowID).Return(originalCashFlow, nil)
+	mockCreditCardRepo.On("GetByID", creditCardID).Return(creditCard, nil)
+	mockCreditCardRepo.On("UpdateUsedCredit", creditCardID, float64(-1000)).Return(creditCard, nil)
+	updatedCreditCard := &models.CreditCard{
+		ID:          creditCardID,
+		IssuingBank: "玉山銀行",
+		CardName:    "Pi 拍錢包信用卡",
+		CreditLimit: 15000,
+		UsedCredit:  9000,
+	}
+	mockCreditCardRepo.On("GetByID", creditCardID).Return(updatedCreditCard, nil)
+	mockCreditCardRepo.On("GetByID", creditCardID).Return(creditCard, nil)
+	mockCreditCardRepo.On("UpdateUsedCredit", creditCardID, float64(1000)).Return(creditCard, nil)
+
+	// Act
+	result, err := service.UpdateCashFlow(cashFlowID, input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "insufficient_credit")
+
+	// 驗證所有 mock 期望都被呼叫
+	mockRepo.AssertExpectations(t)
+	mockCreditCardRepo.AssertExpectations(t)
 }
 
 // TestCashFlowService_CreateCashFlow_CashTransaction 測試現金交易（不影響餘額）
@@ -632,4 +760,129 @@ func TestCashFlowService_CreateCashFlow_CashWithdrawal(t *testing.T) {
 	// 現金提領不應該呼叫信用卡相關方法
 	mockCreditCardRepo.AssertNotCalled(t, "GetByID")
 	mockCreditCardRepo.AssertNotCalled(t, "UpdateUsedCredit")
+}
+
+// TestCashFlowService_CreateCashFlow_InsufficientBankAccountBalance 測試銀行帳戶餘額不足
+func TestCashFlowService_CreateCashFlow_InsufficientBankAccountBalance(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	sourceType := models.SourceTypeBankAccount
+
+	category := &models.CashFlowCategory{
+		ID:   categoryID,
+		Name: "餐飲",
+		Type: models.CashFlowTypeExpense,
+	}
+
+	// 銀行帳戶餘額只有 1000
+	bankAccount := &models.BankAccount{
+		ID:       bankAccountID,
+		BankName: "台灣銀行",
+		Balance:  1000,
+		Currency: models.CurrencyTWD,
+	}
+
+	// 嘗試支出 5000（超過餘額）
+	input := &models.CreateCashFlowInput{
+		Date:        time.Date(2025, 10, 25, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeExpense,
+		CategoryID:  categoryID,
+		Amount:      5000,
+		Description: "購物",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+	}
+
+	// 設定 mock 期望
+	mockCategoryRepo.On("GetByID", categoryID).Return(category, nil)
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(bankAccount, nil)
+
+	// Act
+	result, err := service.CreateCashFlow(input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "insufficient_balance")
+	assert.Contains(t, err.Error(), "1000.00") // 目前餘額
+	assert.Contains(t, err.Error(), "5000.00") // 需要金額
+
+	// 驗證所有 mock 期望都被呼叫
+	mockCategoryRepo.AssertExpectations(t)
+	mockBankAccountRepo.AssertExpectations(t)
+	// 餘額不足時不應該呼叫 UpdateBalance
+	mockBankAccountRepo.AssertNotCalled(t, "UpdateBalance")
+	// 也不應該建立現金流記錄
+	mockRepo.AssertNotCalled(t, "Create")
+}
+
+// TestCashFlowService_UpdateCashFlow_InsufficientBankAccountBalance 測試更新現金流時銀行帳戶餘額不足
+func TestCashFlowService_UpdateCashFlow_InsufficientBankAccountBalance(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockCashFlowRepository)
+	mockCategoryRepo := new(MockCategoryRepository)
+	mockBankAccountRepo := new(MockBankAccountRepository)
+	mockCreditCardRepo := new(MockCreditCardRepository)
+	service := NewCashFlowService(mockRepo, mockCategoryRepo, mockBankAccountRepo, mockCreditCardRepo)
+
+	cashFlowID := uuid.New()
+	bankAccountID := uuid.New()
+	sourceType := models.SourceTypeBankAccount
+
+	// 原始現金流記錄（支出 1000）
+	originalCashFlow := &models.CashFlow{
+		ID:          cashFlowID,
+		Date:        time.Date(2025, 10, 25, 0, 0, 0, 0, time.UTC),
+		Type:        models.CashFlowTypeExpense,
+		Amount:      1000,
+		Description: "午餐",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+	}
+
+	// 嘗試更新金額為 10000（超過餘額）
+	newAmount := float64(10000)
+	input := &models.UpdateCashFlowInput{
+		Amount: &newAmount,
+	}
+
+	// 銀行帳戶餘額只有 5000
+	bankAccount := &models.BankAccount{
+		ID:       bankAccountID,
+		BankName: "台灣銀行",
+		Balance:  5000,
+		Currency: models.CurrencyTWD,
+	}
+
+	mockRepo.On("GetByID", cashFlowID).Return(originalCashFlow, nil)
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(bankAccount, nil)
+	mockBankAccountRepo.On("UpdateBalance", bankAccountID, float64(1000)).Return(bankAccount, nil)
+	updatedBankAccount := &models.BankAccount{
+		ID:       bankAccountID,
+		BankName: "台灣銀行",
+		Balance:  6000,
+		Currency: models.CurrencyTWD,
+	}
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(updatedBankAccount, nil)
+	mockBankAccountRepo.On("GetByID", bankAccountID).Return(bankAccount, nil)
+	mockBankAccountRepo.On("UpdateBalance", bankAccountID, float64(-1000)).Return(bankAccount, nil)
+
+	// Act
+	result, err := service.UpdateCashFlow(cashFlowID, input)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "insufficient_balance")
+
+	// 驗證所有 mock 期望都被呼叫
+	mockRepo.AssertExpectations(t)
+	mockBankAccountRepo.AssertExpectations(t)
 }

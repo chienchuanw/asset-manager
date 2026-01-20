@@ -403,7 +403,14 @@
     "selectCashFlowType": "Select Cash Flow Type",
     "advancedFilter": "Advanced Filter",
     "setFilterConditions": "Set filter conditions to narrow down your search",
-    "confirmDelete": "Are you sure you want to delete this record?"
+    "confirmDelete": "Are you sure you want to delete this record?",
+    "insufficientBalance": "Insufficient Balance",
+    "insufficientBalanceDesc": "Account balance is insufficient to complete this transaction",
+    "currentBalance": "Current Balance",
+    "requiredAmount": "Required Amount",
+    "insufficientCredit": "Insufficient Credit",
+    "insufficientCreditDesc": "Credit card available credit is insufficient to complete this transaction",
+    "availableCredit": "Available Credit"
   },
   "analytics": {
     "title": "Analytics",

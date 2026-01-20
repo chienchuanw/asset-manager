@@ -237,7 +237,15 @@ export function CreditCardForm({
                 <FormItem>
                   <FormLabel>{t("usedCredit")}</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" {...field} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...field}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        field.onChange(isNaN(value) ? "" : value);
+                      }}
+                    />
                   </FormControl>
                   <FormDescription>{t("usedCreditDesc")}</FormDescription>
                   <FormMessage />

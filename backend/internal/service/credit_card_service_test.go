@@ -408,6 +408,40 @@ func TestCreditCardService_UpdateCreditCard_InvalidInput(t *testing.T) {
 	assert.Nil(t, result)
 }
 
+// TestCreditCardService_UpdateCreditCard_UsedCreditExceedsLimit 測試更新信用卡 - 已使用額度超過信用額度（手動調整情境）
+func TestCreditCardService_UpdateCreditCard_UsedCreditExceedsLimit(t *testing.T) {
+	mockRepo := new(MockCreditCardRepository)
+	service := NewCreditCardService(mockRepo)
+
+	cardID := uuid.New()
+	// 手動調整已使用額度為 120000，超過信用額度 100000
+	manualUsedCredit := 120000.0
+	input := &models.UpdateCreditCardInput{
+		UsedCredit: &manualUsedCredit,
+	}
+
+	expectedCard := &models.CreditCard{
+		ID:              cardID,
+		IssuingBank:     "玉山銀行",
+		CardName:        "Pi 拍錢包信用卡",
+		CardNumberLast4: "1234",
+		BillingDay:      5,
+		PaymentDueDay:   20,
+		CreditLimit:     100000,
+		UsedCredit:      manualUsedCredit, // 允許超過信用額度
+	}
+
+	mockRepo.On("Update", cardID, input).Return(expectedCard, nil)
+
+	result, err := service.UpdateCreditCard(cardID, input)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, manualUsedCredit, result.UsedCredit)
+	assert.Greater(t, result.UsedCredit, result.CreditLimit) // 驗證已使用額度確實超過信用額度
+	mockRepo.AssertExpectations(t)
+}
+
 // TestCreditCardService_DeleteCreditCard 測試刪除信用卡
 func TestCreditCardService_DeleteCreditCard(t *testing.T) {
 	mockRepo := new(MockCreditCardRepository)
@@ -435,4 +469,3 @@ func TestCreditCardService_DeleteCreditCard_NotFound(t *testing.T) {
 	assert.Error(t, err)
 	mockRepo.AssertExpectations(t)
 }
-

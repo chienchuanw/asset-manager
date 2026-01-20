@@ -299,8 +299,7 @@ func (s *cashFlowService) revertBalanceUpdateWithError(cashFlowType models.CashF
 
 // updateBankAccountBalance 更新銀行帳戶餘額
 func (s *cashFlowService) updateBankAccountBalance(cashFlowType models.CashFlowType, accountID uuid.UUID, amount float64) error {
-	// 驗證銀行帳戶是否存在
-	_, err := s.bankAccountRepo.GetByID(accountID)
+	account, err := s.bankAccountRepo.GetByID(accountID)
 	if err != nil {
 		return fmt.Errorf("bank account not found: %w", err)
 	}
@@ -309,14 +308,14 @@ func (s *cashFlowService) updateBankAccountBalance(cashFlowType models.CashFlowT
 	var balanceChange float64
 	switch cashFlowType {
 	case models.CashFlowTypeIncome, models.CashFlowTypeTransferIn:
-		// 收入或存入：增加銀行帳戶餘額
 		balanceChange = amount
 	case models.CashFlowTypeExpense, models.CashFlowTypeTransferOut:
-		// 支出或轉出：減少銀行帳戶餘額
 		balanceChange = -amount
+		if account.Balance < amount {
+			return fmt.Errorf("insufficient_balance:bank_account:%.2f:%.2f", account.Balance, amount)
+		}
 	}
 
-	// 更新餘額
 	_, err = s.bankAccountRepo.UpdateBalance(accountID, balanceChange)
 	if err != nil {
 		return fmt.Errorf("failed to update bank account balance: %w", err)
@@ -327,23 +326,22 @@ func (s *cashFlowService) updateBankAccountBalance(cashFlowType models.CashFlowT
 
 // updateCreditCardBalance 更新信用卡已使用額度
 func (s *cashFlowService) updateCreditCardBalance(cashFlowType models.CashFlowType, cardID uuid.UUID, amount float64) error {
-	// 驗證信用卡是否存在
-	_, err := s.creditCardRepo.GetByID(cardID)
+	card, err := s.creditCardRepo.GetByID(cardID)
 	if err != nil {
 		return fmt.Errorf("credit card not found: %w", err)
 	}
 
-	// 計算已使用額度變動
 	var usedCreditChange float64
 	if cashFlowType == models.CashFlowTypeIncome {
-		// 收入：減少已使用額度（例如退款）
 		usedCreditChange = -amount
 	} else {
-		// 支出：增加已使用額度
 		usedCreditChange = amount
+		availableCredit := card.CreditLimit - card.UsedCredit
+		if availableCredit < amount {
+			return fmt.Errorf("insufficient_credit:credit_card:%.2f:%.2f", availableCredit, amount)
+		}
 	}
 
-	// 更新已使用額度
 	_, err = s.creditCardRepo.UpdateUsedCredit(cardID, usedCreditChange)
 	if err != nil {
 		return fmt.Errorf("failed to update credit card used credit: %w", err)
@@ -586,4 +584,3 @@ func (s *cashFlowService) GetYearlySummaryWithComparison(year int) (*models.Year
 
 	return summary, nil
 }
-

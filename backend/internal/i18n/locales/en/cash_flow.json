@@ -2,6 +2,8 @@
   "CASH_FLOW_NOT_FOUND": "Cash flow not found",
   "CASH_FLOW_CREATE_FAILED": "Failed to create cash flow",
   "CASH_FLOW_UPDATE_FAILED": "Failed to update cash flow",
-  "CASH_FLOW_DELETE_FAILED": "Failed to delete cash flow"
+  "CASH_FLOW_DELETE_FAILED": "Failed to delete cash flow",
+  "INSUFFICIENT_BALANCE": "Insufficient balance: Current balance is {currentBalance}, required {requiredAmount}",
+  "INSUFFICIENT_CREDIT": "Insufficient credit: Available credit is {availableCredit}, required {requiredAmount}"
 }
 

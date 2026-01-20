@@ -58,6 +58,7 @@ import type {
   CreateBankAccountInput,
   CreditCard,
   CreateCreditCardInput,
+  UpdateCreditCardInput,
   CreditCardGroupWithCards,
   CreateCreditCardGroupInput,
 } from "@/types/user-management";
@@ -185,9 +186,20 @@ export default function UserManagementPage() {
   const handleSubmitCreditCard = async (data: CreateCreditCardInput) => {
     try {
       if (editingCreditCard) {
+        const updateData: UpdateCreditCardInput = {
+          issuing_bank: data.issuing_bank,
+          card_name: data.card_name,
+          card_number_last4: data.card_number_last4,
+          billing_day: data.billing_day,
+          payment_due_day: data.payment_due_day,
+          credit_limit: data.credit_limit,
+          used_credit: data.used_credit,
+          note: data.note,
+        };
+        
         await updateCreditCardMutation.mutateAsync({
           id: editingCreditCard.id,
-          data,
+          data: updateData,
         });
         toast({
           title: t("updateSuccess"),

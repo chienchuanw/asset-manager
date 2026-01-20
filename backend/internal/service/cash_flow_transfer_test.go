@@ -169,8 +169,8 @@ func TestCreateTransferOut_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// TestCreateTransfer_AllowNegativeBalance 測試轉出允許帳戶餘額變成負數
-func TestCreateTransfer_AllowNegativeBalance(t *testing.T) {
+// TestCreateTransfer_InsufficientBalance 測試轉出時餘額不足應該失敗
+func TestCreateTransfer_InsufficientBalance(t *testing.T) {
 	// Arrange
 	mockRepo := new(MockCashFlowRepository)
 	mockCategoryRepo := new(MockCategoryRepository)
@@ -207,44 +207,26 @@ func TestCreateTransfer_AllowNegativeBalance(t *testing.T) {
 		Currency: models.CurrencyTWD,
 	}
 
-	// 模擬更新後的帳戶資料（允許負餘額）
-	updatedAccount := &models.BankAccount{
-		ID:       accountID,
-		BankName: "測試銀行",
-		Balance:  -10000, // 提領後餘額：5000 - 15000 = -10000
-		Currency: models.CurrencyTWD,
-	}
-
-	expectedCashFlow := &models.CashFlow{
-		ID:          uuid.New(),
-		Date:        input.Date,
-		Type:        input.Type,
-		CategoryID:  input.CategoryID,
-		Amount:      input.Amount,
-		Currency:    models.CurrencyTWD,
-		Description: input.Description,
-		SourceType:  input.SourceType,
-		SourceID:    input.SourceID,
-	}
-
 	// 設定 Mock 期望
 	mockCategoryRepo.On("GetByID", categoryID).Return(expectedCategory, nil)
 	mockBankAccountRepo.On("GetByID", accountID).Return(expectedAccount, nil)
-	mockBankAccountRepo.On("UpdateBalance", accountID, float64(-15000)).Return(updatedAccount, nil)
-	mockRepo.On("Create", input).Return(expectedCashFlow, nil)
 
 	// Act
 	result, err := service.CreateCashFlow(input)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, expectedCashFlow.ID, result.ID)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "insufficient_balance")
+	assert.Contains(t, err.Error(), "5000.00")  // 當前餘額
+	assert.Contains(t, err.Error(), "15000.00") // 需要金額
 
-	// 驗證所有 Mock 都被正確呼叫
+	// 驗證 Mock 呼叫
 	mockCategoryRepo.AssertExpectations(t)
 	mockBankAccountRepo.AssertExpectations(t)
-	mockRepo.AssertExpectations(t)
+	// UpdateBalance 和 Create 不應該被呼叫
+	mockBankAccountRepo.AssertNotCalled(t, "UpdateBalance")
+	mockRepo.AssertNotCalled(t, "Create")
 }
 
 // TestDeleteTransfer_RevertBalance 測試刪除轉帳記錄時回復餘額

@@ -83,8 +83,33 @@ export function AddCashFlowDialog({ onSuccess }: AddCashFlowDialogProps) {
       form.reset();
       onSuccess?.();
     },
-    onError: (error) => {
-      toast.error(error.message || t("errorMessage"));
+    onError: (error: any) => {
+      // 處理餘額不足錯誤
+      if (error.code === "INSUFFICIENT_BALANCE") {
+        const match = error.message.match(/(\d+\.?\d*)/g);
+        const currentBalance = match?.[0] || "0";
+        const requiredAmount = match?.[1] || "0";
+
+        toast.error(t("insufficientBalance"), {
+          description: `${t("currentBalance")}: $${currentBalance}, ${t("requiredAmount")}: $${requiredAmount}`,
+          duration: 5000,
+        });
+      }
+      // 處理信用額度不足錯誤
+      else if (error.code === "INSUFFICIENT_CREDIT") {
+        const match = error.message.match(/(\d+\.?\d*)/g);
+        const availableCredit = match?.[0] || "0";
+        const requiredAmount = match?.[1] || "0";
+
+        toast.error(t("insufficientCredit"), {
+          description: `${t("availableCredit")}: $${availableCredit}, ${t("requiredAmount")}: $${requiredAmount}`,
+          duration: 5000,
+        });
+      }
+      // 其他錯誤
+      else {
+        toast.error(error.message || t("errorMessage"));
+      }
     },
   });
 

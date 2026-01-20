@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -56,12 +57,22 @@ func (h *CashFlowHandler) CreateCashFlow(c *gin.Context) {
 		return
 	}
 
-	// 呼叫 service 建立現金流記錄
 	cashFlow, err := h.service.CreateCashFlow(&input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, APIResponse{
+		statusCode := http.StatusInternalServerError
+		errorCode := "CREATE_FAILED"
+
+		if strings.Contains(err.Error(), "insufficient_balance") {
+			statusCode = http.StatusBadRequest
+			errorCode = "INSUFFICIENT_BALANCE"
+		} else if strings.Contains(err.Error(), "insufficient_credit") {
+			statusCode = http.StatusBadRequest
+			errorCode = "INSUFFICIENT_CREDIT"
+		}
+
+		c.JSON(statusCode, APIResponse{
 			Error: &APIError{
-				Code:    "CREATE_FAILED",
+				Code:    errorCode,
 				Message: err.Error(),
 			},
 		})
@@ -267,12 +278,22 @@ func (h *CashFlowHandler) UpdateCashFlow(c *gin.Context) {
 		return
 	}
 
-	// 呼叫 service 更新現金流記錄
 	cashFlow, err := h.service.UpdateCashFlow(id, &input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, APIResponse{
+		statusCode := http.StatusInternalServerError
+		errorCode := "UPDATE_FAILED"
+
+		if strings.Contains(err.Error(), "insufficient_balance") {
+			statusCode = http.StatusBadRequest
+			errorCode = "INSUFFICIENT_BALANCE"
+		} else if strings.Contains(err.Error(), "insufficient_credit") {
+			statusCode = http.StatusBadRequest
+			errorCode = "INSUFFICIENT_CREDIT"
+		}
+
+		c.JSON(statusCode, APIResponse{
 			Error: &APIError{
-				Code:    "UPDATE_FAILED",
+				Code:    errorCode,
 				Message: err.Error(),
 			},
 		})

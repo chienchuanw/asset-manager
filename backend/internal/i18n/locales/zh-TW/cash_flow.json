@@ -2,6 +2,8 @@
   "CASH_FLOW_NOT_FOUND": "找不到現金流記錄",
   "CASH_FLOW_CREATE_FAILED": "建立現金流記錄失敗",
   "CASH_FLOW_UPDATE_FAILED": "更新現金流記錄失敗",
-  "CASH_FLOW_DELETE_FAILED": "刪除現金流記錄失敗"
+  "CASH_FLOW_DELETE_FAILED": "刪除現金流記錄失敗",
+  "INSUFFICIENT_BALANCE": "餘額不足：帳戶餘額為 {currentBalance}，需要 {requiredAmount}",
+  "INSUFFICIENT_CREDIT": "信用額度不足：可用額度為 {availableCredit}，需要 {requiredAmount}"
 }
 

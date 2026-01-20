@@ -428,7 +428,14 @@
     "selectCashFlowType": "選擇現金流類型",
     "advancedFilter": "進階篩選",
     "setFilterConditions": "設定篩選條件以縮小搜尋範圍",
-    "confirmDelete": "確定要刪除這筆記錄嗎？"
+    "confirmDelete": "確定要刪除這筆記錄嗎？",
+    "insufficientBalance": "餘額不足",
+    "insufficientBalanceDesc": "帳戶餘額不足以完成此交易",
+    "currentBalance": "目前餘額",
+    "requiredAmount": "需要金額",
+    "insufficientCredit": "信用額度不足",
+    "insufficientCreditDesc": "信用卡可用額度不足以完成此交易",
+    "availableCredit": "可用額度"
   },
   "analytics": {
     "title": "分析報表",

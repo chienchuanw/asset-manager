@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -242,6 +243,8 @@ func (h *CreditCardHandler) UpdateCreditCard(c *gin.Context) {
 
 	// 綁定並驗證請求資料
 	if err := c.ShouldBindJSON(&input); err != nil {
+		// 記錄詳細錯誤以便調試
+		log.Printf("[UpdateCreditCard] Binding error for card %s: %v", idStr, err)
 		c.JSON(http.StatusBadRequest, APIResponse{
 			Error: &APIError{
 				Code:    "INVALID_INPUT",
@@ -250,6 +253,9 @@ func (h *CreditCardHandler) UpdateCreditCard(c *gin.Context) {
 		})
 		return
 	}
+
+	// 記錄接收到的輸入資料
+	log.Printf("[UpdateCreditCard] Input for card %s: UsedCredit=%v, CreditLimit=%v", idStr, input.UsedCredit, input.CreditLimit)
 
 	// 呼叫 service 更新信用卡
 	card, err := h.service.UpdateCreditCard(id, &input)
@@ -311,4 +317,3 @@ func (h *CreditCardHandler) DeleteCreditCard(c *gin.Context) {
 		},
 	})
 }
-
