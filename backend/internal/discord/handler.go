@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -121,12 +122,14 @@ func (h *Handler) handleMessage(s discordSession, m *discordgo.MessageCreate) {
 
 	categories, err := h.loadCategories()
 	if err != nil {
+		log.Printf("discord: failed to load categories: %v", err)
 		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgSystemError))
 		return
 	}
 
 	result, err := h.parser.Parse(context.Background(), m.Content, categories)
 	if err != nil {
+		log.Printf("discord: failed to parse message %q: %v", m.Content, err)
 		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgSystemError))
 		return
 	}
@@ -196,6 +199,7 @@ func (h *Handler) handleInteraction(s discordSession, i *discordgo.InteractionCr
 			Description: result.Description,
 		})
 		if err != nil {
+			log.Printf("discord: failed to create cash flow: %v", err)
 			h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgBookingFailed), err.Error())
 			return
 		}
