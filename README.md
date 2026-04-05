@@ -34,7 +34,7 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 - **Subscription and installment billing** -- Recurring subscription management with automatic daily billing, installment tracking with interest calculations, expiration reminders, and auto-renewal.
 - **Bank and credit card accounts** -- Multi-account support with credit card grouping.
 - **Analytics and snapshots** -- Performance trends via daily snapshots, asset allocation by type and individual asset, top performing/underperforming assets, and time-range filtering.
-- **Discord integration** -- Automated daily reports and alerts via webhook.
+- **Discord integration** -- Automated daily reports and alerts via webhook. Discord bot for natural-language bookkeeping with confirmation flow (zh-TW/en).
 - **Authentication and settings** -- JWT-based authentication, role-based access, user preferences, and notification settings.
 - **Exchange rate management** -- Multi-currency support with cached rates and graceful API degradation.
 
@@ -64,6 +64,7 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 | Migrations | golang-migrate |
 | Scheduling | robfig/cron v3 |
 | Testing | testify 1.11 |
+| Discord Bot | discordgo + Gemini 2.0 Flash |
 
 ### Infrastructure
 
@@ -328,6 +329,36 @@ For detailed architecture documentation, see [`backend/doc/ARCHITECTURE.md`](bac
 | POST | `/api/discord/daily-report` | Send daily report |
 
 For complete API documentation, see `backend/doc/`.
+
+## Discord Bot (Natural Language Bookkeeping)
+
+The system includes a Discord bot that allows you to record expenses and income using natural language in a private Discord channel. The bot parses your message with Google Gemini AI, shows a preview, and creates the record after you confirm.
+
+**Usage example:**
+```
+You: 午餐吃拉麵 180
+Bot: 📝 記帳預覽
+     類型: 支出 | 金額: 180 | 分類: 飲食 | 描述: 午餐吃拉麵 | 日期: 2026-04-05
+     [✅ 確認記帳] [❌ 取消]
+
+You: (clicks ✅)
+Bot: ✅ 記帳成功
+```
+
+### Setup
+
+1. Create a bot at [Discord Developer Portal](https://discord.com/developers/applications) → enable **MESSAGE CONTENT INTENT**
+2. Get an API key at [Google AI Studio](https://aistudio.google.com/apikey) (free tier)
+3. Enable Developer Mode in Discord → right-click your channel → Copy Channel ID
+4. Set environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DISCORD_BOT_ENABLED` | `true` to enable the bot |
+| `DISCORD_BOT_TOKEN` | Bot token from Discord Developer Portal |
+| `DISCORD_CHANNEL_IDS` | Comma-separated channel IDs to listen in |
+| `DISCORD_BOT_LANG` | `zh-TW` (default) or `en` |
+| `GEMINI_API_KEY` | Google Gemini API key |
 
 ## Development
 

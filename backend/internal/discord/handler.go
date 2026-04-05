@@ -2,12 +2,13 @@ package discord
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -33,12 +34,19 @@ type CategoryLoader interface {
 	LoadCategories() ([]CategoryInfo, error)
 }
 
+type pendingEntry struct {
+	result   *ParseResult
+	authorID string
+}
+
 // Handler processes Discord messages and button interactions for bookkeeping.
 type Handler struct {
 	parser  Parser
 	creator CashFlowCreator
 	catRepo CategoryLoader
 	lang    string
+	mu      sync.Mutex
+	pending map[string]pendingEntry
 }
 
 type discordSession interface {
@@ -83,6 +91,7 @@ func NewHandler(parser Parser, creator CashFlowCreator, catLoader CategoryLoader
 		creator: creator,
 		catRepo: catLoader,
 		lang:    lang,
+		pending: make(map[string]pendingEntry),
 	}
 }
 
@@ -129,7 +138,7 @@ func (h *Handler) handleMessage(s discordSession, m *discordgo.MessageCreate) {
 		return
 	}
 
-	confirmID := buildConfirmCustomID(result, m.Author.ID)
+	confirmID := h.storePending(result, m.Author.ID)
 	preview := &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{h.buildPreviewEmbed(result)},
 		Components: []discordgo.MessageComponent{
@@ -173,13 +182,13 @@ func (h *Handler) handleInteraction(s discordSession, i *discordgo.InteractionCr
 
 	switch action {
 	case "confirm":
-		result, err := decodeParseResult(payload)
-		if err != nil {
-			h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgBookingFailed), err.Error())
+		result, ok := h.popPending(payload)
+		if !ok {
+			h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgExpired), "")
 			return
 		}
 
-		_, err = h.creator.CreateCashFlowFromBot(&BotCashFlowInput{
+		_, err := h.creator.CreateCashFlowFromBot(&BotCashFlowInput{
 			Date:        result.Date,
 			Type:        result.Type,
 			CategoryID:  result.CategoryID,
@@ -262,48 +271,28 @@ func parseCustomID(customID string) (action string, payload string, authorID str
 	}
 }
 
-func buildConfirmCustomID(result *ParseResult, authorID string) string {
-	if result == nil {
-		return "confirm::" + authorID
-	}
+func (h *Handler) storePending(result *ParseResult, authorID string) string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	key := hex.EncodeToString(b)
 
-	trimmed := *result
-	trimmed.MissingFields = append([]string(nil), result.MissingFields...)
-	for {
-		payload, err := json.Marshal(trimmed)
-		if err != nil {
-			return "confirm::" + authorID
-		}
-		encoded := base64.RawURLEncoding.EncodeToString(payload)
-		customID := "confirm:" + encoded + ":" + authorID
-		if len(customID) <= 100 || len(trimmed.Description) == 0 {
-			return customID
-		}
-		trimmed.Description = trimDescription(trimmed.Description)
-	}
+	h.mu.Lock()
+	h.pending[key] = pendingEntry{result: result, authorID: authorID}
+	h.mu.Unlock()
+
+	return "confirm:" + key + ":" + authorID
 }
 
-func decodeParseResult(payload string) (*ParseResult, error) {
-	decoded, err := base64.RawURLEncoding.DecodeString(payload)
-	if err != nil {
-		return nil, err
-	}
-	var result ParseResult
-	if err := json.Unmarshal(decoded, &result); err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
+func (h *Handler) popPending(key string) (*ParseResult, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
-func trimDescription(value string) string {
-	runes := []rune(value)
-	if len(runes) == 0 {
-		return ""
+	entry, ok := h.pending[key]
+	if !ok {
+		return nil, false
 	}
-	if len(runes) == 1 {
-		return ""
-	}
-	return string(runes[:len(runes)-1])
+	delete(h.pending, key)
+	return entry.result, true
 }
 
 func interactionUserID(i *discordgo.InteractionCreate) string {

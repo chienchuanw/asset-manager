@@ -10,11 +10,11 @@ import (
 )
 
 type mockSession struct {
-	sentMessages          []*discordgo.MessageSend
-	editedMessages        []*discordgo.MessageEdit
-	interactionResponses  []*discordgo.InteractionResponse
-	reactionAdds          []reactionAddCall
-	reactionRemoves       []reactionRemoveCall
+	sentMessages         []*discordgo.MessageSend
+	editedMessages       []*discordgo.MessageEdit
+	interactionResponses []*discordgo.InteractionResponse
+	reactionAdds         []reactionAddCall
+	reactionRemoves      []reactionRemoveCall
 }
 
 type reactionAddCall struct {
@@ -233,7 +233,7 @@ func TestHandleInteraction_Confirm_CreatesRecord(t *testing.T) {
 	}
 	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
 	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, string(LangEn))
-	customID := buildConfirmCustomID(result, "author-1")
+	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "author-1")
 
 	h.handleInteraction(session, interaction)
@@ -284,7 +284,7 @@ func TestHandleInteraction_WrongUser_Ephemeral(t *testing.T) {
 	}
 	creator := &mockCashFlowCreator{}
 	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, string(LangEn))
-	customID := buildConfirmCustomID(result, "author-1")
+	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "other-user")
 
 	h.handleInteraction(session, interaction)
@@ -299,7 +299,7 @@ func TestHandleInteraction_WrongUser_Ephemeral(t *testing.T) {
 
 func newComponentInteraction(customID string, userID string) *discordgo.InteractionCreate {
 	return &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
-		Type: discordgo.InteractionMessageComponent,
+		Type:   discordgo.InteractionMessageComponent,
 		Member: &discordgo.Member{User: &discordgo.User{ID: userID}},
 		Message: &discordgo.Message{
 			ID:        "reply-1",
