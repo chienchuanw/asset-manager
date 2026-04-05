@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-const defaultGeminiModel = "gemini-2.0-flash"
+const defaultGeminiModel = "gemini-2.5-flash"
 
 var (
 	geminiNow             = time.Now
