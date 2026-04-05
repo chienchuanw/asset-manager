@@ -15,6 +15,7 @@ import (
 	"github.com/chienchuanw/asset-manager/internal/cache"
 	"github.com/chienchuanw/asset-manager/internal/client"
 	"github.com/chienchuanw/asset-manager/internal/db"
+	discordbot "github.com/chienchuanw/asset-manager/internal/discord"
 	"github.com/chienchuanw/asset-manager/internal/i18n"
 	"github.com/chienchuanw/asset-manager/internal/middleware"
 	"github.com/chienchuanw/asset-manager/internal/repository"
@@ -175,7 +176,8 @@ func main() {
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, nil)
+		bot := startDiscordBot(cashFlowService, categoryRepo)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, nil, bot)
 		return
 	}
 	defer redisCache.Close()
@@ -296,7 +298,8 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器（會在內部處理 graceful shutdown）
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, schedulerManager)
+	bot := startDiscordBot(cashFlowService, categoryRepo)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, schedulerManager, bot)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -308,8 +311,34 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return value
 }
 
-// startServer 啟動 HTTP 伺服器
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, creditCardGroupHandler *api.CreditCardGroupHandler, exchangeRateHandler *api.ExchangeRateHandler, schedulerManager *scheduler.SchedulerManager) {
+func startDiscordBot(cashFlowSvc service.CashFlowService, categoryRepo repository.CategoryRepository) *discordbot.Bot {
+	cfg := discordbot.LoadConfig()
+	if !cfg.Enabled {
+		log.Println("Discord bot disabled")
+		return nil
+	}
+
+	bot, err := discordbot.NewBot(cfg)
+	if err != nil {
+		log.Printf("Warning: Failed to create Discord bot: %v", err)
+		return nil
+	}
+
+	parser := discordbot.NewGeminiParser(cfg.GeminiKey)
+	creator := discordbot.NewCashFlowServiceAdapter(cashFlowSvc)
+	catLoader := discordbot.NewCategoryRepoAdapter(categoryRepo)
+	handler := discordbot.NewHandler(parser, creator, catLoader, cfg.Lang)
+	bot.SetHandler(handler)
+
+	if err := bot.Start(); err != nil {
+		log.Printf("Warning: Failed to start Discord bot: %v", err)
+		return nil
+	}
+
+	return bot
+}
+
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, creditCardGroupHandler *api.CreditCardGroupHandler, exchangeRateHandler *api.ExchangeRateHandler, schedulerManager *scheduler.SchedulerManager, discordBot *discordbot.Bot) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -563,11 +592,14 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 	<-quit
 	log.Println("Shutting down server gracefully...")
 
-	// 停止排程器
+	if discordBot != nil {
+		log.Println("Stopping Discord bot...")
+		_ = discordBot.Stop()
+	}
+
 	if schedulerManager != nil {
 		log.Println("Stopping scheduler...")
 		schedulerManager.Stop()
-		// 等待正在執行的任務完成
 		time.Sleep(5 * time.Second)
 	}
 

@@ -95,6 +95,13 @@ services:
 
       # CORS 設定
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+
+      # Discord Bot
+      DISCORD_BOT_ENABLED: ${DISCORD_BOT_ENABLED:-false}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_CHANNEL_IDS: ${DISCORD_CHANNEL_IDS:-}
+      DISCORD_BOT_LANG: ${DISCORD_BOT_LANG:-zh-TW}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8080:8080"
     networks:
