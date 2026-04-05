@@ -56,7 +56,7 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
 | Component | Technology |
 |-----------|------------|
-| Language | Go 1.24 |
+| Language | Go 1.25 |
 | Framework | Gin 1.11 |
 | Database | PostgreSQL 12+ |
 | Cache | Redis |
@@ -79,7 +79,7 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
 ### Prerequisites
 
-- **Go** >= 1.24
+- **Go** >= 1.25
 - **Node.js** >= 18 and **pnpm**
 - **PostgreSQL** >= 12
 - **Redis** (for caching and scheduling)
@@ -156,6 +156,8 @@ The project uses environment variables configured via `.env` files. See `.env.te
 | `COINGECKO_API_KEY` | CoinGecko API key for crypto prices |
 | `ALPHA_VANTAGE_API_KEY` | Alpha Vantage API key for U.S. stock prices |
 | `DISCORD_WEBHOOK_URL` | Discord webhook for automated reports |
+| `AUTH_USERNAME`, `AUTH_PASSWORD` | Default admin credentials |
+| `PRICE_CACHE_EXPIRATION` | Cache TTL for price data (e.g. `5m`) |
 | `CORS_ALLOWED_ORIGINS` | Allowed CORS origins |
 | `NEXT_PUBLIC_API_URL` | Backend API URL for the frontend |
 | `SNAPSHOT_SCHEDULER_ENABLED` | Enable daily snapshot scheduler |
@@ -167,7 +169,7 @@ The project uses environment variables configured via `.env` files. See `.env.te
 ```text
 asset-manager/
 ├── backend/
-│   ├── cmd/                  # Entry points (API server, snapshot utility)
+│   ├── cmd/                  # Entry points (API server, seed, snapshot)
 │   ├── internal/
 │   │   ├── api/              # HTTP handlers
 │   │   ├── service/          # Business logic
@@ -176,7 +178,10 @@ asset-manager/
 │   │   ├── middleware/       # Auth, CORS, logging middleware
 │   │   ├── auth/             # JWT token handling
 │   │   ├── cache/            # Redis caching
+│   │   ├── client/           # HTTP client wrappers
+│   │   ├── discord/          # Discord bot integration
 │   │   ├── external/         # External API clients (prices, exchange rates)
+│   │   ├── i18n/             # Internationalization resources
 │   │   ├── scheduler/        # Cron task scheduling
 │   │   └── db/               # Database connection
 │   ├── migrations/           # SQL migration files (28 migrations)
@@ -186,6 +191,7 @@ asset-manager/
 │   │   ├── app/              # Next.js App Router pages
 │   │   ├── components/       # React components
 │   │   ├── hooks/            # Custom data-fetching hooks
+│   │   ├── i18n/             # Internationalization setup
 │   │   ├── lib/              # API client and utilities
 │   │   ├── types/            # TypeScript type definitions
 │   │   └── providers/        # Context providers
@@ -424,10 +430,9 @@ This is a personal project, but suggestions and feedback are welcome.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Follow the coding standards in `.augment/rules/coding-standards.md`
-4. Write tests before implementation (TDD approach)
-5. Commit your changes with meaningful messages in English
-6. Push to the branch and open a Pull Request
+3. Write tests before implementation (TDD approach)
+4. Commit your changes with meaningful messages in English
+5. Push to the branch and open a Pull Request
 
 ```bash
 # Run backend tests before submitting
