@@ -49,6 +49,72 @@ type AccountLoader interface {
 	LoadAccounts(sourceType string) ([]AccountInfo, error)
 }
 
+// CategoryBreakdown holds a single category's spending/income data for query results.
+type CategoryBreakdown struct {
+	Name   string
+	Amount float64
+	Count  int
+}
+
+// MonthComparisonResult holds month-over-month comparison data for query results.
+type MonthComparisonResult struct {
+	PreviousMonth    int
+	PreviousYear     int
+	ExpenseChange    float64
+	ExpenseChangePct float64
+	IncomeChange     float64
+	IncomeChangePct  float64
+}
+
+// MonthlySummaryResult holds the data returned by a cash flow summary query.
+type MonthlySummaryResult struct {
+	Year          int
+	Month         int
+	TotalIncome   float64
+	TotalExpense  float64
+	NetCashFlow   float64
+	IncomeCount   int
+	ExpenseCount  int
+	TopCategories []CategoryBreakdown
+	Comparison    *MonthComparisonResult
+}
+
+// CashFlowQuerier abstracts cash flow summary queries for the bot.
+type CashFlowQuerier interface {
+	GetMonthlySummary(year, month int) (*MonthlySummaryResult, error)
+}
+
+// BankAccountBalance holds a single bank account's balance data for query results.
+type BankAccountBalance struct {
+	Name     string
+	Last4    string
+	Currency string
+	Balance  float64
+}
+
+// CreditCardBalance holds a single credit card's balance data for query results.
+type CreditCardBalance struct {
+	Name        string
+	Last4       string
+	CreditLimit float64
+	UsedCredit  float64
+	Remaining   float64
+	UsagePct    float64
+}
+
+// AccountBalancesResult holds the combined bank + credit card balance data.
+type AccountBalancesResult struct {
+	BankAccounts []BankAccountBalance
+	CreditCards  []CreditCardBalance
+	BankError    error
+	CCError      error
+}
+
+// AccountBalanceQuerier abstracts account balance queries for the bot.
+type AccountBalanceQuerier interface {
+	GetAllBalances() (*AccountBalancesResult, error)
+}
+
 type pendingEntry struct {
 	result            *ParseResult
 	authorID          string
@@ -58,13 +124,15 @@ type pendingEntry struct {
 
 // Handler processes Discord messages and button interactions for bookkeeping.
 type Handler struct {
-	parser     Parser
-	creator    CashFlowCreator
-	catRepo    CategoryLoader
-	acctLoader AccountLoader
-	lang       string
-	mu         sync.Mutex
-	pending    map[string]pendingEntry
+	parser      Parser
+	creator     CashFlowCreator
+	catRepo     CategoryLoader
+	acctLoader  AccountLoader
+	cfQuerier   CashFlowQuerier
+	acctQuerier AccountBalanceQuerier
+	lang        string
+	mu          sync.Mutex
+	pending     map[string]pendingEntry
 }
 
 type discordSession interface {
@@ -99,12 +167,12 @@ func (r realDiscordSession) InteractionRespond(interaction *discordgo.Interactio
 	return r.session.InteractionRespond(interaction, resp)
 }
 
-func NewHandler(parser Parser, creator CashFlowCreator, catLoader CategoryLoader, acctLoader AccountLoader, lang string) *Handler {
+func NewHandler(parser Parser, creator CashFlowCreator, catLoader CategoryLoader, acctLoader AccountLoader, lang string, opts ...HandlerOption) *Handler {
 	if strings.TrimSpace(lang) == "" {
 		lang = string(LangZhTW)
 	}
 
-	return &Handler{
+	h := &Handler{
 		parser:     parser,
 		creator:    creator,
 		catRepo:    catLoader,
@@ -112,6 +180,23 @@ func NewHandler(parser Parser, creator CashFlowCreator, catLoader CategoryLoader
 		lang:       lang,
 		pending:    make(map[string]pendingEntry),
 	}
+
+	for _, opt := range opts {
+		opt(h)
+	}
+
+	return h
+}
+
+// HandlerOption configures optional Handler dependencies.
+type HandlerOption func(*Handler)
+
+func WithCashFlowQuerier(q CashFlowQuerier) HandlerOption {
+	return func(h *Handler) { h.cfQuerier = q }
+}
+
+func WithAccountBalanceQuerier(q AccountBalanceQuerier) HandlerOption {
+	return func(h *Handler) { h.acctQuerier = q }
 }
 
 func (h *Handler) HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate) {

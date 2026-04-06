@@ -19,19 +19,29 @@ var (
 	geminiGenerateContent = defaultGeminiGenerateContent
 )
 
+// QueryParams holds filter criteria for query-type requests.
+type QueryParams struct {
+	Month    int    `json:"month"`    // 0 = current month
+	Year     int    `json:"year"`     // 0 = current year
+	Category string `json:"category"` // category name filter, "" = all
+}
+
 // ParseResult holds the structured result from NLP parsing.
 type ParseResult struct {
-	IsBookkeeping bool     `json:"is_bookkeeping"`
-	Type          string   `json:"type"`
-	Amount        float64  `json:"amount"`
-	Description   string   `json:"description"`
-	CategoryID    string   `json:"category_id"`
-	CategoryName  string   `json:"category_name"`
-	Date          string   `json:"date"`
-	SourceType    string   `json:"source_type"`
-	SourceID      string   `json:"-"`
-	SourceName    string   `json:"-"`
-	MissingFields []string `json:"missing_fields"`
+	IsBookkeeping bool         `json:"is_bookkeeping"`
+	Action        string       `json:"action"` // "create" | "query" | ""
+	Type          string       `json:"type"`
+	Amount        float64      `json:"amount"`
+	Description   string       `json:"description"`
+	CategoryID    string       `json:"category_id"`
+	CategoryName  string       `json:"category_name"`
+	Date          string       `json:"date"`
+	SourceType    string       `json:"source_type"`
+	SourceID      string       `json:"-"`
+	SourceName    string       `json:"-"`
+	MissingFields []string     `json:"missing_fields"`
+	QueryType     string       `json:"query_type"` // "cash_flow_summary" | "account_balance" | ""
+	QueryParams   *QueryParams `json:"query_params"`
 }
 
 // CategoryInfo represents a category passed to the parser for matching.
@@ -88,8 +98,25 @@ func (p *GeminiParser) Parse(ctx context.Context, message string, categories []C
 	if result.MissingFields == nil {
 		result.MissingFields = []string{}
 	}
+	if result.Action == "" && result.IsBookkeeping {
+		result.Action = "create"
+	}
+	applyQueryParamDefaults(&result)
 
 	return &result, nil
+}
+
+func applyQueryParamDefaults(result *ParseResult) {
+	if result.Action != "query" || result.QueryParams == nil {
+		return
+	}
+	now := geminiNow()
+	if result.QueryParams.Year == 0 {
+		result.QueryParams.Year = now.Year()
+	}
+	if result.QueryParams.Month == 0 {
+		result.QueryParams.Month = int(now.Month())
+	}
 }
 
 func buildGeminiPrompt(message string, categories []CategoryInfo, today string) string {
