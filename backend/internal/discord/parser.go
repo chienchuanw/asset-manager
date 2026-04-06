@@ -131,6 +131,7 @@ func buildGeminiPrompt(message string, categories []CategoryInfo, today string) 
 	return fmt.Sprintf(`Return a single JSON object matching exactly this schema:
 {
   "is_bookkeeping": boolean,
+  "action": "create" | "query" | "",
   "type": "income" | "expense" | "",
   "amount": number,
   "description": string,
@@ -138,13 +139,23 @@ func buildGeminiPrompt(message string, categories []CategoryInfo, today string) 
   "category_name": string,
   "date": string,
   "source_type": "cash" | "bank_account" | "credit_card" | "",
-  "missing_fields": string[]
+  "missing_fields": string[],
+  "query_type": "cash_flow_summary" | "account_balance" | "",
+  "query_params": {
+    "month": number,
+    "year": number,
+    "category": string
+  }
 }
 
 Rules:
 - Support both Chinese and English input.
 - Set "is_bookkeeping" to false for greetings, chit-chat, or messages that are not bookkeeping.
-- Only use "income" or "expense" for "type" when the message is bookkeeping.
+- For "action":
+  - If the message contains a specific amount and is recording a transaction, use "create".
+  - If the message is asking a question about spending, balance, or summary (interrogative form, no specific amount to record), use "query".
+  - For greetings/chat or anything non-bookkeeping, use an empty string.
+- Only use "income" or "expense" for "type" when the message is bookkeeping and the intent is transaction recording.
 - Use date format YYYY-MM-DD.
 - Default the date to today (%s) when the user does not specify one.
 - Handle relative dates like 昨天 / yesterday, 前天 / day before yesterday, 上禮拜 / last week relative to today.
@@ -156,7 +167,16 @@ Rules:
   - 轉帳 / transfer / bank → "bank_account"
   - 現金 / cash → "cash"
   - If no payment method is mentioned, use an empty string.
-- If required bookkeeping information is missing, keep "is_bookkeeping" true and list missing keys in "missing_fields".
+- If required bookkeeping information is missing for a transaction, keep "is_bookkeeping" true and list missing keys in "missing_fields".
+- For "query_type":
+  - Use "cash_flow_summary" for spending, income, or cash-flow questions.
+  - Use "account_balance" for bank balance or credit card limit questions.
+  - Otherwise use an empty string.
+- For "query_params":
+  - Resolve month/year from relative terms such as 這個月=current, 上個月=previous, last month=previous.
+  - Extract the category name if mentioned.
+  - Use 0 for unspecified month/year.
+  - Use an empty string for an unspecified category.
 - Use an empty string for unknown string fields and 0 for an unknown amount.
 - Respond with JSON only. No markdown fences, no explanations.
 

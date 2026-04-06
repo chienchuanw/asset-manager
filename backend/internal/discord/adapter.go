@@ -1,7 +1,9 @@
 package discord
 
 import (
+	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -149,4 +151,152 @@ func (a *CategoryRepoAdapter) LoadCategories() ([]CategoryInfo, error) {
 		}
 	}
 	return result, nil
+}
+
+// CashFlowQueryAdapter bridges service.CashFlowService to CashFlowQuerier.
+type CashFlowQueryAdapter struct {
+	svc service.CashFlowService
+}
+
+// NewCashFlowQueryAdapter wraps a CashFlowService for query usage.
+func NewCashFlowQueryAdapter(svc service.CashFlowService) *CashFlowQueryAdapter {
+	return &CashFlowQueryAdapter{svc: svc}
+}
+
+func (a *CashFlowQueryAdapter) GetMonthlySummary(year, month int) (*MonthlySummaryResult, error) {
+	summary, err := a.svc.GetMonthlySummaryWithComparison(year, month)
+	if err != nil {
+		return nil, err
+	}
+	if summary == nil {
+		return &MonthlySummaryResult{TopCategories: []CategoryBreakdown{}}, nil
+	}
+
+	result := &MonthlySummaryResult{
+		Year:          summary.Year,
+		Month:         summary.Month,
+		TotalIncome:   summary.TotalIncome,
+		TotalExpense:  summary.TotalExpense,
+		NetCashFlow:   summary.NetCashFlow,
+		IncomeCount:   summary.IncomeCount,
+		ExpenseCount:  summary.ExpenseCount,
+		TopCategories: mapTopCategories(summary.ExpenseCategoryBreakdown),
+	}
+	if summary.ComparisonToPrev != nil {
+		result.Comparison = &MonthComparisonResult{
+			PreviousMonth:    summary.ComparisonToPrev.PreviousMonth,
+			PreviousYear:     summary.ComparisonToPrev.PreviousYear,
+			ExpenseChange:    summary.ComparisonToPrev.ExpenseChange,
+			ExpenseChangePct: summary.ComparisonToPrev.ExpenseChangePct,
+			IncomeChange:     summary.ComparisonToPrev.IncomeChange,
+			IncomeChangePct:  summary.ComparisonToPrev.IncomeChangePct,
+		}
+	}
+	return result, nil
+}
+
+// AccountBalanceQueryAdapter bridges repositories to AccountBalanceQuerier.
+type AccountBalanceQueryAdapter struct {
+	bankRepo repository.BankAccountRepository
+	cardRepo repository.CreditCardRepository
+}
+
+// NewAccountBalanceQueryAdapter wraps repositories for balance queries.
+func NewAccountBalanceQueryAdapter(bankRepo repository.BankAccountRepository, cardRepo repository.CreditCardRepository) *AccountBalanceQueryAdapter {
+	return &AccountBalanceQueryAdapter{bankRepo: bankRepo, cardRepo: cardRepo}
+}
+
+func (a *AccountBalanceQueryAdapter) GetAllBalances() (*AccountBalancesResult, error) {
+	result := &AccountBalancesResult{
+		BankAccounts: []BankAccountBalance{},
+		CreditCards:  []CreditCardBalance{},
+	}
+
+	bankAccounts, bankErr := a.bankRepo.GetAll(nil)
+	if bankErr == nil {
+		result.BankAccounts = mapBankAccountBalances(bankAccounts)
+	} else {
+		result.BankError = bankErr
+	}
+
+	creditCards, ccErr := a.cardRepo.GetAll()
+	if ccErr == nil {
+		result.CreditCards = mapCreditCardBalances(creditCards)
+	} else {
+		result.CCError = ccErr
+	}
+
+	if bankErr != nil && ccErr != nil {
+		return result, errors.Join(bankErr, ccErr)
+	}
+
+	return result, nil
+}
+
+func mapTopCategories(categories []*models.CategorySummary) []CategoryBreakdown {
+	if len(categories) == 0 {
+		return []CategoryBreakdown{}
+	}
+
+	breakdowns := make([]CategoryBreakdown, 0, len(categories))
+	for _, category := range categories {
+		if category == nil {
+			continue
+		}
+		breakdowns = append(breakdowns, CategoryBreakdown{
+			Name:   category.CategoryName,
+			Amount: category.Amount,
+			Count:  category.Count,
+		})
+	}
+
+	sort.Slice(breakdowns, func(i, j int) bool {
+		return breakdowns[i].Amount > breakdowns[j].Amount
+	})
+	if len(breakdowns) > 5 {
+		breakdowns = breakdowns[:5]
+	}
+	return breakdowns
+}
+
+func mapBankAccountBalances(accounts []*models.BankAccount) []BankAccountBalance {
+	if len(accounts) == 0 {
+		return []BankAccountBalance{}
+	}
+
+	result := make([]BankAccountBalance, 0, len(accounts))
+	for _, account := range accounts {
+		if account == nil {
+			continue
+		}
+		result = append(result, BankAccountBalance{
+			Name:     account.BankName,
+			Last4:    account.AccountNumberLast4,
+			Currency: string(account.Currency),
+			Balance:  account.Balance,
+		})
+	}
+	return result
+}
+
+func mapCreditCardBalances(cards []*models.CreditCard) []CreditCardBalance {
+	if len(cards) == 0 {
+		return []CreditCardBalance{}
+	}
+
+	result := make([]CreditCardBalance, 0, len(cards))
+	for _, card := range cards {
+		if card == nil {
+			continue
+		}
+		result = append(result, CreditCardBalance{
+			Name:        fmt.Sprintf("%s %s", card.IssuingBank, card.CardName),
+			Last4:       card.CardNumberLast4,
+			CreditLimit: card.CreditLimit,
+			UsedCredit:  card.UsedCredit,
+			Remaining:   card.AvailableCredit(),
+			UsagePct:    card.CreditUtilization(),
+		})
+	}
+	return result
 }

@@ -281,12 +281,87 @@ func TestGeminiParser_PromptContainsSourceType(t *testing.T) {
 	require.Contains(t, prompt, "source_type")
 }
 
+func TestBuildGeminiPrompt_IncludesQueryFields(t *testing.T) {
+	prompt := buildGeminiPrompt("test", nil, "2026-04-06")
+
+	require.Contains(t, prompt, "action")
+	require.Contains(t, prompt, "query_type")
+	require.Contains(t, prompt, "query_params")
+}
+
 func TestGeminiParser_PromptContainsDateFormats(t *testing.T) {
 	prompt := buildGeminiPrompt("午餐 180", testCategories(), "2026-04-05")
 
 	require.Contains(t, prompt, "YYYY-MM-DD")
 	require.Contains(t, prompt, "昨天")
 	require.Contains(t, prompt, "前天")
+}
+
+func TestParseResult_ActionDefaults(t *testing.T) {
+	originalGenerate := geminiGenerateContent
+	originalNow := geminiNow
+	t.Cleanup(func() {
+		geminiGenerateContent = originalGenerate
+		geminiNow = originalNow
+	})
+
+	geminiNow = func() time.Time { return time.Date(2026, 4, 6, 0, 0, 0, 0, time.UTC) }
+
+	tests := []struct {
+		name           string
+		response       string
+		expectedAction string
+		expectedMonth  int
+		expectedYear   int
+	}{
+		{
+			name:           "Given bookkeeping result with empty action When Parse Then defaults action to create",
+			response:       `{"is_bookkeeping":true,"action":"","type":"expense","amount":180,"description":"午餐","category_id":"expense-food","category_name":"飲食","date":"2026-04-06","source_type":"cash","missing_fields":[]}`,
+			expectedAction: "create",
+		},
+		{
+			name:           "Given query result with missing year When Parse Then defaults year to current year",
+			response:       `{"is_bookkeeping":true,"action":"query","type":"","amount":0,"description":"","category_id":"","category_name":"","date":"2026-04-06","source_type":"","missing_fields":[],"query_type":"cash_flow_summary","query_params":{"month":3,"year":0,"category":""}}`,
+			expectedAction: "query",
+			expectedMonth:  3,
+			expectedYear:   2026,
+		},
+		{
+			name:           "Given query result with missing month When Parse Then defaults month to current month",
+			response:       `{"is_bookkeeping":true,"action":"query","type":"","amount":0,"description":"","category_id":"","category_name":"","date":"2026-04-06","source_type":"","missing_fields":[],"query_type":"cash_flow_summary","query_params":{"month":0,"year":2025,"category":""}}`,
+			expectedAction: "query",
+			expectedMonth:  4,
+			expectedYear:   2025,
+		},
+		{
+			name:           "Given non-bookkeeping result with empty action When Parse Then action stays empty",
+			response:       `{"is_bookkeeping":false,"action":"","type":"","amount":0,"description":"hello","category_id":"","category_name":"","date":"2026-04-06","source_type":"","missing_fields":[]}`,
+			expectedAction: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			geminiGenerateContent = func(ctx context.Context, apiKey, model, prompt string) (string, error) {
+				return tt.response, nil
+			}
+
+			parser := NewGeminiParser("test-key")
+
+			result, err := parser.Parse(t.Context(), "test message", testCategories())
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedAction, result.Action)
+
+			if tt.expectedAction == "query" {
+				require.NotNil(t, result.QueryParams)
+				require.Equal(t, tt.expectedYear, result.QueryParams.Year)
+				require.Equal(t, tt.expectedMonth, result.QueryParams.Month)
+			} else {
+				require.Nil(t, result.QueryParams)
+			}
+		})
+	}
 }
 
 func TestGeminiParser_Errors(t *testing.T) {
