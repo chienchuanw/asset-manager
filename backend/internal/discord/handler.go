@@ -268,6 +268,7 @@ func (h *Handler) handleAccountIDSelection(s discordSession, i *discordgo.Intera
 		return
 	}
 	entry.result.SourceID = values[0]
+	entry.result.SourceName = h.lookupAccountName(entry.result.SourceType, values[0])
 	entry.awaitingAccountID = false
 	delete(h.pending, pendingKey)
 	h.mu.Unlock()
@@ -467,24 +468,51 @@ func (h *Handler) buildPreviewEmbed(result *ParseResult) *discordgo.MessageEmbed
 		color = 0x00FF00
 	}
 
-	return &discordgo.MessageEmbed{
-		Title: GetMessage(h.lang, MsgPreviewTitle),
-		Color: color,
-		Fields: []*discordgo.MessageEmbedField{
-			{Name: GetMessage(h.lang, MsgFieldType), Value: typeLabel, Inline: true},
-			{Name: GetMessage(h.lang, MsgFieldAmount), Value: formatAmount(result.Amount), Inline: true},
-			{Name: GetMessage(h.lang, MsgFieldCategory), Value: fallbackText(result.CategoryName), Inline: true},
-			{Name: GetMessage(h.lang, MsgFieldDescription), Value: fallbackText(result.Description)},
-			{Name: GetMessage(h.lang, MsgFieldDate), Value: fallbackText(result.Date), Inline: true},
-			{Name: GetMessage(h.lang, MsgFieldPaymentMethod), Value: h.sourceTypeLabel(result.SourceType), Inline: true},
-		},
+	fields := []*discordgo.MessageEmbedField{
+		{Name: GetMessage(h.lang, MsgFieldType), Value: typeLabel, Inline: true},
+		{Name: GetMessage(h.lang, MsgFieldAmount), Value: formatAmount(result.Amount), Inline: true},
+		{Name: GetMessage(h.lang, MsgFieldCategory), Value: fallbackText(result.CategoryName), Inline: true},
+		{Name: GetMessage(h.lang, MsgFieldDescription), Value: fallbackText(result.Description)},
+		{Name: GetMessage(h.lang, MsgFieldPaymentMethod), Value: h.sourceTypeLabel(result.SourceType), Inline: true},
 	}
+
+	if result.SourceName != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name: GetMessage(h.lang, MsgFieldAccount), Value: result.SourceName, Inline: true,
+		})
+	}
+
+	return &discordgo.MessageEmbed{
+		Title:  GetMessage(h.lang, MsgPreviewTitle),
+		Color:  color,
+		Fields: fields,
+		Footer: &discordgo.MessageEmbedFooter{Text: fallbackText(result.Date)},
+	}
+}
+
+func (h *Handler) lookupAccountName(sourceType, accountID string) string {
+	if h.acctLoader == nil {
+		return ""
+	}
+	accounts, err := h.acctLoader.LoadAccounts(sourceType)
+	if err != nil {
+		return ""
+	}
+	for _, acct := range accounts {
+		if acct.ID == accountID {
+			return acct.Name
+		}
+	}
+	return ""
 }
 
 func (h *Handler) respondWithUpdatedEmbed(s discordSession, i *discordgo.InteractionCreate, title, description string) {
 	embed := cloneFirstEmbed(i.Message)
 	embed.Title = title
 	embed.Description = description
+	if title == GetMessage(h.lang, MsgConfirmSuccess) {
+		embed.Color = 0x00CC00
+	}
 	_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseUpdateMessage,
 		Data: &discordgo.InteractionResponseData{

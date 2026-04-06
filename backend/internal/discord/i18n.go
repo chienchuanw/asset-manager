@@ -36,6 +36,7 @@ const (
 	MsgAccountBank        MsgKey = "account_bank"
 	MsgAccountCreditCard  MsgKey = "account_credit_card"
 	MsgFieldPaymentMethod MsgKey = "field_payment_method"
+	MsgFieldAccount       MsgKey = "field_account"
 	MsgSelectBankAccount  MsgKey = "select_bank_account"
 	MsgSelectCreditCard   MsgKey = "select_credit_card"
 	MsgNoAccountsFound    MsgKey = "no_accounts_found"
@@ -67,6 +68,7 @@ var messageCatalog = map[Lang]map[MsgKey]string{
 		MsgAccountBank:        "銀行帳戶",
 		MsgAccountCreditCard:  "信用卡",
 		MsgFieldPaymentMethod: "付款方式",
+		MsgFieldAccount:       "帳戶",
 		MsgSelectBankAccount:  "請選擇銀行帳戶",
 		MsgSelectCreditCard:   "請選擇信用卡",
 		MsgNoAccountsFound:    "❓ 找不到對應的帳戶，請先在系統中新增",
@@ -96,6 +98,7 @@ var messageCatalog = map[Lang]map[MsgKey]string{
 		MsgAccountBank:        "Bank Account",
 		MsgAccountCreditCard:  "Credit Card",
 		MsgFieldPaymentMethod: "Payment Method",
+		MsgFieldAccount:       "Account",
 		MsgSelectBankAccount:  "Select bank account",
 		MsgSelectCreditCard:   "Select credit card",
 		MsgNoAccountsFound:    "❓ No accounts found. Please add one in the system first.",

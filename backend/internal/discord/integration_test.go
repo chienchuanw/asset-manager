@@ -183,7 +183,8 @@ func TestIntegration_YesterdayDate_PassedToRecord(t *testing.T) {
 	require.Len(t, session.sentMessages, 1)
 	sent := session.sentMessages[0]
 	require.Len(t, sent.Embeds, 1)
-	assert.Equal(t, "2026-04-04", sent.Embeds[0].Fields[4].Value)
+	require.NotNil(t, sent.Embeds[0].Footer)
+	assert.Equal(t, "2026-04-04", sent.Embeds[0].Footer.Text)
 
 	confirmBtn := sent.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.Button)
 	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
@@ -225,7 +226,7 @@ func TestIntegration_SpecificDate_PassedToRecord(t *testing.T) {
 
 	require.Len(t, session.sentMessages, 1)
 	sent := session.sentMessages[0]
-	assert.Equal(t, "2026-04-03", sent.Embeds[0].Fields[4].Value)
+	assert.Equal(t, "2026-04-03", sent.Embeds[0].Footer.Text)
 
 	confirmBtn := sent.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.Button)
 	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
@@ -266,7 +267,7 @@ func TestIntegration_DefaultTodayDate(t *testing.T) {
 	h.handleMessage(session, msg)
 
 	require.Len(t, session.sentMessages, 1)
-	assert.Equal(t, "2026-04-05", session.sentMessages[0].Embeds[0].Fields[4].Value)
+	assert.Equal(t, "2026-04-05", session.sentMessages[0].Embeds[0].Footer.Text)
 
 	confirmBtn := session.sentMessages[0].Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.Button)
 	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{

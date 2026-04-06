@@ -30,6 +30,7 @@ type ParseResult struct {
 	Date          string   `json:"date"`
 	SourceType    string   `json:"source_type"`
 	SourceID      string   `json:"-"`
+	SourceName    string   `json:"-"`
 	MissingFields []string `json:"missing_fields"`
 }
 

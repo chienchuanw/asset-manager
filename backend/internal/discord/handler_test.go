@@ -146,16 +146,17 @@ func TestHandleMessage_SuccessfulParse_SendsPreview(t *testing.T) {
 	embed := sent.Embeds[0]
 	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), embed.Title)
 	require.Equal(t, 0xFF0000, embed.Color)
-	require.Len(t, embed.Fields, 6)
+	require.Len(t, embed.Fields, 5)
 	require.Equal(t, GetMessage(string(LangEn), MsgFieldType), embed.Fields[0].Name)
 	require.Equal(t, GetMessage(string(LangEn), MsgTypeExpense), embed.Fields[0].Value)
 	require.Equal(t, GetMessage(string(LangEn), MsgFieldAmount), embed.Fields[1].Name)
 	require.Contains(t, embed.Fields[1].Value, "1,234")
 	require.Equal(t, "Food", embed.Fields[2].Value)
 	require.Equal(t, "lunch with team", embed.Fields[3].Value)
-	require.Equal(t, "2026-04-05", embed.Fields[4].Value)
-	require.Equal(t, GetMessage(string(LangEn), MsgFieldPaymentMethod), embed.Fields[5].Name)
-	require.Equal(t, GetMessage(string(LangEn), MsgAccountCash), embed.Fields[5].Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgFieldPaymentMethod), embed.Fields[4].Name)
+	require.Equal(t, GetMessage(string(LangEn), MsgAccountCash), embed.Fields[4].Value)
+	require.NotNil(t, embed.Footer)
+	require.Equal(t, "2026-04-05", embed.Footer.Text)
 	require.Len(t, sent.Components, 1)
 
 	row, ok := sent.Components[0].(discordgo.ActionsRow)
@@ -489,7 +490,7 @@ func TestHandleInteraction_SelectMenu_WrongUser_Ephemeral(t *testing.T) {
 	require.Equal(t, discordgo.MessageFlagsEphemeral, resp.Data.Flags)
 }
 
-func TestBuildPreviewEmbed_IncludesPaymentMethod(t *testing.T) {
+func TestBuildPreviewEmbed_IncludesPaymentMethodAndFooter(t *testing.T) {
 	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 	result := &ParseResult{
 		IsBookkeeping: true,
@@ -500,14 +501,18 @@ func TestBuildPreviewEmbed_IncludesPaymentMethod(t *testing.T) {
 		CategoryName:  "Food",
 		Date:          "2026-04-05",
 		SourceType:    "credit_card",
+		SourceName:    "中信 Visa *1234",
 	}
 
 	embed := h.buildPreviewEmbed(result)
 
 	require.Len(t, embed.Fields, 6)
-	paymentField := embed.Fields[5]
-	require.Equal(t, GetMessage(string(LangEn), MsgFieldPaymentMethod), paymentField.Name)
-	require.Equal(t, GetMessage(string(LangEn), MsgAccountCreditCard), paymentField.Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgFieldPaymentMethod), embed.Fields[4].Name)
+	require.Equal(t, GetMessage(string(LangEn), MsgAccountCreditCard), embed.Fields[4].Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgFieldAccount), embed.Fields[5].Name)
+	require.Equal(t, "中信 Visa *1234", embed.Fields[5].Value)
+	require.NotNil(t, embed.Footer)
+	require.Equal(t, "2026-04-05", embed.Footer.Text)
 }
 
 func TestHandleInteraction_Confirm_PassesSourceType(t *testing.T) {
