@@ -53,9 +53,13 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.remember/
 
 # Opencode
 .opencode/
 
 # Openspec
 openspec/
+
+# Planning docs
+docs/
