@@ -328,7 +328,12 @@ func startDiscordBot(cashFlowSvc service.CashFlowService, categoryRepo repositor
 	creator := discordbot.NewCashFlowServiceAdapter(cashFlowSvc)
 	catLoader := discordbot.NewCategoryRepoAdapter(categoryRepo)
 	acctLoader := discordbot.NewAccountRepoAdapter(bankAccountRepo, creditCardRepo)
-	handler := discordbot.NewHandler(parser, creator, catLoader, acctLoader, cfg.Lang)
+	cfQuerier := discordbot.NewCashFlowQueryAdapter(cashFlowSvc)
+	acctBalQuerier := discordbot.NewAccountBalanceQueryAdapter(bankAccountRepo, creditCardRepo)
+	handler := discordbot.NewHandler(parser, creator, catLoader, acctLoader, cfg.Lang,
+		discordbot.WithCashFlowQuerier(cfQuerier),
+		discordbot.WithAccountBalanceQuerier(acctBalQuerier),
+	)
 	bot.SetHandler(handler)
 
 	if err := bot.Start(); err != nil {

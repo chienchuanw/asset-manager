@@ -445,6 +445,50 @@ func TestIntegration_KnownSourceType_StillAsksAccountID(t *testing.T) {
 	assert.Equal(t, "cc-uuid-1", creator.createdInputs[0].SourceID)
 }
 
+func TestQueryFlow_EndToEnd(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "query",
+		QueryType:     "cash_flow_summary",
+		QueryParams:   &QueryParams{Year: 2026, Month: 4},
+	}}
+	creator := &mockCashFlowCreator{}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-food", Name: "飲食", Type: "expense"}}}
+	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{
+		Year:          2026,
+		Month:         4,
+		TotalIncome:   80000,
+		TotalExpense:  23500,
+		NetCashFlow:   56500,
+		IncomeCount:   2,
+		ExpenseCount:  5,
+		TopCategories: []CategoryBreakdown{{Name: "飲食", Amount: 5000}, {Name: "交通", Amount: 3000}},
+	}}
+	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{}}
+	h := NewHandler(parser, creator, loader, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier), WithAccountBalanceQuerier(acctQuerier))
+
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "msg-query-1", ChannelID: "ch-1", Content: "本月支出摘要",
+		Author: &discordgo.User{ID: "user-1"},
+	}}
+	h.handleMessage(session, msg)
+
+	require.True(t, parser.parseCalled)
+	require.True(t, cfQuerier.called)
+	require.False(t, acctQuerier.called)
+	require.Len(t, session.sentMessages, 1)
+	require.Len(t, session.sentMessages[0].Embeds, 1)
+	embed := session.sentMessages[0].Embeds[0]
+	assert.Equal(t, "📊 4月現金流摘要", embed.Title)
+	require.Len(t, embed.Fields, 5)
+	assert.Equal(t, "$80,000", embed.Fields[0].Value)
+	assert.Equal(t, "$23,500", embed.Fields[1].Value)
+	assert.Equal(t, "$56,500", embed.Fields[2].Value)
+	assert.Equal(t, "7", embed.Fields[3].Value)
+	assert.Contains(t, embed.Fields[4].Value, "飲食: $5,000")
+}
+
 func TestAdapter_InvalidDateFallsBackToNow(t *testing.T) {
 	input := &BotCashFlowInput{
 		Date:        "invalid-date",

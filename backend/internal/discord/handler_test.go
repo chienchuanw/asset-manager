@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,6 +12,7 @@ import (
 )
 
 type mockSession struct {
+	mu                   sync.Mutex
 	sentMessages         []*discordgo.MessageSend
 	editedMessages       []*discordgo.MessageEdit
 	interactionResponses []*discordgo.InteractionResponse
@@ -32,63 +34,89 @@ type reactionRemoveCall struct {
 }
 
 func (m *mockSession) ChannelMessageSendComplex(channelID string, data *discordgo.MessageSend) (*discordgo.Message, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.sentMessages = append(m.sentMessages, data)
 	return &discordgo.Message{ID: "reply-1", ChannelID: channelID}, nil
 }
 
 func (m *mockSession) MessageReactionAdd(channelID, messageID, emojiID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.reactionAdds = append(m.reactionAdds, reactionAddCall{channelID: channelID, messageID: messageID, emojiID: emojiID})
 	return nil
 }
 
 func (m *mockSession) MessageReactionRemove(channelID, messageID, emojiID, userID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.reactionRemoves = append(m.reactionRemoves, reactionRemoveCall{channelID: channelID, messageID: messageID, emojiID: emojiID, userID: userID})
 	return nil
 }
 
 func (m *mockSession) ChannelMessageEditComplex(data *discordgo.MessageEdit) (*discordgo.Message, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.editedMessages = append(m.editedMessages, data)
 	return &discordgo.Message{ID: data.ID, ChannelID: data.Channel}, nil
 }
 
 func (m *mockSession) InteractionRespond(_ *discordgo.Interaction, resp *discordgo.InteractionResponse) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.interactionResponses = append(m.interactionResponses, resp)
 	return nil
 }
 
 type mockParser struct {
+	mu               sync.Mutex
 	result           *ParseResult
 	err              error
+	parseFunc        func(context.Context, string, []CategoryInfo) (*ParseResult, error)
 	parseCalled      bool
 	message          string
 	categoriesPassed []CategoryInfo
 }
 
-func (m *mockParser) Parse(_ context.Context, message string, categories []CategoryInfo) (*ParseResult, error) {
+func (m *mockParser) Parse(ctx context.Context, message string, categories []CategoryInfo) (*ParseResult, error) {
+	m.mu.Lock()
 	m.parseCalled = true
 	m.message = message
 	m.categoriesPassed = append([]CategoryInfo(nil), categories...)
-	return m.result, m.err
+	parseFunc := m.parseFunc
+	result := m.result
+	err := m.err
+	m.mu.Unlock()
+	if parseFunc != nil {
+		return parseFunc(ctx, message, categories)
+	}
+	return result, err
 }
 
 type mockCashFlowCreator struct {
+	mu            sync.Mutex
 	createdInputs []*BotCashFlowInput
 	resultID      string
 	err           error
 }
 
 func (m *mockCashFlowCreator) CreateCashFlowFromBot(input *BotCashFlowInput) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.createdInputs = append(m.createdInputs, input)
 	return m.resultID, m.err
 }
 
 type mockCategoryLoader struct {
+	mu         sync.Mutex
 	categories []CategoryInfo
 	err        error
 	called     bool
 }
 
 func (m *mockCategoryLoader) LoadCategories() ([]CategoryInfo, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.called = true
 	return m.categories, m.err
 }
@@ -103,6 +131,7 @@ func (m *mockAccountLoader) LoadAccounts(sourceType string) ([]AccountInfo, erro
 }
 
 type mockCashFlowQuerier struct {
+	mu          sync.Mutex
 	result      *MonthlySummaryResult
 	err         error
 	called      bool
@@ -111,6 +140,8 @@ type mockCashFlowQuerier struct {
 }
 
 func (m *mockCashFlowQuerier) GetMonthlySummary(year, month int) (*MonthlySummaryResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.called = true
 	m.calledYear = year
 	m.calledMonth = month
@@ -118,12 +149,15 @@ func (m *mockCashFlowQuerier) GetMonthlySummary(year, month int) (*MonthlySummar
 }
 
 type mockAccountBalanceQuerier struct {
+	mu     sync.Mutex
 	result *AccountBalancesResult
 	err    error
 	called bool
 }
 
 func (m *mockAccountBalanceQuerier) GetAllBalances() (*AccountBalancesResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.called = true
 	return m.result, m.err
 }
@@ -468,6 +502,64 @@ func TestHandleMessage_RoutesToCreateFlow(t *testing.T) {
 	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), session.sentMessages[0].Embeds[0].Title)
 }
 
+func TestHandleMessage_CreateAction_RegressionIdentical(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "create",
+		Type:          "expense",
+		Amount:        180,
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "",
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "lunch 180", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Empty(t, session.sentMessages[0].Embeds)
+	require.Len(t, session.sentMessages[0].Components, 1)
+	row := session.sentMessages[0].Components[0].(discordgo.ActionsRow)
+	menu := row.Components[0].(*discordgo.SelectMenu)
+	require.Equal(t, GetMessage(string(LangEn), MsgSelectAccount), menu.Placeholder)
+}
+
+func TestHandleMessage_BackwardCompat_NoActionField(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: false, Action: ""}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "hi there", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Empty(t, session.sentMessages)
+}
+
+func TestHandleMessage_CreateWithQueryParams_IgnoresParams(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "create",
+		Type:          "expense",
+		Amount:        320,
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "cash",
+		QueryParams:   &QueryParams{Month: 3, Year: 2026},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "lunch 320", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Len(t, session.sentMessages[0].Embeds, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), session.sentMessages[0].Embeds[0].Title)
+	require.Empty(t, session.sentMessages[0].Content)
+	require.Len(t, session.sentMessages[0].Components, 1)
+}
+
 func TestHandleMessage_RoutesToQueryFlow(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{
@@ -508,6 +600,54 @@ func TestHandleMessage_ChatIgnored(t *testing.T) {
 	h.handleMessage(session, msg)
 
 	require.Empty(t, session.sentMessages)
+}
+
+func TestHandleMessage_ConcurrentQueryAndCreate(t *testing.T) {
+	t.Parallel()
+
+	h := NewHandler(
+		&mockParser{parseFunc: func(_ context.Context, message string, _ []CategoryInfo) (*ParseResult, error) {
+			if message == "query" {
+				return &ParseResult{
+					IsBookkeeping: true,
+					Action:        "query",
+					QueryType:     "cash_flow_summary",
+					QueryParams:   &QueryParams{Year: 2026, Month: 4},
+				}, nil
+			}
+			return &ParseResult{
+				IsBookkeeping: true,
+				Action:        "create",
+				Type:          "expense",
+				Amount:        180,
+				CategoryID:    "expense-food",
+				CategoryName:  "Food",
+				Date:          "2026-04-05",
+				SourceType:    "cash",
+			}, nil
+		}},
+		&mockCashFlowCreator{},
+		&mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}},
+		nil,
+		string(LangEn),
+		WithCashFlowQuerier(&mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 4, TotalIncome: 1000, TotalExpense: 500, NetCashFlow: 500}}),
+	)
+
+	var wg sync.WaitGroup
+	for _, tc := range []struct {
+		session *mockSession
+		msg     *discordgo.MessageCreate
+	}{
+		{session: &mockSession{}, msg: &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-query", ChannelID: "channel-1", Content: "query", Author: &discordgo.User{ID: "author-1"}}}},
+		{session: &mockSession{}, msg: &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-create", ChannelID: "channel-1", Content: "create", Author: &discordgo.User{ID: "author-2"}}}},
+	} {
+		wg.Add(1)
+		go func(session *mockSession, msg *discordgo.MessageCreate) {
+			defer wg.Done()
+			h.handleMessage(session, msg)
+		}(tc.session, tc.msg)
+	}
+	wg.Wait()
 }
 
 func TestHandleQuery_UnsupportedType(t *testing.T) {
