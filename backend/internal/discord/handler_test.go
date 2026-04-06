@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
@@ -99,6 +100,32 @@ type mockAccountLoader struct {
 
 func (m *mockAccountLoader) LoadAccounts(sourceType string) ([]AccountInfo, error) {
 	return m.accounts, m.err
+}
+
+type mockCashFlowQuerier struct {
+	result      *MonthlySummaryResult
+	err         error
+	called      bool
+	calledYear  int
+	calledMonth int
+}
+
+func (m *mockCashFlowQuerier) GetMonthlySummary(year, month int) (*MonthlySummaryResult, error) {
+	m.called = true
+	m.calledYear = year
+	m.calledMonth = month
+	return m.result, m.err
+}
+
+type mockAccountBalanceQuerier struct {
+	result *AccountBalancesResult
+	err    error
+	called bool
+}
+
+func (m *mockAccountBalanceQuerier) GetAllBalances() (*AccountBalancesResult, error) {
+	m.called = true
+	return m.result, m.err
 }
 
 func TestHandler_ImplementsMessageHandler(t *testing.T) {
@@ -414,6 +441,239 @@ func TestHandleMessage_Cash_SendsPreviewDirectly(t *testing.T) {
 	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), sent.Embeds[0].Title)
 }
 
+func TestHandleMessage_RoutesToCreateFlow(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "create",
+		Type:          "expense",
+		Amount:        180,
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "cash",
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "lunch 180",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	require.Len(t, session.sentMessages[0].Embeds, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), session.sentMessages[0].Embeds[0].Title)
+}
+
+func TestHandleMessage_RoutesToQueryFlow(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "query",
+		QueryType:     "cash_flow_summary",
+		QueryParams:   &QueryParams{Year: 2026, Month: 4},
+	}}
+	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 4, TotalIncome: 1000, TotalExpense: 500, NetCashFlow: 500}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "本月支出摘要",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.True(t, cfQuerier.called)
+	require.Len(t, session.sentMessages, 1)
+	require.Len(t, session.sentMessages[0].Embeds, 1)
+	require.Empty(t, session.sentMessages[0].Components)
+	require.Equal(t, "📊 4月現金流摘要", session.sentMessages[0].Embeds[0].Title)
+}
+
+func TestHandleMessage_ChatIgnored(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: false, Action: ""}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "hello",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Empty(t, session.sentMessages)
+}
+
+func TestHandleQuery_UnsupportedType(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "unknown", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "what can you do",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgQueryUnsupported), session.sentMessages[0].Content)
+}
+
+func TestHandleCashFlowQuery_CurrentMonth_GivenSummary_WhenHandleMessage_ThenSendEmbed(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "query",
+		QueryType:     "cash_flow_summary",
+		QueryParams:   &QueryParams{Year: 2026, Month: 4},
+	}}
+	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{
+		Year:          2026,
+		Month:         4,
+		TotalIncome:   80000,
+		TotalExpense:  23500,
+		NetCashFlow:   56500,
+		IncomeCount:   2,
+		ExpenseCount:  5,
+		TopCategories: []CategoryBreakdown{{Name: "飲食", Amount: 5000}, {Name: "交通", Amount: 3000}},
+		Comparison:    &MonthComparisonResult{ExpenseChange: 1200, ExpenseChangePct: 5.4, IncomeChange: 8000, IncomeChangePct: 11.1},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "本月現金流", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	embed := session.sentMessages[0].Embeds[0]
+	require.Equal(t, "📊 4月現金流摘要", embed.Title)
+	require.Contains(t, embed.Fields[0].Value, "80,000")
+	require.Contains(t, embed.Fields[1].Value, "23,500")
+	require.Contains(t, embed.Fields[2].Value, "56,500")
+	require.Contains(t, embed.Fields[3].Value, "7")
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryTopCategories), embed.Fields[4].Name)
+	require.Contains(t, embed.Fields[4].Value, "飲食: $5,000")
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryComparison), embed.Fields[5].Name)
+	require.Contains(t, embed.Fields[5].Value, "1,200")
+	require.Contains(t, embed.Fields[5].Value, "5.4%")
+}
+
+func TestHandleCashFlowQuery_SpecificMonth_GivenMonthParam_WhenHandleMessage_ThenUseMonthInTitle(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 3}}}
+	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 3, TotalIncome: 1, TotalExpense: 1, NetCashFlow: 0}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "3月支出", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Equal(t, "📊 3月現金流摘要", session.sentMessages[0].Embeds[0].Title)
+}
+
+func TestHandleCashFlowQuery_WithCategory_GivenCategoryParam_WhenHandleMessage_ThenUseCategoryTitle(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4, Category: "飲食"}}}
+	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{
+		Year:          2026,
+		Month:         4,
+		TotalIncome:   80000,
+		TotalExpense:  23500,
+		NetCashFlow:   56500,
+		TopCategories: []CategoryBreakdown{{Name: "飲食", Amount: 5000, Count: 3}},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "4月飲食支出", Author: &discordgo.User{ID: "author-1"}}})
+
+	embed := session.sentMessages[0].Embeds[0]
+	require.Equal(t, "📊 4月飲食支出", embed.Title)
+	require.Contains(t, embed.Fields[1].Value, "5,000")
+}
+
+func TestHandleCashFlowQuery_NoData_GivenZeroSummary_WhenHandleMessage_ThenShowEmptyDescription(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 4}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "本月摘要", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryNoData), session.sentMessages[0].Embeds[0].Description)
+}
+
+func TestHandleCashFlowQuery_ServiceError_GivenServiceFailure_WhenHandleMessage_ThenReplySystemError(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	cfQuerier := &mockCashFlowQuerier{err: errors.New("boom")}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCashFlowQuerier(cfQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "cash flow", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgSystemError), session.sentMessages[0].Content)
+}
+
+func TestHandleAccountBalanceQuery_BankAndCC_GivenBalances_WhenHandleMessage_ThenSendSections(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{
+		BankAccounts: []BankAccountBalance{{Name: "中信銀行", Last4: "1234", Balance: 25000}, {Name: "台新銀行", Last4: "5678", Balance: 12000}},
+		CreditCards:  []CreditCardBalance{{Name: "中信 Visa", Last4: "4321", CreditLimit: 100000, UsedCredit: 20000, Remaining: 80000, UsagePct: 20}},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "帳戶餘額", Author: &discordgo.User{ID: "author-1"}}})
+
+	embed := session.sentMessages[0].Embeds[0]
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryAccountTitle), embed.Title)
+	require.Len(t, embed.Fields, 2)
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryBankSection), embed.Fields[0].Name)
+	require.Contains(t, embed.Fields[0].Value, "中信銀行 *1234")
+	require.Contains(t, embed.Fields[0].Value, GetMessage(string(LangZhTW), MsgQueryBankTotal))
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryCCSection), embed.Fields[1].Name)
+	require.Contains(t, embed.Fields[1].Value, "中信 Visa *4321")
+}
+
+func TestHandleAccountBalanceQuery_CCNearingLimit_GivenHighUsage_WhenHandleMessage_ThenShowWarning(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{CreditCards: []CreditCardBalance{{Name: "中信 Visa", Last4: "4321", CreditLimit: 100000, UsedCredit: 85000, Remaining: 15000, UsagePct: 85}}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "信用卡額度", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Contains(t, session.sentMessages[0].Embeds[0].Fields[0].Value, GetMessage(string(LangZhTW), MsgQueryCCNearLimit))
+}
+
+func TestHandleAccountBalanceQuery_NoAccounts_GivenEmptyResult_WhenHandleMessage_ThenSendNoAccountsMessage(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "餘額", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryNoAccounts), session.sentMessages[0].Content)
+}
+
+func TestHandleAccountBalanceQuery_PartialFailure_GivenBankOKAndCCError_WhenHandleMessage_ThenShowMixedResults(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{BankAccounts: []BankAccountBalance{{Name: "中信銀行", Last4: "1234", Balance: 25000}}, CCError: errors.New("cc down")}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "帳戶餘額", Author: &discordgo.User{ID: "author-1"}}})
+
+	embed := session.sentMessages[0].Embeds[0]
+	require.Contains(t, embed.Fields[0].Value, "中信銀行 *1234")
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryLoadFailed), embed.Fields[1].Value)
+}
+
 func TestHandleInteraction_SelectMenu_CashGoesToPreview(t *testing.T) {
 	session := &mockSession{}
 	result := &ParseResult{
@@ -700,4 +960,8 @@ func newComponentInteraction(customID string, userID string) *discordgo.Interact
 		},
 		Data: discordgo.MessageComponentInteractionData{CustomID: customID},
 	}}
+}
+
+func TestMonthNameForQueryTitle_English(t *testing.T) {
+	require.Equal(t, "April", fmt.Sprintf("%s", monthLabel(string(LangEn), 4)))
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -236,7 +237,11 @@ func (h *Handler) handleMessage(s discordSession, m *discordgo.MessageCreate) {
 		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgSystemError))
 		return
 	}
-	if result == nil || !result.IsBookkeeping {
+	if result == nil || (!result.IsBookkeeping && result.Action == "") {
+		return
+	}
+	if result.Action == "query" {
+		h.handleQuery(s, m.ChannelID, result)
 		return
 	}
 	if hasMissingField(result.MissingFields, "amount") {
@@ -440,6 +445,184 @@ func (h *Handler) loadCategories() ([]CategoryInfo, error) {
 		return nil, nil
 	}
 	return h.catRepo.LoadCategories()
+}
+
+func (h *Handler) handleQuery(s discordSession, channelID string, result *ParseResult) {
+	switch result.QueryType {
+	case "cash_flow_summary":
+		h.handleCashFlowQuery(s, channelID, result)
+	case "account_balance":
+		h.handleAccountBalanceQuery(s, channelID, result)
+	default:
+		h.sendText(s, channelID, GetMessage(h.lang, MsgQueryUnsupported))
+	}
+}
+
+func (h *Handler) handleCashFlowQuery(s discordSession, channelID string, result *ParseResult) {
+	if h.cfQuerier == nil || result == nil || result.QueryParams == nil {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		return
+	}
+
+	params := result.QueryParams
+	summary, err := h.cfQuerier.GetMonthlySummary(params.Year, params.Month)
+	if err != nil || summary == nil {
+		if err != nil {
+			log.Printf("discord: failed to query cash flow summary: %v", err)
+		}
+		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		return
+	}
+
+	if category := strings.TrimSpace(params.Category); category != "" {
+		matched := false
+		filtered := *summary
+		for _, breakdown := range summary.TopCategories {
+			if breakdown.Name != category {
+				continue
+			}
+			filtered.TotalExpense = breakdown.Amount
+			filtered.ExpenseCount = breakdown.Count
+			filtered.NetCashFlow = filtered.TotalIncome - breakdown.Amount
+			filtered.TopCategories = []CategoryBreakdown{breakdown}
+			summary = &filtered
+			matched = true
+			break
+		}
+		if !matched {
+			h.sendText(s, channelID, fmt.Sprintf(GetMessage(h.lang, MsgQueryCategoryNotFound), category))
+			return
+		}
+	}
+
+	_, _ = s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{Embeds: []*discordgo.MessageEmbed{h.buildCashFlowQueryEmbed(result, summary)}})
+}
+
+func (h *Handler) handleAccountBalanceQuery(s discordSession, channelID string, _ *ParseResult) {
+	if h.acctQuerier == nil {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		return
+	}
+
+	balances, err := h.acctQuerier.GetAllBalances()
+	if err != nil || balances == nil {
+		if err != nil {
+			log.Printf("discord: failed to query account balances: %v", err)
+		}
+		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		return
+	}
+
+	if len(balances.BankAccounts) == 0 && len(balances.CreditCards) == 0 && balances.BankError == nil && balances.CCError == nil {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgQueryNoAccounts))
+		return
+	}
+
+	_, _ = s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{Embeds: []*discordgo.MessageEmbed{h.buildAccountBalanceEmbed(balances)}})
+}
+
+func (h *Handler) buildCashFlowQueryEmbed(result *ParseResult, summary *MonthlySummaryResult) *discordgo.MessageEmbed {
+	title := fmt.Sprintf(GetMessage(h.lang, MsgQueryCashFlowTitle), monthTitleArg(h.lang, summary.Month))
+	if result != nil && result.QueryParams != nil && strings.TrimSpace(result.QueryParams.Category) != "" {
+		title = fmt.Sprintf(GetMessage(h.lang, MsgQueryCashFlowCategoryTitle), monthTitleArg(h.lang, summary.Month), strings.TrimSpace(result.QueryParams.Category))
+	}
+
+	count := summary.IncomeCount + summary.ExpenseCount
+	fields := []*discordgo.MessageEmbedField{
+		{Name: GetMessage(h.lang, MsgQueryTotalIncome), Value: "$" + formatAmount(summary.TotalIncome), Inline: true},
+		{Name: GetMessage(h.lang, MsgQueryTotalExpense), Value: "$" + formatAmount(summary.TotalExpense), Inline: true},
+		{Name: GetMessage(h.lang, MsgQueryNetCashFlow), Value: "$" + formatAmount(summary.NetCashFlow), Inline: true},
+		{Name: GetMessage(h.lang, MsgQueryFieldCount), Value: strconv.Itoa(count), Inline: true},
+	}
+
+	if len(summary.TopCategories) > 0 {
+		lines := make([]string, 0, minInt(len(summary.TopCategories), 5))
+		for i, category := range summary.TopCategories {
+			if i >= 5 {
+				break
+			}
+			lines = append(lines, fmt.Sprintf("%s: $%s", category.Name, formatAmount(category.Amount)))
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{Name: GetMessage(h.lang, MsgQueryTopCategories), Value: strings.Join(lines, "\n")})
+	}
+
+	if summary.Comparison != nil {
+		comparison := fmt.Sprintf(
+			"%s: $%s (%.1f%%)\n%s: $%s (%.1f%%)",
+			GetMessage(h.lang, MsgQueryTotalExpense),
+			formatAmount(summary.Comparison.ExpenseChange),
+			summary.Comparison.ExpenseChangePct,
+			GetMessage(h.lang, MsgQueryTotalIncome),
+			formatAmount(summary.Comparison.IncomeChange),
+			summary.Comparison.IncomeChangePct,
+		)
+		fields = append(fields, &discordgo.MessageEmbedField{Name: GetMessage(h.lang, MsgQueryComparison), Value: comparison})
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:  title,
+		Color:  0x3498DB,
+		Fields: fields,
+		Footer: &discordgo.MessageEmbedFooter{Text: time.Now().Format("2006-01-02")},
+	}
+
+	if summary.TotalIncome == 0 && summary.TotalExpense == 0 && summary.NetCashFlow == 0 && count == 0 {
+		embed.Description = GetMessage(h.lang, MsgQueryNoData)
+	}
+
+	return embed
+}
+
+func (h *Handler) buildAccountBalanceEmbed(result *AccountBalancesResult) *discordgo.MessageEmbed {
+	fields := []*discordgo.MessageEmbedField{}
+
+	if result.BankError != nil || len(result.BankAccounts) > 0 {
+		bankValue := GetMessage(h.lang, MsgQueryLoadFailed)
+		if result.BankError == nil {
+			var lines []string
+			var total float64
+			for _, account := range result.BankAccounts {
+				lines = append(lines, fmt.Sprintf("%s *%s: $%s", account.Name, account.Last4, formatAmount(account.Balance)))
+				total += account.Balance
+			}
+			lines = append(lines, fmt.Sprintf("%s: $%s", GetMessage(h.lang, MsgQueryBankTotal), formatAmount(total)))
+			bankValue = strings.Join(lines, "\n")
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{Name: GetMessage(h.lang, MsgQueryBankSection), Value: bankValue})
+	}
+
+	if result.CCError != nil || len(result.CreditCards) > 0 {
+		ccValue := GetMessage(h.lang, MsgQueryLoadFailed)
+		if result.CCError == nil {
+			var lines []string
+			for _, card := range result.CreditCards {
+				line := fmt.Sprintf("%s *%s\n%s: $%s | %s: $%s | %s: $%s (%.0f%%)",
+					card.Name,
+					card.Last4,
+					GetMessage(h.lang, MsgQueryCCLimit),
+					formatAmount(card.CreditLimit),
+					GetMessage(h.lang, MsgQueryCCUsed),
+					formatAmount(card.UsedCredit),
+					GetMessage(h.lang, MsgQueryCCRemaining),
+					formatAmount(card.Remaining),
+					card.UsagePct,
+				)
+				if card.UsagePct > 80 {
+					line = "⚠️ " + line + " " + GetMessage(h.lang, MsgQueryCCNearLimit)
+				}
+				lines = append(lines, line)
+			}
+			ccValue = strings.Join(lines, "\n\n")
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{Name: GetMessage(h.lang, MsgQueryCCSection), Value: ccValue})
+	}
+
+	return &discordgo.MessageEmbed{
+		Title:  GetMessage(h.lang, MsgQueryAccountTitle),
+		Color:  0x3498DB,
+		Fields: fields,
+		Footer: &discordgo.MessageEmbedFooter{Text: time.Now().Format("2006-01-02")},
+	}
 }
 
 func (h *Handler) sendText(s discordSession, channelID, content string) {
@@ -743,4 +926,28 @@ func parseInt64(value string) int64 {
 		return 0
 	}
 	return parsed
+}
+
+func monthLabel(lang string, month int) string {
+	if month < 1 || month > 12 {
+		return strconv.Itoa(month)
+	}
+	if lang == string(LangEn) {
+		return time.Month(month).String()
+	}
+	return fmt.Sprintf("%d月", month)
+}
+
+func monthTitleArg(lang string, month int) any {
+	if lang == string(LangEn) {
+		return monthLabel(lang, month)
+	}
+	return month
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

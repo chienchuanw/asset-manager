@@ -71,3 +71,39 @@ func TestGetMessage_AccountLabels_En(t *testing.T) {
 	require.Equal(t, "Select payment method", GetMessage(string(LangEn), MsgSelectAccount))
 	require.Equal(t, "Payment Method", GetMessage(string(LangEn), MsgFieldPaymentMethod))
 }
+
+func TestGetMessage_NewQueryKeys(t *testing.T) {
+	queryKeys := []MsgKey{
+		MsgQueryCashFlowTitle,
+		MsgQueryCashFlowCategoryTitle,
+		MsgQueryAccountTitle,
+		MsgQueryNoData,
+		MsgQueryUnsupported,
+		MsgQueryBankSection,
+		MsgQueryCCSection,
+		MsgQueryCCNearLimit,
+		MsgQueryNoAccounts,
+		MsgQueryTotalIncome,
+		MsgQueryTotalExpense,
+		MsgQueryNetCashFlow,
+		MsgQueryFieldCount,
+		MsgQueryTopCategories,
+		MsgQueryComparison,
+		MsgQueryCCLimit,
+		MsgQueryCCUsed,
+		MsgQueryCCRemaining,
+		MsgQueryBankTotal,
+		MsgQueryCategoryNotFound,
+		MsgQueryLoadFailed,
+	}
+
+	for _, key := range queryKeys {
+		zhMsg := GetMessage(string(LangZhTW), key)
+		require.NotEmpty(t, zhMsg)
+		require.NotEqual(t, string(key), zhMsg, "zh-TW missing key: %s", key)
+
+		enMsg := GetMessage(string(LangEn), key)
+		require.NotEmpty(t, enMsg)
+		require.NotEqual(t, string(key), enMsg, "en missing key: %s", key)
+	}
+}
