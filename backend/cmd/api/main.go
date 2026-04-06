@@ -176,7 +176,7 @@ func main() {
 
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
-		bot := startDiscordBot(cashFlowService, categoryRepo, bankAccountRepo)
+		bot := startDiscordBot(cashFlowService, categoryRepo, bankAccountRepo, creditCardRepo)
 		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, nil, bot)
 		return
 	}
@@ -298,7 +298,7 @@ func main() {
 	schedulerHandler := api.NewSchedulerHandler(schedulerManager)
 
 	// 啟動伺服器（會在內部處理 graceful shutdown）
-	bot := startDiscordBot(cashFlowService, categoryRepo, bankAccountRepo)
+	bot := startDiscordBot(cashFlowService, categoryRepo, bankAccountRepo, creditCardRepo)
 	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, schedulerManager, bot)
 }
 
@@ -311,7 +311,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return value
 }
 
-func startDiscordBot(cashFlowSvc service.CashFlowService, categoryRepo repository.CategoryRepository, bankAccountRepo repository.BankAccountRepository) *discordbot.Bot {
+func startDiscordBot(cashFlowSvc service.CashFlowService, categoryRepo repository.CategoryRepository, bankAccountRepo repository.BankAccountRepository, creditCardRepo repository.CreditCardRepository) *discordbot.Bot {
 	cfg := discordbot.LoadConfig()
 	if !cfg.Enabled {
 		log.Println("Discord bot disabled")
@@ -327,7 +327,7 @@ func startDiscordBot(cashFlowSvc service.CashFlowService, categoryRepo repositor
 	parser := discordbot.NewGeminiParser(cfg.GeminiKey)
 	creator := discordbot.NewCashFlowServiceAdapter(cashFlowSvc)
 	catLoader := discordbot.NewCategoryRepoAdapter(categoryRepo)
-	acctLoader := discordbot.NewBankAccountRepoAdapter(bankAccountRepo)
+	acctLoader := discordbot.NewAccountRepoAdapter(bankAccountRepo, creditCardRepo)
 	handler := discordbot.NewHandler(parser, creator, catLoader, acctLoader, cfg.Lang)
 	bot.SetHandler(handler)
 

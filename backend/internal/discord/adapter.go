@@ -79,35 +79,56 @@ func mapSourceType(sourceType string) models.SourceType {
 	}
 }
 
-// BankAccountRepoAdapter bridges repository.BankAccountRepository to AccountLoader.
-type BankAccountRepoAdapter struct {
-	repo repository.BankAccountRepository
+// AccountRepoAdapter bridges bank account and credit card repositories to AccountLoader.
+type AccountRepoAdapter struct {
+	bankRepo repository.BankAccountRepository
+	cardRepo repository.CreditCardRepository
 }
 
-func NewBankAccountRepoAdapter(repo repository.BankAccountRepository) *BankAccountRepoAdapter {
-	return &BankAccountRepoAdapter{repo: repo}
+func NewAccountRepoAdapter(bankRepo repository.BankAccountRepository, cardRepo repository.CreditCardRepository) *AccountRepoAdapter {
+	return &AccountRepoAdapter{bankRepo: bankRepo, cardRepo: cardRepo}
 }
 
-func (a *BankAccountRepoAdapter) LoadAccounts(sourceType string) ([]AccountInfo, error) {
-	accounts, err := a.repo.GetAll(nil)
+func (a *AccountRepoAdapter) LoadAccounts(sourceType string) ([]AccountInfo, error) {
+	switch sourceType {
+	case "bank_account":
+		return a.loadBankAccounts()
+	case "credit_card":
+		return a.loadCreditCards()
+	default:
+		return nil, nil
+	}
+}
+
+func (a *AccountRepoAdapter) loadBankAccounts() ([]AccountInfo, error) {
+	accounts, err := a.bankRepo.GetAll(nil)
 	if err != nil {
 		return nil, err
 	}
-
-	var result []AccountInfo
+	result := make([]AccountInfo, 0, len(accounts))
 	for _, acct := range accounts {
-		acctType := "bank_account"
-		if acct.AccountType == "credit_card" {
-			acctType = "credit_card"
-		}
-		if acctType != sourceType {
-			continue
-		}
 		label := fmt.Sprintf("%s *%s", acct.BankName, acct.AccountNumberLast4)
 		result = append(result, AccountInfo{
 			ID:   acct.ID.String(),
 			Name: label,
-			Type: acctType,
+			Type: "bank_account",
+		})
+	}
+	return result, nil
+}
+
+func (a *AccountRepoAdapter) loadCreditCards() ([]AccountInfo, error) {
+	cards, err := a.cardRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]AccountInfo, 0, len(cards))
+	for _, card := range cards {
+		label := fmt.Sprintf("%s %s *%s", card.IssuingBank, card.CardName, card.CardNumberLast4)
+		result = append(result, AccountInfo{
+			ID:   card.ID.String(),
+			Name: label,
+			Type: "credit_card",
 		})
 	}
 	return result, nil
