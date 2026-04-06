@@ -378,7 +378,7 @@ func TestIntegration_SelectMenuToConfirmFlow(t *testing.T) {
 	assert.Equal(t, "2026-04-05", created.Date)
 }
 
-func TestIntegration_KnownSourceTypeSkipsSelectMenu(t *testing.T) {
+func TestIntegration_KnownSourceType_StillAsksAccountID(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{
 		IsBookkeeping: true,
@@ -395,7 +395,10 @@ func TestIntegration_KnownSourceTypeSkipsSelectMenu(t *testing.T) {
 	loader := &mockCategoryLoader{categories: []CategoryInfo{
 		{ID: "cat-other", Name: "其他支出", Type: "expense"},
 	}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	acctLoader := &mockAccountLoader{accounts: []AccountInfo{
+		{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"},
+	}}
+	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-known-1", ChannelID: "ch-1", Content: "刷卡買衣服 2000",
@@ -405,23 +408,40 @@ func TestIntegration_KnownSourceTypeSkipsSelectMenu(t *testing.T) {
 
 	require.Len(t, session.sentMessages, 1)
 	sent := session.sentMessages[0]
-	require.Len(t, sent.Embeds, 1)
-	assert.Equal(t, GetMessage(string(LangZhTW), MsgPreviewTitle), sent.Embeds[0].Title)
+	require.Empty(t, sent.Embeds)
+	require.Len(t, sent.Components, 1)
+	acctMenu := sent.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.SelectMenu)
+	require.Equal(t, GetMessage(string(LangZhTW), MsgSelectCreditCard), acctMenu.Placeholder)
 
-	paymentField := sent.Embeds[0].Fields[5]
-	assert.Equal(t, GetMessage(string(LangZhTW), MsgAccountCreditCard), paymentField.Value)
+	acctInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-acct", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      acctMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cc-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, acctInteraction)
 
-	confirmBtn := sent.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.Button)
-	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+	require.Len(t, session.interactionResponses, 1)
+	previewResp := session.interactionResponses[0]
+	require.Len(t, previewResp.Data.Embeds, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgPreviewTitle), previewResp.Data.Embeds[0].Title)
+
+	confirmBtn := previewResp.Data.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.Button)
+	confirmInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
 		Type:    discordgo.InteractionMessageComponent,
 		Data:    discordgo.MessageComponentInteractionData{CustomID: confirmBtn.CustomID},
 		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
-		Message: &discordgo.Message{Embeds: sent.Embeds},
+		Message: &discordgo.Message{Embeds: previewResp.Data.Embeds},
 	}}
-	h.handleInteraction(session, interaction)
+	h.handleInteraction(session, confirmInteraction)
 
 	require.Len(t, creator.createdInputs, 1)
 	assert.Equal(t, "credit_card", creator.createdInputs[0].SourceType)
+	assert.Equal(t, "cc-uuid-1", creator.createdInputs[0].SourceID)
 }
 
 func TestAdapter_InvalidDateFallsBackToNow(t *testing.T) {

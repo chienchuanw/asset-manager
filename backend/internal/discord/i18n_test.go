@@ -60,8 +60,8 @@ func TestGetMessage_AccountLabels_ZhTW(t *testing.T) {
 	require.Equal(t, "現金", GetMessage(string(LangZhTW), MsgAccountCash))
 	require.Equal(t, "銀行帳戶", GetMessage(string(LangZhTW), MsgAccountBank))
 	require.Equal(t, "信用卡", GetMessage(string(LangZhTW), MsgAccountCreditCard))
-	require.Equal(t, "請選擇支付方式", GetMessage(string(LangZhTW), MsgSelectAccount))
-	require.Equal(t, "支付方式", GetMessage(string(LangZhTW), MsgFieldPaymentMethod))
+	require.Equal(t, "請選擇付款方式", GetMessage(string(LangZhTW), MsgSelectAccount))
+	require.Equal(t, "付款方式", GetMessage(string(LangZhTW), MsgFieldPaymentMethod))
 }
 
 func TestGetMessage_AccountLabels_En(t *testing.T) {

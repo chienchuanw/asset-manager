@@ -345,7 +345,7 @@ func TestHandleMessage_EmptySourceType_SendsSelectMenu(t *testing.T) {
 	require.Len(t, selectMenu.Options, 3)
 }
 
-func TestHandleMessage_KnownSourceType_SendsPreviewDirectly(t *testing.T) {
+func TestHandleMessage_CreditCard_ShowsAccountIDMenu(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{
 		IsBookkeeping: true,
@@ -358,11 +358,50 @@ func TestHandleMessage_KnownSourceType_SendsPreviewDirectly(t *testing.T) {
 		SourceType:    "credit_card",
 	}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-other", Name: "Other", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	acctLoader := &mockAccountLoader{accounts: []AccountInfo{
+		{ID: "cc-1", Name: "中信 Visa *1234", Type: "credit_card"},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, acctLoader, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
 		Content:   "credit card clothes 2000",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	sent := session.sentMessages[0]
+	require.Empty(t, sent.Embeds)
+	require.Len(t, sent.Components, 1)
+	row, ok := sent.Components[0].(discordgo.ActionsRow)
+	require.True(t, ok)
+	selectMenu, ok := row.Components[0].(*discordgo.SelectMenu)
+	require.True(t, ok)
+	require.Equal(t, GetMessage(string(LangEn), MsgSelectCreditCard), selectMenu.Placeholder)
+	require.Len(t, selectMenu.Options, 1)
+	require.Equal(t, "cc-1", selectMenu.Options[0].Value)
+}
+
+func TestHandleMessage_Cash_SendsPreviewDirectly(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        180,
+		Description:   "lunch",
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "cash",
+	}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "cash lunch 180",
 		Author:    &discordgo.User{ID: "author-1"},
 	}}
 

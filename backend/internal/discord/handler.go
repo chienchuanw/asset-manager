@@ -164,6 +164,11 @@ func (h *Handler) handleMessage(s discordSession, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if result.SourceType != "cash" {
+		h.sendAccountIDMenu(s, m.ChannelID, result, m.Author.ID)
+		return
+	}
+
 	h.sendPreview(s, m.ChannelID, result, m.Author.ID)
 }
 
@@ -377,6 +382,54 @@ func (h *Handler) sendAccountSelectMenu(s discordSession, channelID string, resu
 						{Label: GetMessage(h.lang, MsgAccountBank), Value: "bank_account"},
 						{Label: GetMessage(h.lang, MsgAccountCreditCard), Value: "credit_card"},
 					},
+				},
+			}},
+		},
+	}
+	_, _ = s.ChannelMessageSendComplex(channelID, msg)
+}
+
+func (h *Handler) sendAccountIDMenu(s discordSession, channelID string, result *ParseResult, authorID string) {
+	placeholder := GetMessage(h.lang, MsgSelectBankAccount)
+	if result.SourceType == "credit_card" {
+		placeholder = GetMessage(h.lang, MsgSelectCreditCard)
+	}
+
+	var options []discordgo.SelectMenuOption
+	if h.acctLoader != nil {
+		accounts, err := h.acctLoader.LoadAccounts(result.SourceType)
+		if err == nil {
+			for _, acct := range accounts {
+				options = append(options, discordgo.SelectMenuOption{
+					Label: acct.Name,
+					Value: acct.ID,
+				})
+			}
+		}
+	}
+
+	if len(options) == 0 {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgNoAccountsFound))
+		return
+	}
+
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	key := hex.EncodeToString(b)
+
+	h.mu.Lock()
+	h.pending[key] = pendingEntry{result: result, authorID: authorID, awaitingAccountID: true}
+	h.mu.Unlock()
+
+	customID := "select_account_id:" + key + ":" + authorID
+	msg := &discordgo.MessageSend{
+		Content: placeholder,
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+				&discordgo.SelectMenu{
+					CustomID:    customID,
+					Placeholder: placeholder,
+					Options:     options,
 				},
 			}},
 		},
