@@ -338,17 +338,33 @@ For complete API documentation, see `backend/doc/`.
 
 ## Discord Bot (Natural Language Bookkeeping)
 
-The system includes a Discord bot that allows you to record expenses and income using natural language in a private Discord channel. The bot parses your message with Google Gemini AI, shows a preview, and creates the record after you confirm.
+The system includes a Discord bot that allows you to record expenses and income using natural language in a private Discord channel. The bot parses your message with Google Gemini AI, shows a preview, and creates the record after you confirm. Supports payment method selection and custom dates.
 
-**Usage example:**
+**Usage examples:**
 ```
 You: 午餐吃拉麵 180
+Bot: 請選擇支付方式
+     [▼ 現金 / 銀行帳戶 / 信用卡]
+
+You: (selects 現金)
 Bot: 📝 記帳預覽
-     類型: 支出 | 金額: 180 | 分類: 飲食 | 描述: 午餐吃拉麵 | 日期: 2026-04-05
+     類型: 支出 | 金額: 180 | 分類: 飲食 | 描述: 午餐吃拉麵 | 日期: 2026-04-05 | 支付方式: 現金
      [✅ 確認記帳] [❌ 取消]
 
 You: (clicks ✅)
 Bot: ✅ 記帳成功
+```
+
+```
+You: 刷卡買衣服 2000
+Bot: 📝 記帳預覽  (skips payment selection -- inferred from 刷卡)
+     類型: 支出 | 金額: 2,000 | 分類: 其他支出 | 描述: 刷卡買衣服 | 日期: 2026-04-05 | 支付方式: 信用卡
+     [✅ 確認記帳] [❌ 取消]
+```
+
+```
+You: 昨天午餐 180  (supports relative dates: 昨天, 前天, yesterday)
+Bot: ... 日期: 2026-04-04 ...
 ```
 
 ### Setup

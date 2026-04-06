@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -30,14 +31,21 @@ func (a *CashFlowServiceAdapter) CreateCashFlowFromBot(input *BotCashFlowInput) 
 		return "", err
 	}
 
-	cashSourceType := models.SourceTypeCash
+	sourceType := mapSourceType(input.SourceType)
 	createInput := &models.CreateCashFlowInput{
 		Date:        date,
 		Type:        models.CashFlowType(input.Type),
 		CategoryID:  categoryID,
 		Amount:      input.Amount,
 		Description: input.Description,
-		SourceType:  &cashSourceType,
+		SourceType:  &sourceType,
+	}
+
+	if input.SourceID != "" {
+		sourceID, err := uuid.Parse(input.SourceID)
+		if err == nil {
+			createInput.SourceID = &sourceID
+		}
 	}
 
 	record, err := a.svc.CreateCashFlow(createInput)
@@ -56,6 +64,53 @@ type CategoryRepoAdapter struct {
 // NewCategoryRepoAdapter wraps a CategoryRepository for bot usage.
 func NewCategoryRepoAdapter(repo repository.CategoryRepository) *CategoryRepoAdapter {
 	return &CategoryRepoAdapter{repo: repo}
+}
+
+func mapSourceType(sourceType string) models.SourceType {
+	switch sourceType {
+	case "bank_account":
+		return models.SourceTypeBankAccount
+	case "credit_card":
+		return models.SourceTypeCreditCard
+	case "cash":
+		return models.SourceTypeCash
+	default:
+		return models.SourceTypeCash
+	}
+}
+
+// BankAccountRepoAdapter bridges repository.BankAccountRepository to AccountLoader.
+type BankAccountRepoAdapter struct {
+	repo repository.BankAccountRepository
+}
+
+func NewBankAccountRepoAdapter(repo repository.BankAccountRepository) *BankAccountRepoAdapter {
+	return &BankAccountRepoAdapter{repo: repo}
+}
+
+func (a *BankAccountRepoAdapter) LoadAccounts(sourceType string) ([]AccountInfo, error) {
+	accounts, err := a.repo.GetAll(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []AccountInfo
+	for _, acct := range accounts {
+		acctType := "bank_account"
+		if acct.AccountType == "credit_card" {
+			acctType = "credit_card"
+		}
+		if acctType != sourceType {
+			continue
+		}
+		label := fmt.Sprintf("%s *%s", acct.BankName, acct.AccountNumberLast4)
+		result = append(result, AccountInfo{
+			ID:   acct.ID.String(),
+			Name: label,
+			Type: acctType,
+		})
+	}
+	return result, nil
 }
 
 func (a *CategoryRepoAdapter) LoadCategories() ([]CategoryInfo, error) {

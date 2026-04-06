@@ -92,6 +92,15 @@ func (m *mockCategoryLoader) LoadCategories() ([]CategoryInfo, error) {
 	return m.categories, m.err
 }
 
+type mockAccountLoader struct {
+	accounts []AccountInfo
+	err      error
+}
+
+func (m *mockAccountLoader) LoadAccounts(sourceType string) ([]AccountInfo, error) {
+	return m.accounts, m.err
+}
+
 func TestHandler_ImplementsMessageHandler(t *testing.T) {
 	var _ MessageHandler = (*Handler)(nil)
 }
@@ -106,11 +115,12 @@ func TestHandleMessage_SuccessfulParse_SendsPreview(t *testing.T) {
 		CategoryID:    "expense-food",
 		CategoryName:  "Food",
 		Date:          "2026-04-05",
+		SourceType:    "cash",
 	}}
 	creator := &mockCashFlowCreator{}
 	categories := []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}
 	loader := &mockCategoryLoader{categories: categories}
-	h := NewHandler(parser, creator, loader, string(LangEn))
+	h := NewHandler(parser, creator, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -136,7 +146,7 @@ func TestHandleMessage_SuccessfulParse_SendsPreview(t *testing.T) {
 	embed := sent.Embeds[0]
 	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), embed.Title)
 	require.Equal(t, 0xFF0000, embed.Color)
-	require.Len(t, embed.Fields, 5)
+	require.Len(t, embed.Fields, 6)
 	require.Equal(t, GetMessage(string(LangEn), MsgFieldType), embed.Fields[0].Name)
 	require.Equal(t, GetMessage(string(LangEn), MsgTypeExpense), embed.Fields[0].Value)
 	require.Equal(t, GetMessage(string(LangEn), MsgFieldAmount), embed.Fields[1].Name)
@@ -144,6 +154,8 @@ func TestHandleMessage_SuccessfulParse_SendsPreview(t *testing.T) {
 	require.Equal(t, "Food", embed.Fields[2].Value)
 	require.Equal(t, "lunch with team", embed.Fields[3].Value)
 	require.Equal(t, "2026-04-05", embed.Fields[4].Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgFieldPaymentMethod), embed.Fields[5].Name)
+	require.Equal(t, GetMessage(string(LangEn), MsgAccountCash), embed.Fields[5].Value)
 	require.Len(t, sent.Components, 1)
 
 	row, ok := sent.Components[0].(discordgo.ActionsRow)
@@ -164,7 +176,7 @@ func TestHandleMessage_NonBookkeeping_Silent(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: false}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, string(LangEn))
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -187,7 +199,7 @@ func TestHandleMessage_MissingAmount_SendsHint(t *testing.T) {
 		MissingFields: []string{"amount"},
 	}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, string(LangEn))
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -206,7 +218,7 @@ func TestHandleMessage_ParseError_SendsSystemError(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{err: errors.New("parser down")}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, string(LangEn))
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -232,7 +244,7 @@ func TestHandleInteraction_Confirm_CreatesRecord(t *testing.T) {
 		Date:          "2026-04-05",
 	}
 	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, string(LangEn))
+	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "author-1")
 
@@ -257,7 +269,7 @@ func TestHandleInteraction_Confirm_CreatesRecord(t *testing.T) {
 func TestHandleInteraction_Cancel_UpdatesEmbed(t *testing.T) {
 	session := &mockSession{}
 	creator := &mockCashFlowCreator{}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, string(LangEn))
+	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	interaction := newComponentInteraction("cancel:author-1", "author-1")
 
 	h.handleInteraction(session, interaction)
@@ -283,7 +295,7 @@ func TestHandleInteraction_WrongUser_Ephemeral(t *testing.T) {
 		Date:          "2026-04-05",
 	}
 	creator := &mockCashFlowCreator{}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, string(LangEn))
+	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "other-user")
 
@@ -295,6 +307,342 @@ func TestHandleInteraction_WrongUser_Ephemeral(t *testing.T) {
 	require.Equal(t, discordgo.InteractionResponseChannelMessageWithSource, resp.Type)
 	require.Equal(t, GetMessage(string(LangEn), MsgOnlyAuthor), resp.Data.Content)
 	require.Equal(t, discordgo.MessageFlagsEphemeral, resp.Data.Flags)
+}
+
+func TestHandleMessage_EmptySourceType_SendsSelectMenu(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        180,
+		Description:   "午餐",
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "",
+	}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "lunch 180",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	sent := session.sentMessages[0]
+	require.Empty(t, sent.Embeds)
+	require.Len(t, sent.Components, 1)
+	row, ok := sent.Components[0].(discordgo.ActionsRow)
+	require.True(t, ok)
+	require.Len(t, row.Components, 1)
+	selectMenu, ok := row.Components[0].(*discordgo.SelectMenu)
+	require.True(t, ok)
+	require.Equal(t, GetMessage(string(LangEn), MsgSelectAccount), selectMenu.Placeholder)
+	require.Len(t, selectMenu.Options, 3)
+}
+
+func TestHandleMessage_KnownSourceType_SendsPreviewDirectly(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        2000,
+		Description:   "刷卡買衣服",
+		CategoryID:    "expense-other",
+		CategoryName:  "Other",
+		Date:          "2026-04-05",
+		SourceType:    "credit_card",
+	}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-other", Name: "Other", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "credit card clothes 2000",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	sent := session.sentMessages[0]
+	require.Len(t, sent.Embeds, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), sent.Embeds[0].Title)
+}
+
+func TestHandleInteraction_SelectMenu_CashGoesToPreview(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        180,
+		Description:   "lunch",
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "",
+	}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:   discordgo.InteractionMessageComponent,
+		Member: &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{
+			ID:        "reply-1",
+			ChannelID: "channel-1",
+		},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      "select_account:test-key:author-1",
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cash"},
+		},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseUpdateMessage, resp.Type)
+	require.Len(t, resp.Data.Embeds, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), resp.Data.Embeds[0].Title)
+	require.Len(t, resp.Data.Components, 1)
+}
+
+func TestHandleInteraction_SelectMenu_WrongUser_Ephemeral(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        180,
+		SourceType:    "",
+	}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "other-user"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      "select_account:test-key:author-1",
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cash"},
+		},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseChannelMessageWithSource, resp.Type)
+	require.Equal(t, GetMessage(string(LangEn), MsgOnlyAuthor), resp.Data.Content)
+	require.Equal(t, discordgo.MessageFlagsEphemeral, resp.Data.Flags)
+}
+
+func TestBuildPreviewEmbed_IncludesPaymentMethod(t *testing.T) {
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        180,
+		Description:   "lunch",
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "credit_card",
+	}
+
+	embed := h.buildPreviewEmbed(result)
+
+	require.Len(t, embed.Fields, 6)
+	paymentField := embed.Fields[5]
+	require.Equal(t, GetMessage(string(LangEn), MsgFieldPaymentMethod), paymentField.Name)
+	require.Equal(t, GetMessage(string(LangEn), MsgAccountCreditCard), paymentField.Value)
+}
+
+func TestHandleInteraction_Confirm_PassesSourceType(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        2000,
+		Description:   "clothes",
+		CategoryID:    "expense-other",
+		CategoryName:  "Other",
+		Date:          "2026-04-05",
+		SourceType:    "credit_card",
+	}
+	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
+	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	customID := h.storePending(result, "author-1")
+	interaction := newComponentInteraction(customID, "author-1")
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, creator.createdInputs, 1)
+	require.Equal(t, "credit_card", creator.createdInputs[0].SourceType)
+}
+
+func TestHandleInteraction_SelectBankAccount_ShowsSecondSelectMenu(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        15000,
+		Description:   "rent",
+		CategoryID:    "expense-other",
+		CategoryName:  "Other",
+		Date:          "2026-04-05",
+		SourceType:    "",
+	}
+	acctLoader := &mockAccountLoader{accounts: []AccountInfo{
+		{ID: "acct-1", Name: "中信銀行 *1234", Type: "bank_account"},
+		{ID: "acct-2", Name: "台新銀行 *5678", Type: "bank_account"},
+	}}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      "select_account:test-key:author-1",
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"bank_account"},
+		},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseUpdateMessage, resp.Type)
+	require.Len(t, resp.Data.Components, 1)
+	row, ok := resp.Data.Components[0].(discordgo.ActionsRow)
+	require.True(t, ok)
+	selectMenu, ok := row.Components[0].(*discordgo.SelectMenu)
+	require.True(t, ok)
+	require.Equal(t, GetMessage(string(LangEn), MsgSelectBankAccount), selectMenu.Placeholder)
+	require.Len(t, selectMenu.Options, 2)
+	require.Equal(t, "acct-1", selectMenu.Options[0].Value)
+	require.Equal(t, "中信銀行 *1234", selectMenu.Options[0].Label)
+}
+
+func TestHandleInteraction_SelectCash_SkipsSecondMenu(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        180,
+		Description:   "lunch",
+		CategoryID:    "expense-food",
+		CategoryName:  "Food",
+		Date:          "2026-04-05",
+		SourceType:    "",
+	}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      "select_account:test-key:author-1",
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cash"},
+		},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseUpdateMessage, resp.Type)
+	require.Len(t, resp.Data.Embeds, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), resp.Data.Embeds[0].Title)
+}
+
+func TestHandleInteraction_SelectAccountID_UpdatesPendingAndShowsPreview(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        15000,
+		Description:   "rent",
+		CategoryID:    "expense-other",
+		CategoryName:  "Other",
+		Date:          "2026-04-05",
+		SourceType:    "bank_account",
+	}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccountID: true}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      "select_account_id:test-key:author-1",
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"acct-1"},
+		},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseUpdateMessage, resp.Type)
+	require.Len(t, resp.Data.Embeds, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgPreviewTitle), resp.Data.Embeds[0].Title)
+	require.Len(t, resp.Data.Components, 1)
+}
+
+func TestHandleInteraction_Confirm_PassesSourceID(t *testing.T) {
+	session := &mockSession{}
+	result := &ParseResult{
+		IsBookkeeping: true,
+		Type:          "expense",
+		Amount:        15000,
+		Description:   "rent",
+		CategoryID:    "expense-other",
+		CategoryName:  "Other",
+		Date:          "2026-04-05",
+		SourceType:    "bank_account",
+		SourceID:      "acct-uuid-1",
+	}
+	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
+	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	customID := h.storePending(result, "author-1")
+	interaction := newComponentInteraction(customID, "author-1")
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, creator.createdInputs, 1)
+	require.Equal(t, "bank_account", creator.createdInputs[0].SourceType)
+	require.Equal(t, "acct-uuid-1", creator.createdInputs[0].SourceID)
 }
 
 func newComponentInteraction(customID string, userID string) *discordgo.InteractionCreate {

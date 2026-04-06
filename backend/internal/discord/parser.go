@@ -28,6 +28,8 @@ type ParseResult struct {
 	CategoryID    string   `json:"category_id"`
 	CategoryName  string   `json:"category_name"`
 	Date          string   `json:"date"`
+	SourceType    string   `json:"source_type"`
+	SourceID      string   `json:"-"`
 	MissingFields []string `json:"missing_fields"`
 }
 
@@ -107,6 +109,7 @@ func buildGeminiPrompt(message string, categories []CategoryInfo, today string) 
   "category_id": string,
   "category_name": string,
   "date": string,
+  "source_type": "cash" | "bank_account" | "credit_card" | "",
   "missing_fields": string[]
 }
 
@@ -116,9 +119,15 @@ Rules:
 - Only use "income" or "expense" for "type" when the message is bookkeeping.
 - Use date format YYYY-MM-DD.
 - Default the date to today (%s) when the user does not specify one.
-- Handle relative dates like 昨天 / yesterday and 前天 / day before yesterday relative to today.
+- Handle relative dates like 昨天 / yesterday, 前天 / day before yesterday, 上禮拜 / last week relative to today.
+- Support absolute date formats: M/D, MM/DD, YYYY/MM/DD, and Chinese expressions like 4月3號.
 - Match the best category from this list:
 %s
+- For source_type: infer the payment method from context clues.
+  - 刷卡 / credit card → "credit_card"
+  - 轉帳 / transfer / bank → "bank_account"
+  - 現金 / cash → "cash"
+  - If no payment method is mentioned, use an empty string.
 - If required bookkeeping information is missing, keep "is_bookkeeping" true and list missing keys in "missing_fields".
 - Use an empty string for unknown string fields and 0 for an unknown amount.
 - Respond with JSON only. No markdown fences, no explanations.

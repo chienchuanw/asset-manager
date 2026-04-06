@@ -37,3 +37,37 @@ func TestGetMessage_AllKeysHaveBothLanguages(t *testing.T) {
 		require.NotEmpty(t, enMessages[key])
 	}
 }
+
+func TestGetMessage_AccountSelectionKeys(t *testing.T) {
+	accountKeys := []MsgKey{
+		MsgSelectAccount,
+		MsgAccountCash,
+		MsgAccountBank,
+		MsgAccountCreditCard,
+		MsgFieldPaymentMethod,
+	}
+
+	for _, key := range accountKeys {
+		zhMsg := GetMessage(string(LangZhTW), key)
+		require.NotEqual(t, string(key), zhMsg, "zh-TW missing key: %s", key)
+
+		enMsg := GetMessage(string(LangEn), key)
+		require.NotEqual(t, string(key), enMsg, "en missing key: %s", key)
+	}
+}
+
+func TestGetMessage_AccountLabels_ZhTW(t *testing.T) {
+	require.Equal(t, "現金", GetMessage(string(LangZhTW), MsgAccountCash))
+	require.Equal(t, "銀行帳戶", GetMessage(string(LangZhTW), MsgAccountBank))
+	require.Equal(t, "信用卡", GetMessage(string(LangZhTW), MsgAccountCreditCard))
+	require.Equal(t, "請選擇支付方式", GetMessage(string(LangZhTW), MsgSelectAccount))
+	require.Equal(t, "支付方式", GetMessage(string(LangZhTW), MsgFieldPaymentMethod))
+}
+
+func TestGetMessage_AccountLabels_En(t *testing.T) {
+	require.Equal(t, "Cash", GetMessage(string(LangEn), MsgAccountCash))
+	require.Equal(t, "Bank Account", GetMessage(string(LangEn), MsgAccountBank))
+	require.Equal(t, "Credit Card", GetMessage(string(LangEn), MsgAccountCreditCard))
+	require.Equal(t, "Select payment method", GetMessage(string(LangEn), MsgSelectAccount))
+	require.Equal(t, "Payment Method", GetMessage(string(LangEn), MsgFieldPaymentMethod))
+}
