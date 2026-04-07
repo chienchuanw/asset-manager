@@ -28,12 +28,30 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
 ## Features
 
+- **Dashboard** -- At-a-glance portfolio value, return rate, asset allocation pie chart, and recent activity.
+
+  ![Dashboard](assets/screenshots/dashboard.png)
+
 - **Multi-asset portfolio tracking** -- Buy, sell, dividend, fee, and tax transactions for Taiwan stocks, U.S. stocks, crypto, and cash. CSV import/export and batch creation supported.
+
+  ![Holdings](assets/screenshots/holdings.png)
+
 - **FIFO cost basis and P&L** -- Automatic First-In, First-Out cost basis calculation with realized and unrealized profit/loss tracking.
+
 - **Cash flow management** -- Income and expense tracking with predefined and custom categories, monthly/yearly reports, and summary statistics.
+
+  ![Cash Flows](assets/screenshots/cash-flows.png)
+
 - **Subscription and installment billing** -- Recurring subscription management with automatic daily billing, installment tracking with interest calculations, expiration reminders, and auto-renewal.
+
+  ![Recurring](assets/screenshots/recurring.png)
+
 - **Bank and credit card accounts** -- Multi-account support with credit card grouping.
+
 - **Analytics and snapshots** -- Performance trends via daily snapshots, asset allocation by type and individual asset, top performing/underperforming assets, and time-range filtering.
+
+  ![Analytics](assets/screenshots/analytics.png)
+
 - **Discord integration** -- Automated daily reports and alerts via webhook. Discord bot for natural-language bookkeeping with confirmation flow (zh-TW/en).
 - **Authentication and settings** -- JWT-based authentication, role-based access, user preferences, and notification settings.
 - **Exchange rate management** -- Multi-currency support with cached rates and graceful API degradation.
