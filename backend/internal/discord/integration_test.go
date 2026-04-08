@@ -445,6 +445,308 @@ func TestIntegration_KnownSourceType_StillAsksAccountID(t *testing.T) {
 	assert.Equal(t, "cc-uuid-1", creator.createdInputs[0].SourceID)
 }
 
+func TestIntegration_CCPayment_FullFlow(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "cc_payment",
+		Amount:        15000,
+		Date:          "2026-04-05",
+		PaymentType:   "custom",
+		CategoryID:    "cat-transfer",
+	}}
+	creator := &mockCashFlowCreator{}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-transfer", Name: "信用卡繳費", Type: "expense"}}}
+	ccCreator := &mockCCPaymentCreator{resultID: "cf-cc-001", resultAmount: 15000}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"credit_card":  {{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"}},
+		"bank_account": {{ID: "bank-uuid-1", Name: "中信銀行 *5678", Type: "bank_account"}},
+	}}
+	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
+
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "msg-cc-1", ChannelID: "ch-1", Content: "繳中信卡 15000",
+		Author: &discordgo.User{ID: "user-1"},
+	}}
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	cardSent := session.sentMessages[0]
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCCPaymentSelectCard), cardSent.Content)
+	require.Len(t, cardSent.Components, 1)
+	cardRow := cardSent.Components[0].(discordgo.ActionsRow)
+	cardMenu := cardRow.Components[0].(*discordgo.SelectMenu)
+	require.Len(t, cardMenu.Options, 1)
+	assert.Equal(t, "cc-uuid-1", cardMenu.Options[0].Value)
+
+	cardInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-cc-1", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      cardMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cc-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, cardInteraction)
+
+	require.Len(t, session.interactionResponses, 1)
+	bankResp := session.interactionResponses[0]
+	assert.Equal(t, discordgo.InteractionResponseUpdateMessage, bankResp.Type)
+	require.Len(t, bankResp.Data.Components, 1)
+	bankRow := bankResp.Data.Components[0].(discordgo.ActionsRow)
+	bankMenu := bankRow.Components[0].(*discordgo.SelectMenu)
+	require.Len(t, bankMenu.Options, 1)
+	assert.Equal(t, "bank-uuid-1", bankMenu.Options[0].Value)
+
+	bankInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-cc-bank-1", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      bankMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"bank-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, bankInteraction)
+
+	require.Len(t, session.interactionResponses, 2)
+	previewResp := session.interactionResponses[1]
+	require.Len(t, previewResp.Data.Embeds, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCCPaymentPreview), previewResp.Data.Embeds[0].Title)
+	require.Len(t, previewResp.Data.Components, 1)
+	previewRow := previewResp.Data.Components[0].(discordgo.ActionsRow)
+	require.Len(t, previewRow.Components, 2)
+	confirmBtn := previewRow.Components[0].(*discordgo.Button)
+
+	confirmInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:   discordgo.InteractionMessageComponent,
+		Data:   discordgo.MessageComponentInteractionData{CustomID: confirmBtn.CustomID},
+		Member: &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{
+			Embeds: previewResp.Data.Embeds,
+		},
+	}}
+	h.handleInteraction(session, confirmInteraction)
+
+	require.Len(t, ccCreator.createdInputs, 1)
+	assert.Equal(t, &BotCCPaymentInput{
+		CreditCardID:  "cc-uuid-1",
+		BankAccountID: "bank-uuid-1",
+		CategoryID:    "cat-transfer",
+		Amount:        15000,
+		Date:          "2026-04-05",
+		PaymentType:   "custom",
+	}, ccCreator.createdInputs[0])
+
+	require.Len(t, session.interactionResponses, 3)
+	finalResp := session.interactionResponses[2]
+	require.Len(t, finalResp.Data.Embeds, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCCPaymentSuccess), finalResp.Data.Embeds[0].Title)
+}
+
+func TestIntegration_CCPayment_CancelFlow(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "cc_payment",
+		Amount:        15000,
+		Date:          "2026-04-05",
+		PaymentType:   "custom",
+		CategoryID:    "cat-transfer",
+	}}
+	creator := &mockCashFlowCreator{}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-transfer", Name: "信用卡繳費", Type: "expense"}}}
+	ccCreator := &mockCCPaymentCreator{resultID: "cf-cc-001", resultAmount: 15000}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"credit_card":  {{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"}},
+		"bank_account": {{ID: "bank-uuid-1", Name: "中信銀行 *5678", Type: "bank_account"}},
+	}}
+	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
+
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "msg-cc-2", ChannelID: "ch-1", Content: "繳中信卡 15000",
+		Author: &discordgo.User{ID: "user-1"},
+	}}
+	h.handleMessage(session, msg)
+
+	cardMenu := session.sentMessages[0].Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.SelectMenu)
+	cardInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-cc-2", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      cardMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cc-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, cardInteraction)
+
+	bankMenu := session.interactionResponses[0].Data.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.SelectMenu)
+	bankInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-cc-bank-2", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      bankMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"bank-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, bankInteraction)
+
+	require.Len(t, session.interactionResponses, 2)
+	previewResp := session.interactionResponses[1]
+	require.Len(t, previewResp.Data.Embeds, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCCPaymentPreview), previewResp.Data.Embeds[0].Title)
+	previewRow := previewResp.Data.Components[0].(discordgo.ActionsRow)
+	cancelBtn := previewRow.Components[1].(*discordgo.Button)
+
+	cancelInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:   discordgo.InteractionMessageComponent,
+		Data:   discordgo.MessageComponentInteractionData{CustomID: cancelBtn.CustomID},
+		Member: &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{
+			Embeds: previewResp.Data.Embeds,
+		},
+	}}
+	h.handleInteraction(session, cancelInteraction)
+
+	assert.Empty(t, ccCreator.createdInputs)
+	require.Len(t, session.interactionResponses, 3)
+	finalResp := session.interactionResponses[2]
+	require.Len(t, finalResp.Data.Embeds, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCancelled), finalResp.Data.Embeds[0].Title)
+}
+
+func TestIntegration_CCPayment_FullPayment_AutoAmount(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "cc_payment",
+		Amount:        0,
+		Date:          "2026-04-05",
+		PaymentType:   "full",
+		CategoryID:    "cat-transfer",
+	}}
+	creator := &mockCashFlowCreator{}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-transfer", Name: "信用卡繳費", Type: "expense"}}}
+	ccCreator := &mockCCPaymentCreator{resultID: "cf-cc-002", resultAmount: 28654}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"credit_card":  {{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"}},
+		"bank_account": {{ID: "bank-uuid-1", Name: "中信銀行 *5678", Type: "bank_account"}},
+	}}
+	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
+
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "msg-cc-3", ChannelID: "ch-1", Content: "繳清中信卡",
+		Author: &discordgo.User{ID: "user-1"},
+	}}
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	cardMenu := session.sentMessages[0].Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.SelectMenu)
+	parts := strings.Split(cardMenu.CustomID, ":")
+	require.Len(t, parts, 3)
+	key := parts[1]
+
+	cardInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-cc-3", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      cardMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"cc-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, cardInteraction)
+
+	h.mu.Lock()
+	entry := h.pending[key]
+	entry.ccAmount = ccCreator.resultAmount
+	h.pending[key] = entry
+	h.mu.Unlock()
+
+	bankMenu := session.interactionResponses[0].Data.Components[0].(discordgo.ActionsRow).Components[0].(*discordgo.SelectMenu)
+	bankInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{ID: "reply-cc-bank-3", ChannelID: "ch-1"},
+		Data: discordgo.MessageComponentInteractionData{
+			CustomID:      bankMenu.CustomID,
+			ComponentType: discordgo.SelectMenuComponent,
+			Values:        []string{"bank-uuid-1"},
+		},
+	}}
+	h.handleInteraction(session, bankInteraction)
+
+	require.Len(t, session.interactionResponses, 2)
+	previewResp := session.interactionResponses[1]
+	require.Len(t, previewResp.Data.Embeds, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCCPaymentPreview), previewResp.Data.Embeds[0].Title)
+	require.Len(t, previewResp.Data.Embeds[0].Fields, 4)
+	assert.Equal(t, "$28,654", previewResp.Data.Embeds[0].Fields[0].Value)
+	previewRow := previewResp.Data.Components[0].(discordgo.ActionsRow)
+	confirmBtn := previewRow.Components[0].(*discordgo.Button)
+
+	confirmInteraction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:   discordgo.InteractionMessageComponent,
+		Data:   discordgo.MessageComponentInteractionData{CustomID: confirmBtn.CustomID},
+		Member: &discordgo.Member{User: &discordgo.User{ID: "user-1"}},
+		Message: &discordgo.Message{
+			Embeds: previewResp.Data.Embeds,
+		},
+	}}
+	h.handleInteraction(session, confirmInteraction)
+
+	require.Len(t, ccCreator.createdInputs, 1)
+	assert.Equal(t, 28654.0, ccCreator.createdInputs[0].Amount)
+	require.Len(t, session.interactionResponses, 3)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgCCPaymentSuccess), session.interactionResponses[2].Data.Embeds[0].Title)
+}
+
+func TestIntegration_ChatGreeting(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{Action: "chat", IsBookkeeping: false}}
+	creator := &mockCashFlowCreator{}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-food", Name: "飲食", Type: "expense"}}}
+	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "msg-chat-1", ChannelID: "ch-1", Content: "你好",
+		Author: &discordgo.User{ID: "user-1"},
+	}}
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgChatGreeting), session.sentMessages[0].Content)
+	assert.Empty(t, session.sentMessages[0].Embeds)
+	assert.Empty(t, session.sentMessages[0].Components)
+}
+
+func TestIntegration_UnsupportedAction(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{Action: "unsupported", IsBookkeeping: false}}
+	creator := &mockCashFlowCreator{}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-food", Name: "飲食", Type: "expense"}}}
+	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "msg-unsupported-1", ChannelID: "ch-1", Content: "幫我做不支援的事",
+		Author: &discordgo.User{ID: "user-1"},
+	}}
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	assert.Equal(t, GetMessage(string(LangZhTW), MsgUnsupported), session.sentMessages[0].Content)
+	assert.Empty(t, session.sentMessages[0].Embeds)
+	assert.Empty(t, session.sentMessages[0].Components)
+}
+
 func TestQueryFlow_EndToEnd(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{
