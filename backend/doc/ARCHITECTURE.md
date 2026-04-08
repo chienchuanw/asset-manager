@@ -149,6 +149,46 @@
 
 ---
 
+### 5. Discord Bot 模組
+**Discord Bot 架構：**
+```
+Discord 使用者訊息
+    │
+    ▼
+Handler (handleMessage / handleInteraction)
+    │
+    ├── Parser (Gemini NLP)
+    │   └── 解析自然語言 → ParseResult
+    │       action: create | query | cc_payment | unsupported | chat
+    │
+    ├── action="create" → 記帳流程
+    │   └── 選擇付款方式 → 預覽 → 確認 → CashFlowServiceAdapter
+    │
+    ├── action="query" → 查詢流程
+    │   └── CashFlowQuerier / AccountBalanceQuerier
+    │
+    ├── action="cc_payment" → 信用卡繳款流程
+    │   └── 選卡 → 選銀行帳戶 → 預覽 → 確認 → CreditCardPaymentAdapter
+    │       └── CashFlowService.CreateCashFlow (transfer_out)
+    │
+    ├── action="chat" → 友善問候回應
+    │
+    └── action="unsupported" → 不支援提示 + 功能清單
+```
+
+**關鍵檔案：**
+- `internal/discord/parser.go` -- Gemini NLP 解析器
+- `internal/discord/handler.go` -- Discord 訊息和互動處理
+- `internal/discord/adapter.go` -- Service 層橋接（CashFlowServiceAdapter, CreditCardPaymentAdapter）
+- `internal/discord/i18n.go` -- 雙語訊息（zh-TW / en）
+
+**設計模式：**
+- 無狀態互動：Button custom_id 編碼 `action:payload:authorID`
+- Pending entries：多步驟互動透過 `pendingEntry` map 追蹤狀態
+- Adapter 模式：Handler 不直接依賴 Service 層，透過介面抽象
+
+---
+
 ## 🔄 資料流程
 
 ### 建立交易記錄的流程
@@ -291,7 +331,7 @@ func main() {
 
 ### 未來可能的擴展
 
-1. **快取層**
+1. **快取層** (已實作)
    - 使用 Redis 快取常用查詢
    - 減少資料庫負載
 
@@ -308,9 +348,12 @@ func main() {
    - `/api/v1/transactions`
    - `/api/v2/transactions`
 
-5. **認證與授權**
+5. **認證與授權** (已實作)
    - JWT Token
    - Role-based Access Control (RBAC)
+
+6. **Discord Bot 排程繳款提醒**
+7. **最低應繳金額自動計算**
 
 ---
 
@@ -319,4 +362,5 @@ func main() {
 - `README_PHASE1.md` - 詳細實作指南
 - `PHASE1_SUMMARY.md` - Phase 1 完成總結
 - `QUICK_START.md` - 快速開始指南
+- `TESTING_GUIDE.md` - 測試指南（含 Discord Bot 測試）
 

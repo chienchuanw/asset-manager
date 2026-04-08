@@ -176,7 +176,31 @@ ls -lh /home/ubuntu/backups/
 2. 頻道設定 → 整合 → Webhooks → 新增 Webhook
 3. 複製 Webhook URL
 
-### 5.2 設定 GitHub Secrets
+### 5.2 Discord Bot 設定（可選）
+
+Discord Bot 允許透過自然語言在 Discord 頻道中記帳、繳信用卡、查詢餘額。
+
+1. 前往 [Discord Developer Portal](https://discord.com/developers/applications) 建立 Bot
+2. 啟用 **MESSAGE CONTENT INTENT**
+3. 取得 [Google AI Studio](https://aistudio.google.com/apikey) 的 Gemini API Key
+4. 在 Discord 中啟用開發者模式，右鍵複製頻道 ID
+5. 設定環境變數：
+
+| 變數 | 說明 |
+|------|------|
+| `DISCORD_BOT_ENABLED` | 設為 `true` 啟用 Bot |
+| `DISCORD_BOT_TOKEN` | Discord Bot Token |
+| `DISCORD_CHANNEL_IDS` | 允許的頻道 ID（逗號分隔） |
+| `DISCORD_BOT_LANG` | 語言設定：`zh-TW`（預設）或 `en` |
+| `GEMINI_API_KEY` | Google Gemini API Key |
+
+支援功能：
+- 記帳（收入/支出）：「午餐 150」
+- 信用卡繳款：「繳中信卡 15000」「繳玉山卡全額」
+- 查詢月度摘要：「這個月花了多少？」
+- 查詢帳戶餘額：「我的餘額多少？」
+
+### 5.3 設定 GitHub Secrets
 
 前往: `https://github.com/chienchuanw/asset-manager/settings/secrets/actions`
 
@@ -246,6 +270,21 @@ Value: (你的 Alpha Vantage API Key)
 ```
 Name: DISCORD_WEBHOOK_URL
 Value: (你的 Discord Webhook URL)
+
+Name: DISCORD_BOT_ENABLED
+Value: true
+
+Name: DISCORD_BOT_TOKEN
+Value: (你的 Discord Bot Token)
+
+Name: DISCORD_CHANNEL_IDS
+Value: (你的 Discord 頻道 ID)
+
+Name: DISCORD_BOT_LANG
+Value: zh-TW
+
+Name: GEMINI_API_KEY
+Value: (你的 Gemini API Key)
 ```
 
 ### 5.3 測試自動部署

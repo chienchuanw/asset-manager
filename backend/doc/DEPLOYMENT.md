@@ -202,6 +202,16 @@ PROD_ALPHA_VANTAGE_API_KEY=YOUR_KEY
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
+**Discord Bot:**
+
+```
+DISCORD_BOT_ENABLED=true
+DISCORD_BOT_TOKEN=MTIz...
+DISCORD_CHANNEL_IDS=123456789,987654321
+DISCORD_BOT_LANG=zh-TW
+GEMINI_API_KEY=AIza...
+```
+
 ### 2. 測試自動部署
 
 ```bash
@@ -241,6 +251,18 @@ curl -H "Content-Type: application/json" \
   }' \
   YOUR_DISCORD_WEBHOOK_URL
 ```
+
+---
+
+## Discord Bot 環境變數
+
+| 變數 | 說明 | 範例 |
+|------|------|------|
+| `DISCORD_BOT_ENABLED` | 啟用 Discord Bot | `true` |
+| `DISCORD_BOT_TOKEN` | Bot Token | `MTIz...` |
+| `DISCORD_CHANNEL_IDS` | 監聽頻道 ID | `123456789,987654321` |
+| `DISCORD_BOT_LANG` | Bot 語言 | `zh-TW` |
+| `GEMINI_API_KEY` | Gemini API Key | `AIza...` |
 
 ---
 
