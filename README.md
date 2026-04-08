@@ -52,7 +52,7 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
   ![Analytics](assets/screenshots/analytics.png)
 
-- **Discord integration** -- Automated daily reports and alerts via webhook. Discord bot for natural-language bookkeeping with confirmation flow (zh-TW/en).
+- **Discord integration** -- Automated daily reports and alerts via webhook. Discord bot for natural-language bookkeeping, credit card bill payments, and account queries with confirmation flow (zh-TW/en). Graceful responses for unsupported requests and friendly greetings.
 - **Authentication and settings** -- JWT-based authentication, role-based access, user preferences, and notification settings.
 - **Exchange rate management** -- Multi-currency support with cached rates and graceful API degradation.
 
@@ -356,9 +356,9 @@ For complete API documentation, see `backend/doc/`.
 
 ## Discord Bot (Natural Language Bookkeeping)
 
-The system includes a Discord bot that allows you to record expenses and income using natural language in a private Discord channel. The bot parses your message with Google Gemini AI, shows a preview, and creates the record after you confirm. Supports payment method selection and custom dates.
+The system includes a Discord bot that allows you to record expenses, income, and credit card payments using natural language in a private Discord channel. The bot parses your message with Google Gemini AI, shows a preview, and creates the record after you confirm. Supports payment method selection, custom dates, and account queries.
 
-**Usage examples:**
+**Bookkeeping examples:**
 ```
 You: 午餐吃拉麵 180
 Bot: 請選擇支付方式
@@ -380,9 +380,47 @@ Bot: 📝 記帳預覽  (skips payment selection -- inferred from 刷卡)
      [✅ 確認記帳] [❌ 取消]
 ```
 
+**Credit card payment:**
 ```
+You: 繳中信卡 15000
+Bot: 請選擇要繳款的信用卡
+     [▼ 中信 LINE Pay *1234 / 玉山 *5678]
+
+You: (selects 中信 LINE Pay *1234)
+Bot: 請選擇扣款銀行帳戶
+     [▼ 台新 Richart *9012 / 中信 *3456]
+
+You: (selects 台新 Richart *9012)
+Bot: 💳 繳款預覽
+     金額: 15,000 | 信用卡: 中信 LINE Pay *1234 | 扣款帳戶: 台新 Richart *9012 | 繳款類型: 自訂金額
+     [✅ 確認繳款] [❌ 取消]
+
+You: (clicks ✅)
+Bot: ✅ 繳款成功
+```
+
+Full payment and minimum payment are also supported:
+```
+You: 繳玉山卡全額       -- auto-fills amount from current balance
+You: 繳中信卡最低 3000  -- records minimum payment of 3,000
+```
+
+**Queries and other interactions:**
+```
+You: 這個月花了多少？
+Bot: 📊 2026 年 4 月支出摘要 ...
+
+You: 我的餘額多少？
+Bot: 🏦 帳戶餘額 ...
+
 You: 昨天午餐 180  (supports relative dates: 昨天, 前天, yesterday)
 Bot: ... 日期: 2026-04-04 ...
+
+You: 嗨
+Bot: 👋 嗨！我是記帳小幫手 ...
+
+You: 幫我買台積電 10 股
+Bot: ❓ 目前不支援這項操作 (lists available features)
 ```
 
 ### Setup
