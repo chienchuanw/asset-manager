@@ -157,7 +157,7 @@ Rules:
 - Set "is_bookkeeping" to false for greetings, chit-chat, or messages that are not bookkeeping.
 - For "action":
   - If the message contains a specific amount and is recording a transaction, use "create".
-  - If the message is asking a question about spending, balance, or summary (interrogative form, no specific amount to record), use "query".
+  - If the message is asking about spending, balance, summary, or checking account/card status (e.g., 餘額, 額度, 花了多少, balance, how much), use "query". This includes phrases with a specific bank or card name like "富邦信用卡餘額" or "中信卡額度".
   - If the message is about paying a credit card bill (繳卡費/繳信用卡/pay credit card bill), use "cc_payment".
   - If the message has a clear action intent but is NOT bookkeeping, querying, or credit card payment (e.g., buying stocks, setting budgets), use "unsupported".
   - If the message is a greeting, chat, or casual conversation (嗨/你好/hello/thanks/謝謝), use "chat".
@@ -182,7 +182,7 @@ Rules:
 - If required bookkeeping information is missing for a transaction, keep "is_bookkeeping" true and list missing keys in "missing_fields".
 - For "query_type":
   - Use "cash_flow_summary" for spending, income, or cash-flow questions.
-  - Use "account_balance" for bank balance or credit card limit questions.
+  - Use "account_balance" for bank balance, credit card balance, credit card limit, credit card remaining, or any inquiry about how much is left on a card. Examples: 餘額多少, 信用卡餘額, 富邦信用卡額度, credit card balance, what's my balance.
   - Otherwise use an empty string.
 - For "query_params":
   - Resolve month/year from relative terms such as 這個月=current, 上個月=previous, last month=previous.
@@ -209,11 +209,14 @@ func defaultGeminiGenerateContent(ctx context.Context, apiKey, modelName, prompt
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("GenerateContent error: %w", err)
 	}
 
 	text := extractTextFromResponse(resp)
 	if strings.TrimSpace(text) == "" {
+		if resp != nil && len(resp.Candidates) > 0 && resp.Candidates[0].FinishReason > 0 {
+			return "", fmt.Errorf("empty Gemini response (finish_reason=%d)", resp.Candidates[0].FinishReason)
+		}
 		return "", errors.New("empty Gemini response")
 	}
 
