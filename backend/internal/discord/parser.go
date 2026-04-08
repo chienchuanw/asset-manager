@@ -28,20 +28,22 @@ type QueryParams struct {
 
 // ParseResult holds the structured result from NLP parsing.
 type ParseResult struct {
-	IsBookkeeping bool         `json:"is_bookkeeping"`
-	Action        string       `json:"action"` // "create" | "query" | ""
-	Type          string       `json:"type"`
-	Amount        float64      `json:"amount"`
-	Description   string       `json:"description"`
-	CategoryID    string       `json:"category_id"`
-	CategoryName  string       `json:"category_name"`
-	Date          string       `json:"date"`
-	SourceType    string       `json:"source_type"`
-	SourceID      string       `json:"-"`
-	SourceName    string       `json:"-"`
-	MissingFields []string     `json:"missing_fields"`
-	QueryType     string       `json:"query_type"` // "cash_flow_summary" | "account_balance" | ""
-	QueryParams   *QueryParams `json:"query_params"`
+	IsBookkeeping  bool         `json:"is_bookkeeping"`
+	Action         string       `json:"action"` // "create" | "query" | "cc_payment" | "unsupported" | "chat" | ""
+	Type           string       `json:"type"`
+	Amount         float64      `json:"amount"`
+	Description    string       `json:"description"`
+	CategoryID     string       `json:"category_id"`
+	CategoryName   string       `json:"category_name"`
+	Date           string       `json:"date"`
+	SourceType     string       `json:"source_type"`
+	SourceID       string       `json:"-"`
+	SourceName     string       `json:"-"`
+	MissingFields  []string     `json:"missing_fields"`
+	QueryType      string       `json:"query_type"` // "cash_flow_summary" | "account_balance" | ""
+	QueryParams    *QueryParams `json:"query_params"`
+	PaymentType    string       `json:"payment_type"`     // "full" | "minimum" | "custom" | ""
+	TargetCardHint string       `json:"target_card_hint"` // credit card name hint for matching
 }
 
 // CategoryInfo represents a category passed to the parser for matching.
@@ -131,7 +133,7 @@ func buildGeminiPrompt(message string, categories []CategoryInfo, today string) 
 	return fmt.Sprintf(`Return a single JSON object matching exactly this schema:
 {
   "is_bookkeeping": boolean,
-  "action": "create" | "query" | "",
+  "action": "create" | "query" | "cc_payment" | "unsupported" | "chat" | "",
   "type": "income" | "expense" | "",
   "amount": number,
   "description": string,
@@ -145,7 +147,9 @@ func buildGeminiPrompt(message string, categories []CategoryInfo, today string) 
     "month": number,
     "year": number,
     "category": string
-  }
+  },
+  "payment_type": "full" | "minimum" | "custom" | "",
+  "target_card_hint": string
 }
 
 Rules:
@@ -154,7 +158,10 @@ Rules:
 - For "action":
   - If the message contains a specific amount and is recording a transaction, use "create".
   - If the message is asking a question about spending, balance, or summary (interrogative form, no specific amount to record), use "query".
-  - For greetings/chat or anything non-bookkeeping, use an empty string.
+  - If the message is about paying a credit card bill (繳卡費/繳信用卡/pay credit card bill), use "cc_payment".
+  - If the message has a clear action intent but is NOT bookkeeping, querying, or credit card payment (e.g., buying stocks, setting budgets), use "unsupported".
+  - If the message is a greeting, chat, or casual conversation (嗨/你好/hello/thanks/謝謝), use "chat".
+  - Use an empty string only when none of the above actions can be determined.
 - Only use "income" or "expense" for "type" when the message is bookkeeping and the intent is transaction recording.
 - Use date format YYYY-MM-DD.
 - Default the date to today (%s) when the user does not specify one.
@@ -167,6 +174,11 @@ Rules:
   - 轉帳 / transfer / bank → "bank_account"
   - 現金 / cash → "cash"
   - If no payment method is mentioned, use an empty string.
+- For "payment_type": only set it when action is "cc_payment".
+  - Use "full" for full payment (全額).
+  - Use "minimum" for minimum payment (最低).
+  - Use "custom" for any other credit card payment amount.
+- For "target_card_hint": extract the credit card name or bank keyword from the message when action is "cc_payment".
 - If required bookkeeping information is missing for a transaction, keep "is_bookkeeping" true and list missing keys in "missing_fields".
 - For "query_type":
   - Use "cash_flow_summary" for spending, income, or cash-flow questions.

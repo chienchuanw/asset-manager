@@ -34,7 +34,29 @@ func (p MockParser) Parse(ctx context.Context, message string, categories []Cate
 			Date:          "2026-04-05",
 		}, nil
 	case "你好":
-		return &ParseResult{IsBookkeeping: false}, nil
+		return &ParseResult{Action: "chat", IsBookkeeping: false}, nil
+	case "繳中信卡 15000":
+		return &ParseResult{Action: "cc_payment", Amount: 15000, PaymentType: "custom", TargetCardHint: "中信", Date: "2026-04-05"}, nil
+	case "繳玉山卡全額":
+		return &ParseResult{Action: "cc_payment", PaymentType: "full", TargetCardHint: "玉山", Date: "2026-04-05"}, nil
+	case "繳中信卡最低 3000":
+		return &ParseResult{Action: "cc_payment", Amount: 3000, PaymentType: "minimum", TargetCardHint: "中信", Date: "2026-04-05"}, nil
+	case "繳中信卡":
+		return &ParseResult{Action: "cc_payment", PaymentType: "custom", TargetCardHint: "中信", Date: "2026-04-05", MissingFields: []string{"amount"}}, nil
+	case "pay credit card 15000":
+		return &ParseResult{Action: "cc_payment", Amount: 15000, PaymentType: "custom", Date: "2026-04-05"}, nil
+	case "幫我買台積電 10 股":
+		return &ParseResult{Action: "unsupported", IsBookkeeping: false}, nil
+	case "幫我設定每月預算 30000":
+		return &ParseResult{Action: "unsupported", IsBookkeeping: false}, nil
+	case "buy 10 shares of TSMC":
+		return &ParseResult{Action: "unsupported", IsBookkeeping: false}, nil
+	case "嗨":
+		return &ParseResult{Action: "chat", IsBookkeeping: false}, nil
+	case "hello":
+		return &ParseResult{Action: "chat", IsBookkeeping: false}, nil
+	case "謝謝":
+		return &ParseResult{Action: "chat", IsBookkeeping: false}, nil
 	case "午餐吃拉麵":
 		return &ParseResult{
 			IsBookkeeping: true,
@@ -144,6 +166,123 @@ func TestMockParser_NonBookkeeping(t *testing.T) {
 
 	require.NoError(t, err)
 	require.False(t, result.IsBookkeeping)
+	require.Equal(t, "chat", result.Action)
+}
+
+func TestMockParser_CCPayment_CustomAmount(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "繳中信卡 15000", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "cc_payment", result.Action)
+	require.Equal(t, 15000.0, result.Amount)
+	require.Equal(t, "custom", result.PaymentType)
+	require.Contains(t, result.TargetCardHint, "中信")
+}
+
+func TestMockParser_CCPayment_FullPayment(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "繳玉山卡全額", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "cc_payment", result.Action)
+	require.Equal(t, "full", result.PaymentType)
+}
+
+func TestMockParser_CCPayment_MinimumPayment(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "繳中信卡最低 3000", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "cc_payment", result.Action)
+	require.Equal(t, 3000.0, result.Amount)
+	require.Equal(t, "minimum", result.PaymentType)
+}
+
+func TestMockParser_CCPayment_MissingAmount(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "繳中信卡", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "cc_payment", result.Action)
+	require.Equal(t, []string{"amount"}, result.MissingFields)
+}
+
+func TestMockParser_CCPayment_English(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "pay credit card 15000", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "cc_payment", result.Action)
+}
+
+func TestMockParser_BackwardCompat_CreateAction(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "午餐吃拉麵 180", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "", result.PaymentType)
+	require.Equal(t, "", result.TargetCardHint)
+}
+
+func TestMockParser_Unsupported_BuyStock(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "幫我買台積電 10 股", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "unsupported", result.Action)
+}
+
+func TestMockParser_Unsupported_SetBudget(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "幫我設定每月預算 30000", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "unsupported", result.Action)
+}
+
+func TestMockParser_Unsupported_English(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "buy 10 shares of TSMC", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "unsupported", result.Action)
+}
+
+func TestMockParser_Chat_Greeting_ZhTW(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "嗨", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "chat", result.Action)
+}
+
+func TestMockParser_Chat_Greeting_En(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "hello", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "chat", result.Action)
+}
+
+func TestMockParser_Chat_Thanks(t *testing.T) {
+	parser := MockParser{}
+
+	result, err := parser.Parse(t.Context(), "謝謝", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "chat", result.Action)
 }
 
 func TestMockParser_MissingAmount(t *testing.T) {
@@ -275,10 +414,89 @@ func TestGeminiParser_RelativeDate(t *testing.T) {
 	require.Equal(t, "2026-04-04", result.Date)
 }
 
+func TestGeminiParser_CCPayment(t *testing.T) {
+	originalGenerate := geminiGenerateContent
+	originalNow := geminiNow
+	t.Cleanup(func() {
+		geminiGenerateContent = originalGenerate
+		geminiNow = originalNow
+	})
+
+	geminiNow = func() time.Time { return time.Date(2026, 4, 5, 0, 0, 0, 0, time.UTC) }
+	geminiGenerateContent = func(ctx context.Context, apiKey, model, prompt string) (string, error) {
+		return `{"is_bookkeeping":false,"action":"cc_payment","type":"","amount":15000,"description":"","category_id":"","category_name":"","date":"2026-04-05","source_type":"","missing_fields":[],"payment_type":"custom","target_card_hint":"中信"}`, nil
+	}
+
+	parser := NewGeminiParser("test-key")
+
+	result, err := parser.Parse(t.Context(), "繳中信卡 15000", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "cc_payment", result.Action)
+	require.Equal(t, 15000.0, result.Amount)
+	require.Equal(t, "custom", result.PaymentType)
+	require.Equal(t, "中信", result.TargetCardHint)
+	require.Empty(t, result.MissingFields)
+}
+
+func TestGeminiParser_Unsupported(t *testing.T) {
+	originalGenerate := geminiGenerateContent
+	originalNow := geminiNow
+	t.Cleanup(func() {
+		geminiGenerateContent = originalGenerate
+		geminiNow = originalNow
+	})
+
+	geminiNow = func() time.Time { return time.Date(2026, 4, 5, 0, 0, 0, 0, time.UTC) }
+	geminiGenerateContent = func(ctx context.Context, apiKey, model, prompt string) (string, error) {
+		return `{"is_bookkeeping":false,"action":"unsupported","type":"","amount":0,"description":"","category_id":"","category_name":"","date":"2026-04-05","source_type":"","missing_fields":[]}`, nil
+	}
+
+	parser := NewGeminiParser("test-key")
+
+	result, err := parser.Parse(t.Context(), "幫我買台積電 10 股", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "unsupported", result.Action)
+	require.Empty(t, result.MissingFields)
+}
+
+func TestGeminiParser_Chat(t *testing.T) {
+	originalGenerate := geminiGenerateContent
+	originalNow := geminiNow
+	t.Cleanup(func() {
+		geminiGenerateContent = originalGenerate
+		geminiNow = originalNow
+	})
+
+	geminiNow = func() time.Time { return time.Date(2026, 4, 5, 0, 0, 0, 0, time.UTC) }
+	geminiGenerateContent = func(ctx context.Context, apiKey, model, prompt string) (string, error) {
+		return `{"is_bookkeeping":false,"action":"chat","type":"","amount":0,"description":"hello","category_id":"","category_name":"","date":"2026-04-05","source_type":"","missing_fields":[]}`, nil
+	}
+
+	parser := NewGeminiParser("test-key")
+
+	result, err := parser.Parse(t.Context(), "hello", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "chat", result.Action)
+	require.Empty(t, result.MissingFields)
+}
+
 func TestGeminiParser_PromptContainsSourceType(t *testing.T) {
 	prompt := buildGeminiPrompt("午餐 180", testCategories(), "2026-04-05")
 
 	require.Contains(t, prompt, "source_type")
+}
+
+func TestBuildGeminiPrompt_IncludesCCPaymentFields(t *testing.T) {
+	prompt := buildGeminiPrompt("test", nil, "2026-04-06")
+
+	require.Contains(t, prompt, "payment_type")
+	require.Contains(t, prompt, "target_card_hint")
+	require.Contains(t, prompt, "cc_payment")
+	require.Contains(t, prompt, "unsupported")
+	require.Contains(t, prompt, "chat")
 }
 
 func TestBuildGeminiPrompt_IncludesQueryFields(t *testing.T) {

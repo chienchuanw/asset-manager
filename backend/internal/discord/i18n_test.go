@@ -107,3 +107,39 @@ func TestGetMessage_NewQueryKeys(t *testing.T) {
 		require.NotEqual(t, string(key), enMsg, "en missing key: %s", key)
 	}
 }
+
+func TestGetMessage_CCPaymentAndBotUXKeys(t *testing.T) {
+	keys := []MsgKey{
+		MsgCCPaymentPreview,
+		MsgCCPaymentSuccess,
+		MsgCCPaymentFailed,
+		MsgCCPaymentConfirmButton,
+		MsgCCPaymentTypeFull,
+		MsgCCPaymentTypeMinimum,
+		MsgCCPaymentTypeCustom,
+		MsgCCPaymentFieldCard,
+		MsgCCPaymentFieldBank,
+		MsgCCPaymentFieldType,
+		MsgCCPaymentMissingAmount,
+		MsgCCPaymentUsageExamples,
+		MsgCCPaymentNoCards,
+		MsgCCPaymentNoBankAccounts,
+		MsgCCPaymentSelectCard,
+		MsgCCPaymentSelectBank,
+		MsgUnsupported,
+		MsgChatGreeting,
+		MsgDataLoadFailed,
+		MsgParseFailed,
+		MsgQueryFailed,
+	}
+
+	for _, key := range keys {
+		zhMsg := GetMessage(string(LangZhTW), key)
+		require.NotEmpty(t, zhMsg)
+		require.NotEqual(t, string(key), zhMsg, "zh-TW missing key: %s", key)
+
+		enMsg := GetMessage(string(LangEn), key)
+		require.NotEmpty(t, enMsg)
+		require.NotEqual(t, string(key), enMsg, "en missing key: %s", key)
+	}
+}
