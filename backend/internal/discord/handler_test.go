@@ -1288,7 +1288,7 @@ func TestHandleInteraction_CCConfirm_Success(t *testing.T) {
 	h.handleInteraction(session, interaction)
 
 	require.Len(t, ccCreator.createdInputs, 1)
-	require.Equal(t, &BotCCPaymentInput{CreditCardID: "cc-1", BankAccountID: "bank-1", CategoryID: "category-1", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, ccCreator.createdInputs[0])
+	require.Equal(t, &BotCCPaymentInput{CreditCardID: "cc-1", BankAccountID: "bank-1", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, ccCreator.createdInputs[0])
 	require.Len(t, session.interactionResponses, 1)
 	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentSuccess), session.interactionResponses[0].Data.Embeds[0].Title)
 	require.Empty(t, session.interactionResponses[0].Data.Components)

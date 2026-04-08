@@ -356,7 +356,6 @@ func (h *Handler) handleInteraction(s discordSession, i *discordgo.InteractionCr
 			Amount:        entry.ccAmount,
 			Date:          entry.result.Date,
 			PaymentType:   entry.ccPaymentType,
-			CategoryID:    entry.result.CategoryID,
 		})
 		if err != nil {
 			log.Printf("discord: failed to create cc payment: %v", err)

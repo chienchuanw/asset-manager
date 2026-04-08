@@ -535,7 +535,6 @@ func TestIntegration_CCPayment_FullFlow(t *testing.T) {
 	assert.Equal(t, &BotCCPaymentInput{
 		CreditCardID:  "cc-uuid-1",
 		BankAccountID: "bank-uuid-1",
-		CategoryID:    "cat-transfer",
 		Amount:        15000,
 		Date:          "2026-04-05",
 		PaymentType:   "custom",

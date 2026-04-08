@@ -172,6 +172,34 @@ func (m *mockCCPaymentCreditCardRepo) Delete(id uuid.UUID) error {
 	panic("unexpected call to Delete")
 }
 
+type mockCCPaymentCategoryRepo struct {
+	categories []*models.CashFlowCategory
+	err        error
+}
+
+func (m *mockCCPaymentCategoryRepo) Create(input *models.CreateCategoryInput) (*models.CashFlowCategory, error) {
+	panic("unexpected")
+}
+func (m *mockCCPaymentCategoryRepo) GetByID(id uuid.UUID) (*models.CashFlowCategory, error) {
+	panic("unexpected")
+}
+func (m *mockCCPaymentCategoryRepo) GetAll(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error) {
+	return m.categories, m.err
+}
+func (m *mockCCPaymentCategoryRepo) Update(id uuid.UUID, input *models.UpdateCategoryInput) (*models.CashFlowCategory, error) {
+	panic("unexpected")
+}
+func (m *mockCCPaymentCategoryRepo) Delete(id uuid.UUID) error { panic("unexpected") }
+func (m *mockCCPaymentCategoryRepo) IsInUse(id uuid.UUID) (bool, error) {
+	panic("unexpected")
+}
+func (m *mockCCPaymentCategoryRepo) Reorder(input *models.ReorderCategoryInput) error {
+	panic("unexpected")
+}
+func (m *mockCCPaymentCategoryRepo) GetMaxSortOrder(flowType models.CashFlowType) (int, error) {
+	panic("unexpected")
+}
+
 func (m *mockCreditCardQueryRepo) Create(input *models.CreateCreditCardInput) (*models.CreditCard, error) {
 	panic("unexpected call to Create")
 }
@@ -349,17 +377,17 @@ func TestAccountBalanceQueryAdapter_NoAccounts(t *testing.T) {
 }
 
 func TestCCPaymentAdapter_CustomAmount(t *testing.T) {
-	categoryID := uuid.New()
+	transferCatID := uuid.New()
 	bankAccountID := uuid.New()
 	creditCardID := uuid.New()
 	recordID := uuid.New()
 	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
-	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{})
+	catRepo := &mockCCPaymentCategoryRepo{categories: []*models.CashFlowCategory{{ID: transferCatID, Name: "移轉", Type: models.CashFlowTypeTransferOut}}}
+	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{}, catRepo)
 
 	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
 		CreditCardID:  creditCardID.String(),
 		BankAccountID: bankAccountID.String(),
-		CategoryID:    categoryID.String(),
 		Amount:        15000,
 		Date:          "2026-04-08",
 		PaymentType:   "custom",
@@ -370,7 +398,7 @@ func TestCCPaymentAdapter_CustomAmount(t *testing.T) {
 	require.Equal(t, 15000.0, actualAmount)
 	require.NotNil(t, svc.createInput)
 	require.Equal(t, models.CashFlowTypeTransferOut, svc.createInput.Type)
-	require.Equal(t, categoryID, svc.createInput.CategoryID)
+	require.Equal(t, transferCatID, svc.createInput.CategoryID)
 	require.Equal(t, 15000.0, svc.createInput.Amount)
 	require.Equal(t, time.Date(2026, 4, 8, 0, 0, 0, 0, time.UTC), svc.createInput.Date)
 	require.NotNil(t, svc.createInput.SourceType)
@@ -384,18 +412,18 @@ func TestCCPaymentAdapter_CustomAmount(t *testing.T) {
 }
 
 func TestCCPaymentAdapter_FullPayment(t *testing.T) {
-	categoryID := uuid.New()
 	bankAccountID := uuid.New()
 	creditCardID := uuid.New()
 	recordID := uuid.New()
+	transferCatID := uuid.New()
 	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
 	cardRepo := &mockCCPaymentCreditCardRepo{card: &models.CreditCard{ID: creditCardID, UsedCredit: 23500}}
-	adapter := NewCreditCardPaymentAdapter(svc, cardRepo)
+	catRepo := &mockCCPaymentCategoryRepo{categories: []*models.CashFlowCategory{{ID: transferCatID, Type: models.CashFlowTypeTransferOut}}}
+	adapter := NewCreditCardPaymentAdapter(svc, cardRepo, catRepo)
 
 	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
 		CreditCardID:  creditCardID.String(),
 		BankAccountID: bankAccountID.String(),
-		CategoryID:    categoryID.String(),
 		Amount:        0,
 		Date:          "2026-04-08",
 		PaymentType:   "full",
@@ -410,17 +438,17 @@ func TestCCPaymentAdapter_FullPayment(t *testing.T) {
 }
 
 func TestCCPaymentAdapter_MinimumPayment(t *testing.T) {
-	categoryID := uuid.New()
 	bankAccountID := uuid.New()
 	creditCardID := uuid.New()
 	recordID := uuid.New()
+	transferCatID := uuid.New()
 	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
-	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{})
+	catRepo := &mockCCPaymentCategoryRepo{categories: []*models.CashFlowCategory{{ID: transferCatID, Type: models.CashFlowTypeTransferOut}}}
+	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{}, catRepo)
 
 	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
 		CreditCardID:  creditCardID.String(),
 		BankAccountID: bankAccountID.String(),
-		CategoryID:    categoryID.String(),
 		Amount:        3000,
 		Date:          "2026-04-08",
 		PaymentType:   "minimum",
@@ -434,16 +462,16 @@ func TestCCPaymentAdapter_MinimumPayment(t *testing.T) {
 }
 
 func TestCCPaymentAdapter_Failure(t *testing.T) {
-	categoryID := uuid.New()
 	bankAccountID := uuid.New()
 	creditCardID := uuid.New()
+	transferCatID := uuid.New()
 	svc := &mockCCPaymentCashFlowService{err: errors.New("create failed")}
-	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{})
+	catRepo := &mockCCPaymentCategoryRepo{categories: []*models.CashFlowCategory{{ID: transferCatID, Type: models.CashFlowTypeTransferOut}}}
+	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{}, catRepo)
 
 	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
 		CreditCardID:  creditCardID.String(),
 		BankAccountID: bankAccountID.String(),
-		CategoryID:    categoryID.String(),
 		Amount:        15000,
 		Date:          "2026-04-08",
 		PaymentType:   "custom",
@@ -455,18 +483,18 @@ func TestCCPaymentAdapter_Failure(t *testing.T) {
 }
 
 func TestCCPaymentAdapter_FullPayment_ZeroUsedCredit(t *testing.T) {
-	categoryID := uuid.New()
 	bankAccountID := uuid.New()
 	creditCardID := uuid.New()
 	recordID := uuid.New()
+	transferCatID := uuid.New()
 	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
 	cardRepo := &mockCCPaymentCreditCardRepo{card: &models.CreditCard{ID: creditCardID, UsedCredit: 0}}
-	adapter := NewCreditCardPaymentAdapter(svc, cardRepo)
+	catRepo := &mockCCPaymentCategoryRepo{categories: []*models.CashFlowCategory{{ID: transferCatID, Type: models.CashFlowTypeTransferOut}}}
+	adapter := NewCreditCardPaymentAdapter(svc, cardRepo, catRepo)
 
 	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
 		CreditCardID:  creditCardID.String(),
 		BankAccountID: bankAccountID.String(),
-		CategoryID:    categoryID.String(),
 		Amount:        0,
 		Date:          "2026-04-08",
 		PaymentType:   "full",

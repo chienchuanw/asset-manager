@@ -20,7 +20,6 @@ type CashFlowServiceAdapter struct {
 type BotCCPaymentInput struct {
 	CreditCardID  string
 	BankAccountID string
-	CategoryID    string
 	Amount        float64
 	Date          string
 	PaymentType   string
@@ -33,6 +32,7 @@ type CreditCardPaymentCreator interface {
 type CreditCardPaymentAdapter struct {
 	svc      service.CashFlowService
 	cardRepo repository.CreditCardRepository
+	catRepo  repository.CategoryRepository
 }
 
 // NewCashFlowServiceAdapter wraps a CashFlowService for bot usage.
@@ -40,8 +40,8 @@ func NewCashFlowServiceAdapter(svc service.CashFlowService) *CashFlowServiceAdap
 	return &CashFlowServiceAdapter{svc: svc}
 }
 
-func NewCreditCardPaymentAdapter(svc service.CashFlowService, cardRepo repository.CreditCardRepository) *CreditCardPaymentAdapter {
-	return &CreditCardPaymentAdapter{svc: svc, cardRepo: cardRepo}
+func NewCreditCardPaymentAdapter(svc service.CashFlowService, cardRepo repository.CreditCardRepository, catRepo repository.CategoryRepository) *CreditCardPaymentAdapter {
+	return &CreditCardPaymentAdapter{svc: svc, cardRepo: cardRepo, catRepo: catRepo}
 }
 
 func (a *CashFlowServiceAdapter) CreateCashFlowFromBot(input *BotCashFlowInput) (string, error) {
@@ -86,10 +86,12 @@ func (a *CreditCardPaymentAdapter) CreatePaymentFromBot(input *BotCCPaymentInput
 		date = time.Now()
 	}
 
-	categoryID, err := uuid.Parse(input.CategoryID)
-	if err != nil {
-		return "", 0, err
+	transferOutType := models.CashFlowTypeTransferOut
+	categories, err := a.catRepo.GetAll(&transferOutType)
+	if err != nil || len(categories) == 0 {
+		return "", 0, fmt.Errorf("no transfer_out category found")
 	}
+	categoryID := categories[0].ID
 
 	creditCardID, err := uuid.Parse(input.CreditCardID)
 	if err != nil {
