@@ -276,7 +276,98 @@ func TestHandleMessage_MissingAmount_SendsHint(t *testing.T) {
 	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgUsageExamples))
 }
 
-func TestHandleMessage_ParseError_SendsSystemError(t *testing.T) {
+func TestHandleMessage_ChatAction_ZhTW(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{Action: "chat", IsBookkeeping: false}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangZhTW))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "你好",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangZhTW), MsgChatGreeting))
+}
+
+func TestHandleMessage_ChatAction_En(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{Action: "chat", IsBookkeeping: false}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "hello",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgChatGreeting))
+}
+
+func TestHandleMessage_UnsupportedAction_ZhTW(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{Action: "unsupported", IsBookkeeping: false}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangZhTW))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "do something unsupported",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangZhTW), MsgUnsupported))
+}
+
+func TestHandleMessage_UnsupportedAction_En(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{Action: "unsupported", IsBookkeeping: false}}
+	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "do something unsupported",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.Len(t, session.sentMessages, 1)
+	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgUnsupported))
+}
+
+func TestHandleMessage_CategoryLoadFail_SpecificError(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{}
+	loader := &mockCategoryLoader{err: errors.New("db down")}
+	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID:        "message-1",
+		ChannelID: "channel-1",
+		Content:   "lunch 150",
+		Author:    &discordgo.User{ID: "author-1"},
+	}}
+
+	h.handleMessage(session, msg)
+
+	require.False(t, parser.parseCalled)
+	require.Len(t, session.sentMessages, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgDataLoadFailed), session.sentMessages[0].Content)
+}
+
+func TestHandleMessage_ParseFail_SpecificError(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{err: errors.New("parser down")}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
@@ -291,7 +382,7 @@ func TestHandleMessage_ParseError_SendsSystemError(t *testing.T) {
 	h.handleMessage(session, msg)
 
 	require.Len(t, session.sentMessages, 1)
-	require.Equal(t, GetMessage(string(LangEn), MsgSystemError), session.sentMessages[0].Content)
+	require.Equal(t, GetMessage(string(LangEn), MsgParseFailed), session.sentMessages[0].Content)
 }
 
 func TestHandleInteraction_Confirm_CreatesRecord(t *testing.T) {
@@ -755,7 +846,19 @@ func TestHandleCashFlowQuery_ServiceError_GivenServiceFailure_WhenHandleMessage_
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "cash flow", Author: &discordgo.User{ID: "author-1"}}})
 
 	require.Len(t, session.sentMessages, 1)
-	require.Equal(t, GetMessage(string(LangEn), MsgSystemError), session.sentMessages[0].Content)
+	require.Equal(t, GetMessage(string(LangEn), MsgQueryFailed), session.sentMessages[0].Content)
+}
+
+func TestHandleCashFlowQuery_Fail_SpecificError(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	cfQuerier := &mockCashFlowQuerier{err: errors.New("boom")}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "本月摘要", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryFailed), session.sentMessages[0].Content)
 }
 
 func TestHandleAccountBalanceQuery_BankAndCC_GivenBalances_WhenHandleMessage_ThenSendSections(t *testing.T) {
@@ -812,6 +915,18 @@ func TestHandleAccountBalanceQuery_PartialFailure_GivenBankOKAndCCError_WhenHand
 	embed := session.sentMessages[0].Embeds[0]
 	require.Contains(t, embed.Fields[0].Value, "中信銀行 *1234")
 	require.Equal(t, GetMessage(string(LangZhTW), MsgQueryLoadFailed), embed.Fields[1].Value)
+}
+
+func TestHandleAccountBalanceQuery_Fail_SpecificError(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
+	acctQuerier := &mockAccountBalanceQuerier{err: errors.New("boom")}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithAccountBalanceQuerier(acctQuerier))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "balances", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgQueryFailed), session.sentMessages[0].Content)
 }
 
 func TestHandleInteraction_SelectMenu_CashGoesToPreview(t *testing.T) {

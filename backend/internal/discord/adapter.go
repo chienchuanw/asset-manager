@@ -17,9 +17,31 @@ type CashFlowServiceAdapter struct {
 	svc service.CashFlowService
 }
 
+type BotCCPaymentInput struct {
+	CreditCardID  string
+	BankAccountID string
+	CategoryID    string
+	Amount        float64
+	Date          string
+	PaymentType   string
+}
+
+type CreditCardPaymentCreator interface {
+	CreatePaymentFromBot(input *BotCCPaymentInput) (string, float64, error)
+}
+
+type CreditCardPaymentAdapter struct {
+	svc      service.CashFlowService
+	cardRepo repository.CreditCardRepository
+}
+
 // NewCashFlowServiceAdapter wraps a CashFlowService for bot usage.
 func NewCashFlowServiceAdapter(svc service.CashFlowService) *CashFlowServiceAdapter {
 	return &CashFlowServiceAdapter{svc: svc}
+}
+
+func NewCreditCardPaymentAdapter(svc service.CashFlowService, cardRepo repository.CreditCardRepository) *CreditCardPaymentAdapter {
+	return &CreditCardPaymentAdapter{svc: svc, cardRepo: cardRepo}
 }
 
 func (a *CashFlowServiceAdapter) CreateCashFlowFromBot(input *BotCashFlowInput) (string, error) {
@@ -56,6 +78,58 @@ func (a *CashFlowServiceAdapter) CreateCashFlowFromBot(input *BotCashFlowInput) 
 	}
 
 	return record.ID.String(), nil
+}
+
+func (a *CreditCardPaymentAdapter) CreatePaymentFromBot(input *BotCCPaymentInput) (string, float64, error) {
+	date, err := time.Parse("2006-01-02", input.Date)
+	if err != nil {
+		date = time.Now()
+	}
+
+	categoryID, err := uuid.Parse(input.CategoryID)
+	if err != nil {
+		return "", 0, err
+	}
+
+	creditCardID, err := uuid.Parse(input.CreditCardID)
+	if err != nil {
+		return "", 0, err
+	}
+
+	bankAccountID, err := uuid.Parse(input.BankAccountID)
+	if err != nil {
+		return "", 0, err
+	}
+
+	amount := input.Amount
+	if input.PaymentType == "full" {
+		card, err := a.cardRepo.GetByID(creditCardID)
+		if err != nil {
+			return "", 0, err
+		}
+		amount = card.UsedCredit
+	}
+
+	sourceType := models.SourceTypeBankAccount
+	targetType := models.SourceTypeCreditCard
+	createInput := &models.CreateCashFlowInput{
+		Date:        date,
+		Type:        models.CashFlowTypeTransferOut,
+		CategoryID:  categoryID,
+		Amount:      amount,
+		Description: "Credit card payment",
+		SourceType:  &sourceType,
+		SourceID:    &bankAccountID,
+		TargetType:  &targetType,
+		TargetID:    &creditCardID,
+	}
+
+	record, err := a.svc.CreateCashFlow(createInput)
+	if err != nil {
+		return "", amount, err
+	}
+
+	return record.ID.String(), amount, nil
 }
 
 // CategoryRepoAdapter bridges repository.CategoryRepository to CategoryLoader.

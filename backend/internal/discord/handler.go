@@ -227,17 +227,25 @@ func (h *Handler) handleMessage(s discordSession, m *discordgo.MessageCreate) {
 	categories, err := h.loadCategories()
 	if err != nil {
 		log.Printf("discord: failed to load categories: %v", err)
-		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgSystemError))
+		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgDataLoadFailed))
 		return
 	}
 
 	result, err := h.parser.Parse(context.Background(), m.Content, categories)
 	if err != nil {
 		log.Printf("discord: failed to parse message %q: %v", m.Content, err)
-		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgSystemError))
+		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgParseFailed))
 		return
 	}
 	if result == nil || (!result.IsBookkeeping && result.Action == "") {
+		return
+	}
+	if result.Action == "chat" {
+		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgChatGreeting))
+		return
+	}
+	if result.Action == "unsupported" {
+		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgUnsupported))
 		return
 	}
 	if result.Action == "query" {
@@ -460,7 +468,7 @@ func (h *Handler) handleQuery(s discordSession, channelID string, result *ParseR
 
 func (h *Handler) handleCashFlowQuery(s discordSession, channelID string, result *ParseResult) {
 	if h.cfQuerier == nil || result == nil || result.QueryParams == nil {
-		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		h.sendText(s, channelID, GetMessage(h.lang, MsgQueryFailed))
 		return
 	}
 
@@ -470,7 +478,7 @@ func (h *Handler) handleCashFlowQuery(s discordSession, channelID string, result
 		if err != nil {
 			log.Printf("discord: failed to query cash flow summary: %v", err)
 		}
-		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		h.sendText(s, channelID, GetMessage(h.lang, MsgQueryFailed))
 		return
 	}
 
@@ -500,7 +508,7 @@ func (h *Handler) handleCashFlowQuery(s discordSession, channelID string, result
 
 func (h *Handler) handleAccountBalanceQuery(s discordSession, channelID string, _ *ParseResult) {
 	if h.acctQuerier == nil {
-		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		h.sendText(s, channelID, GetMessage(h.lang, MsgQueryFailed))
 		return
 	}
 
@@ -509,7 +517,7 @@ func (h *Handler) handleAccountBalanceQuery(s discordSession, channelID string, 
 		if err != nil {
 			log.Printf("discord: failed to query account balances: %v", err)
 		}
-		h.sendText(s, channelID, GetMessage(h.lang, MsgSystemError))
+		h.sendText(s, channelID, GetMessage(h.lang, MsgQueryFailed))
 		return
 	}
 

@@ -86,6 +86,92 @@ type mockCreditCardQueryRepo struct {
 	err   error
 }
 
+type mockCCPaymentCashFlowService struct {
+	createResult *models.CashFlow
+	err          error
+	createInput  *models.CreateCashFlowInput
+}
+
+func (m *mockCCPaymentCashFlowService) CreateCashFlow(input *models.CreateCashFlowInput) (*models.CashFlow, error) {
+	m.createInput = input
+	return m.createResult, m.err
+}
+
+func (m *mockCCPaymentCashFlowService) GetCashFlow(id uuid.UUID) (*models.CashFlow, error) {
+	panic("unexpected call to GetCashFlow")
+}
+
+func (m *mockCCPaymentCashFlowService) ListCashFlows(filters repository.CashFlowFilters) ([]*models.CashFlow, error) {
+	panic("unexpected call to ListCashFlows")
+}
+
+func (m *mockCCPaymentCashFlowService) UpdateCashFlow(id uuid.UUID, input *models.UpdateCashFlowInput) (*models.CashFlow, error) {
+	panic("unexpected call to UpdateCashFlow")
+}
+
+func (m *mockCCPaymentCashFlowService) DeleteCashFlow(id uuid.UUID) error {
+	panic("unexpected call to DeleteCashFlow")
+}
+
+func (m *mockCCPaymentCashFlowService) GetSummary(startDate, endDate time.Time) (*repository.CashFlowSummary, error) {
+	panic("unexpected call to GetSummary")
+}
+
+func (m *mockCCPaymentCashFlowService) GetMonthlySummaryWithComparison(year, month int) (*models.MonthlyCashFlowSummary, error) {
+	panic("unexpected call to GetMonthlySummaryWithComparison")
+}
+
+func (m *mockCCPaymentCashFlowService) GetYearlySummaryWithComparison(year int) (*models.YearlyCashFlowSummary, error) {
+	panic("unexpected call to GetYearlySummaryWithComparison")
+}
+
+type mockCCPaymentCreditCardRepo struct {
+	card     *models.CreditCard
+	err      error
+	calledID uuid.UUID
+}
+
+func (m *mockCCPaymentCreditCardRepo) Create(input *models.CreateCreditCardInput) (*models.CreditCard, error) {
+	panic("unexpected call to Create")
+}
+
+func (m *mockCCPaymentCreditCardRepo) GetByID(id uuid.UUID) (*models.CreditCard, error) {
+	m.calledID = id
+	return m.card, m.err
+}
+
+func (m *mockCCPaymentCreditCardRepo) GetAll() ([]*models.CreditCard, error) {
+	panic("unexpected call to GetAll")
+}
+
+func (m *mockCCPaymentCreditCardRepo) GetByBillingDay(day int) ([]*models.CreditCard, error) {
+	panic("unexpected call to GetByBillingDay")
+}
+
+func (m *mockCCPaymentCreditCardRepo) GetByPaymentDueDay(day int) ([]*models.CreditCard, error) {
+	panic("unexpected call to GetByPaymentDueDay")
+}
+
+func (m *mockCCPaymentCreditCardRepo) GetUpcomingBilling(daysAhead int) ([]*models.CreditCard, error) {
+	panic("unexpected call to GetUpcomingBilling")
+}
+
+func (m *mockCCPaymentCreditCardRepo) GetUpcomingPayment(daysAhead int) ([]*models.CreditCard, error) {
+	panic("unexpected call to GetUpcomingPayment")
+}
+
+func (m *mockCCPaymentCreditCardRepo) Update(id uuid.UUID, input *models.UpdateCreditCardInput) (*models.CreditCard, error) {
+	panic("unexpected call to Update")
+}
+
+func (m *mockCCPaymentCreditCardRepo) UpdateUsedCredit(id uuid.UUID, amount float64) (*models.CreditCard, error) {
+	panic("unexpected call to UpdateUsedCredit")
+}
+
+func (m *mockCCPaymentCreditCardRepo) Delete(id uuid.UUID) error {
+	panic("unexpected call to Delete")
+}
+
 func (m *mockCreditCardQueryRepo) Create(input *models.CreateCreditCardInput) (*models.CreditCard, error) {
 	panic("unexpected call to Create")
 }
@@ -260,4 +346,135 @@ func TestAccountBalanceQueryAdapter_NoAccounts(t *testing.T) {
 	require.NotNil(t, result.CreditCards)
 	require.Empty(t, result.BankAccounts)
 	require.Empty(t, result.CreditCards)
+}
+
+func TestCCPaymentAdapter_CustomAmount(t *testing.T) {
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	recordID := uuid.New()
+	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
+	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{})
+
+	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
+		CreditCardID:  creditCardID.String(),
+		BankAccountID: bankAccountID.String(),
+		CategoryID:    categoryID.String(),
+		Amount:        15000,
+		Date:          "2026-04-08",
+		PaymentType:   "custom",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, recordID.String(), id)
+	require.Equal(t, 15000.0, actualAmount)
+	require.NotNil(t, svc.createInput)
+	require.Equal(t, models.CashFlowTypeTransferOut, svc.createInput.Type)
+	require.Equal(t, categoryID, svc.createInput.CategoryID)
+	require.Equal(t, 15000.0, svc.createInput.Amount)
+	require.Equal(t, time.Date(2026, 4, 8, 0, 0, 0, 0, time.UTC), svc.createInput.Date)
+	require.NotNil(t, svc.createInput.SourceType)
+	require.Equal(t, models.SourceTypeBankAccount, *svc.createInput.SourceType)
+	require.NotNil(t, svc.createInput.SourceID)
+	require.Equal(t, bankAccountID, *svc.createInput.SourceID)
+	require.NotNil(t, svc.createInput.TargetType)
+	require.Equal(t, models.SourceTypeCreditCard, *svc.createInput.TargetType)
+	require.NotNil(t, svc.createInput.TargetID)
+	require.Equal(t, creditCardID, *svc.createInput.TargetID)
+}
+
+func TestCCPaymentAdapter_FullPayment(t *testing.T) {
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	recordID := uuid.New()
+	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
+	cardRepo := &mockCCPaymentCreditCardRepo{card: &models.CreditCard{ID: creditCardID, UsedCredit: 23500}}
+	adapter := NewCreditCardPaymentAdapter(svc, cardRepo)
+
+	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
+		CreditCardID:  creditCardID.String(),
+		BankAccountID: bankAccountID.String(),
+		CategoryID:    categoryID.String(),
+		Amount:        0,
+		Date:          "2026-04-08",
+		PaymentType:   "full",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, recordID.String(), id)
+	require.Equal(t, 23500.0, actualAmount)
+	require.Equal(t, creditCardID, cardRepo.calledID)
+	require.NotNil(t, svc.createInput)
+	require.Equal(t, 23500.0, svc.createInput.Amount)
+}
+
+func TestCCPaymentAdapter_MinimumPayment(t *testing.T) {
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	recordID := uuid.New()
+	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
+	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{})
+
+	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
+		CreditCardID:  creditCardID.String(),
+		BankAccountID: bankAccountID.String(),
+		CategoryID:    categoryID.String(),
+		Amount:        3000,
+		Date:          "2026-04-08",
+		PaymentType:   "minimum",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, recordID.String(), id)
+	require.Equal(t, 3000.0, actualAmount)
+	require.NotNil(t, svc.createInput)
+	require.Equal(t, 3000.0, svc.createInput.Amount)
+}
+
+func TestCCPaymentAdapter_Failure(t *testing.T) {
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	svc := &mockCCPaymentCashFlowService{err: errors.New("create failed")}
+	adapter := NewCreditCardPaymentAdapter(svc, &mockCCPaymentCreditCardRepo{})
+
+	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
+		CreditCardID:  creditCardID.String(),
+		BankAccountID: bankAccountID.String(),
+		CategoryID:    categoryID.String(),
+		Amount:        15000,
+		Date:          "2026-04-08",
+		PaymentType:   "custom",
+	})
+
+	require.ErrorContains(t, err, "create failed")
+	require.Empty(t, id)
+	require.Equal(t, 15000.0, actualAmount)
+}
+
+func TestCCPaymentAdapter_FullPayment_ZeroUsedCredit(t *testing.T) {
+	categoryID := uuid.New()
+	bankAccountID := uuid.New()
+	creditCardID := uuid.New()
+	recordID := uuid.New()
+	svc := &mockCCPaymentCashFlowService{createResult: &models.CashFlow{ID: recordID}}
+	cardRepo := &mockCCPaymentCreditCardRepo{card: &models.CreditCard{ID: creditCardID, UsedCredit: 0}}
+	adapter := NewCreditCardPaymentAdapter(svc, cardRepo)
+
+	id, actualAmount, err := adapter.CreatePaymentFromBot(&BotCCPaymentInput{
+		CreditCardID:  creditCardID.String(),
+		BankAccountID: bankAccountID.String(),
+		CategoryID:    categoryID.String(),
+		Amount:        0,
+		Date:          "2026-04-08",
+		PaymentType:   "full",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, recordID.String(), id)
+	require.Equal(t, 0.0, actualAmount)
+	require.NotNil(t, svc.createInput)
+	require.Equal(t, 0.0, svc.createInput.Amount)
 }
