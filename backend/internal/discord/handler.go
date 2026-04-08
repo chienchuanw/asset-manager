@@ -121,19 +121,27 @@ type pendingEntry struct {
 	authorID          string
 	awaitingAccount   bool
 	awaitingAccountID bool
+	ccPayment         bool
+	ccCardID          string
+	ccCardName        string
+	ccBankID          string
+	ccBankName        string
+	ccAmount          float64
+	ccPaymentType     string
 }
 
 // Handler processes Discord messages and button interactions for bookkeeping.
 type Handler struct {
-	parser      Parser
-	creator     CashFlowCreator
-	catRepo     CategoryLoader
-	acctLoader  AccountLoader
-	cfQuerier   CashFlowQuerier
-	acctQuerier AccountBalanceQuerier
-	lang        string
-	mu          sync.Mutex
-	pending     map[string]pendingEntry
+	parser           Parser
+	creator          CashFlowCreator
+	ccPaymentCreator CreditCardPaymentCreator
+	catRepo          CategoryLoader
+	acctLoader       AccountLoader
+	cfQuerier        CashFlowQuerier
+	acctQuerier      AccountBalanceQuerier
+	lang             string
+	mu               sync.Mutex
+	pending          map[string]pendingEntry
 }
 
 type discordSession interface {
@@ -200,6 +208,10 @@ func WithAccountBalanceQuerier(q AccountBalanceQuerier) HandlerOption {
 	return func(h *Handler) { h.acctQuerier = q }
 }
 
+func WithCCPaymentCreator(c CreditCardPaymentCreator) HandlerOption {
+	return func(h *Handler) { h.ccPaymentCreator = c }
+}
+
 func (h *Handler) HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if s == nil {
 		return
@@ -252,6 +264,10 @@ func (h *Handler) handleMessage(s discordSession, m *discordgo.MessageCreate) {
 		h.handleQuery(s, m.ChannelID, result)
 		return
 	}
+	if result.Action == "cc_payment" {
+		h.handleCCPayment(s, m.ChannelID, result, m.Author.ID)
+		return
+	}
 	if hasMissingField(result.MissingFields, "amount") {
 		h.sendText(s, m.ChannelID, GetMessage(h.lang, MsgMissingAmount)+"\n"+GetMessage(h.lang, MsgUsageExamples))
 		return
@@ -296,6 +312,10 @@ func (h *Handler) handleInteraction(s discordSession, i *discordgo.InteractionCr
 		h.handleAccountSelection(s, i, payload, data.Values)
 	case "select_account_id":
 		h.handleAccountIDSelection(s, i, payload, data.Values)
+	case "select_cc":
+		h.handleCCCardSelection(s, i, payload, data.Values)
+	case "select_cc_bank":
+		h.handleCCBankSelection(s, i, payload, data.Values)
 	case "confirm":
 		result, ok := h.popPending(payload)
 		if !ok {
@@ -319,9 +339,80 @@ func (h *Handler) handleInteraction(s discordSession, i *discordgo.InteractionCr
 		}
 
 		h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgConfirmSuccess), "")
+	case "confirm_cc_payment":
+		entry, ok := h.popPendingEntry(payload)
+		if !ok {
+			h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgExpired), "")
+			return
+		}
+		if h.ccPaymentCreator == nil {
+			h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgCCPaymentFailed), GetMessage(h.lang, MsgSystemError))
+			return
+		}
+
+		_, _, err := h.ccPaymentCreator.CreatePaymentFromBot(&BotCCPaymentInput{
+			CreditCardID:  entry.ccCardID,
+			BankAccountID: entry.ccBankID,
+			Amount:        entry.ccAmount,
+			Date:          entry.result.Date,
+			PaymentType:   entry.ccPaymentType,
+			CategoryID:    entry.result.CategoryID,
+		})
+		if err != nil {
+			log.Printf("discord: failed to create cc payment: %v", err)
+			h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgCCPaymentFailed), err.Error())
+			return
+		}
+
+		h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgCCPaymentSuccess), "")
 	case "cancel":
 		h.respondWithUpdatedEmbed(s, i, GetMessage(h.lang, MsgCancelled), "")
 	}
+}
+
+func (h *Handler) handleCCPayment(s discordSession, channelID string, result *ParseResult, authorID string) {
+	if result.PaymentType != "full" && hasMissingField(result.MissingFields, "amount") {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgCCPaymentMissingAmount)+"\n"+GetMessage(h.lang, MsgCCPaymentUsageExamples))
+		return
+	}
+
+	if h.acctLoader == nil {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgCCPaymentNoCards))
+		return
+	}
+
+	cards, err := h.acctLoader.LoadAccounts("credit_card")
+	if err != nil || len(cards) == 0 {
+		h.sendText(s, channelID, GetMessage(h.lang, MsgCCPaymentNoCards))
+		return
+	}
+
+	key := randomHexKey()
+	h.mu.Lock()
+	h.pending[key] = pendingEntry{
+		result:        result,
+		authorID:      authorID,
+		ccPayment:     true,
+		ccAmount:      result.Amount,
+		ccPaymentType: result.PaymentType,
+	}
+	h.mu.Unlock()
+
+	options := make([]discordgo.SelectMenuOption, 0, len(cards))
+	for _, card := range cards {
+		options = append(options, discordgo.SelectMenuOption{Label: card.Name, Value: card.ID})
+	}
+
+	customID := "select_cc:" + key + ":" + authorID
+	msg := &discordgo.MessageSend{
+		Content: GetMessage(h.lang, MsgCCPaymentSelectCard),
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+				&discordgo.SelectMenu{CustomID: customID, Placeholder: GetMessage(h.lang, MsgCCPaymentSelectCard), Options: options},
+			}},
+		},
+	}
+	_, _ = s.ChannelMessageSendComplex(channelID, msg)
 }
 
 func (h *Handler) handleAccountSelection(s discordSession, i *discordgo.InteractionCreate, pendingKey string, values []string) {
@@ -372,6 +463,91 @@ func (h *Handler) handleAccountIDSelection(s discordSession, i *discordgo.Intera
 	h.mu.Unlock()
 
 	h.respondWithPreview(s, i, entry.result, entry.authorID)
+}
+
+func (h *Handler) handleCCCardSelection(s discordSession, i *discordgo.InteractionCreate, pendingKey string, values []string) {
+	if len(values) == 0 {
+		return
+	}
+
+	h.mu.Lock()
+	entry, ok := h.pending[pendingKey]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	entry.ccCardID = values[0]
+	entry.ccCardName = h.lookupAccountName("credit_card", values[0])
+	h.pending[pendingKey] = entry
+	h.mu.Unlock()
+
+	var accounts []AccountInfo
+	if h.acctLoader != nil {
+		accounts, _ = h.acctLoader.LoadAccounts("bank_account")
+	}
+	if len(accounts) == 0 {
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseUpdateMessage,
+			Data: &discordgo.InteractionResponseData{
+				Content:    GetMessage(h.lang, MsgCCPaymentNoBankAccounts),
+				Components: []discordgo.MessageComponent{},
+			},
+		})
+		return
+	}
+
+	options := make([]discordgo.SelectMenuOption, 0, len(accounts))
+	for _, acct := range accounts {
+		options = append(options, discordgo.SelectMenuOption{Label: acct.Name, Value: acct.ID})
+	}
+	customID := "select_cc_bank:" + pendingKey + ":" + entry.authorID
+	_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Content: GetMessage(h.lang, MsgCCPaymentSelectBank),
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+					&discordgo.SelectMenu{CustomID: customID, Placeholder: GetMessage(h.lang, MsgCCPaymentSelectBank), Options: options},
+				}},
+			},
+		},
+	})
+}
+
+func (h *Handler) handleCCBankSelection(s discordSession, i *discordgo.InteractionCreate, pendingKey string, values []string) {
+	if len(values) == 0 {
+		return
+	}
+
+	h.mu.Lock()
+	entry, ok := h.pending[pendingKey]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	entry.ccBankID = values[0]
+	entry.ccBankName = h.lookupAccountName("bank_account", values[0])
+	delete(h.pending, pendingKey)
+	h.mu.Unlock()
+
+	confirmKey := randomHexKey()
+	h.mu.Lock()
+	h.pending[confirmKey] = entry
+	h.mu.Unlock()
+
+	confirmID := "confirm_cc_payment:" + confirmKey + ":" + entry.authorID
+	_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{h.buildCCPaymentPreviewEmbed(&entry)},
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+					&discordgo.Button{Label: GetMessage(h.lang, MsgCCPaymentConfirmButton), Style: discordgo.SuccessButton, CustomID: confirmID},
+					&discordgo.Button{Label: GetMessage(h.lang, MsgCancelButton), Style: discordgo.DangerButton, CustomID: "cancel:" + entry.authorID},
+				}},
+			},
+		},
+	})
 }
 
 func (h *Handler) respondWithPreview(s discordSession, i *discordgo.InteractionCreate, result *ParseResult, authorID string) {
@@ -766,6 +942,28 @@ func (h *Handler) buildPreviewEmbed(result *ParseResult) *discordgo.MessageEmbed
 	}
 }
 
+func (h *Handler) buildCCPaymentPreviewEmbed(entry *pendingEntry) *discordgo.MessageEmbed {
+	typeLabel := GetMessage(h.lang, MsgCCPaymentTypeCustom)
+	switch entry.ccPaymentType {
+	case "full":
+		typeLabel = GetMessage(h.lang, MsgCCPaymentTypeFull)
+	case "minimum":
+		typeLabel = GetMessage(h.lang, MsgCCPaymentTypeMinimum)
+	}
+
+	return &discordgo.MessageEmbed{
+		Title: GetMessage(h.lang, MsgCCPaymentPreview),
+		Color: 0x3498DB,
+		Fields: []*discordgo.MessageEmbedField{
+			{Name: GetMessage(h.lang, MsgFieldAmount), Value: "$" + formatAmount(entry.ccAmount), Inline: true},
+			{Name: GetMessage(h.lang, MsgCCPaymentFieldCard), Value: fallbackText(entry.ccCardName), Inline: true},
+			{Name: GetMessage(h.lang, MsgCCPaymentFieldBank), Value: fallbackText(entry.ccBankName), Inline: true},
+			{Name: GetMessage(h.lang, MsgCCPaymentFieldType), Value: typeLabel, Inline: true},
+		},
+		Footer: &discordgo.MessageEmbedFooter{Text: fallbackText(entry.result.Date)},
+	}
+}
+
 func (h *Handler) lookupAccountName(sourceType, accountID string) string {
 	if h.acctLoader == nil {
 		return ""
@@ -786,7 +984,7 @@ func (h *Handler) respondWithUpdatedEmbed(s discordSession, i *discordgo.Interac
 	embed := cloneFirstEmbed(i.Message)
 	embed.Title = title
 	embed.Description = description
-	if title == GetMessage(h.lang, MsgConfirmSuccess) {
+	if title == GetMessage(h.lang, MsgConfirmSuccess) || title == GetMessage(h.lang, MsgCCPaymentSuccess) {
 		embed.Color = 0x00CC00
 	}
 	_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -811,9 +1009,15 @@ func parseCustomID(customID string) (action string, payload string, authorID str
 	switch {
 	case len(parts) == 3 && parts[0] == "confirm":
 		return parts[0], parts[1], parts[2], true
+	case len(parts) == 3 && parts[0] == "confirm_cc_payment":
+		return parts[0], parts[1], parts[2], true
 	case len(parts) == 3 && parts[0] == "select_account":
 		return parts[0], parts[1], parts[2], true
 	case len(parts) == 3 && parts[0] == "select_account_id":
+		return parts[0], parts[1], parts[2], true
+	case len(parts) == 3 && parts[0] == "select_cc":
+		return parts[0], parts[1], parts[2], true
+	case len(parts) == 3 && parts[0] == "select_cc_bank":
 		return parts[0], parts[1], parts[2], true
 	case len(parts) == 2 && parts[0] == "cancel":
 		return parts[0], "", parts[1], true
@@ -822,10 +1026,14 @@ func parseCustomID(customID string) (action string, payload string, authorID str
 	}
 }
 
-func (h *Handler) storePending(result *ParseResult, authorID string) string {
+func randomHexKey() string {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
-	key := hex.EncodeToString(b)
+	return hex.EncodeToString(b)
+}
+
+func (h *Handler) storePending(result *ParseResult, authorID string) string {
+	key := randomHexKey()
 
 	h.mu.Lock()
 	h.pending[key] = pendingEntry{result: result, authorID: authorID}
@@ -844,6 +1052,18 @@ func (h *Handler) popPending(key string) (*ParseResult, bool) {
 	}
 	delete(h.pending, key)
 	return entry.result, true
+}
+
+func (h *Handler) popPendingEntry(key string) (pendingEntry, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	entry, ok := h.pending[key]
+	if !ok {
+		return pendingEntry{}, false
+	}
+	delete(h.pending, key)
+	return entry, true
 }
 
 func interactionUserID(i *discordgo.InteractionCreate) string {

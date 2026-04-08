@@ -107,6 +107,28 @@ func (m *mockCashFlowCreator) CreateCashFlowFromBot(input *BotCashFlowInput) (st
 	return m.resultID, m.err
 }
 
+type mockCCPaymentCreator struct {
+	mu            sync.Mutex
+	resultID      string
+	resultAmount  float64
+	err           error
+	createdInputs []*BotCCPaymentInput
+}
+
+func (m *mockCCPaymentCreator) CreatePaymentFromBot(input *BotCCPaymentInput) (string, float64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.createdInputs = append(m.createdInputs, input)
+	if m.err != nil {
+		return "", 0, m.err
+	}
+	amount := input.Amount
+	if m.resultAmount > 0 {
+		amount = m.resultAmount
+	}
+	return m.resultID, amount, nil
+}
+
 type mockCategoryLoader struct {
 	mu         sync.Mutex
 	categories []CategoryInfo
@@ -122,11 +144,21 @@ func (m *mockCategoryLoader) LoadCategories() ([]CategoryInfo, error) {
 }
 
 type mockAccountLoader struct {
-	accounts []AccountInfo
-	err      error
+	accounts       []AccountInfo
+	accountsByType map[string][]AccountInfo
+	err            error
+	errByType      map[string]error
 }
 
 func (m *mockAccountLoader) LoadAccounts(sourceType string) ([]AccountInfo, error) {
+	if m.errByType != nil {
+		if err, ok := m.errByType[sourceType]; ok {
+			return nil, err
+		}
+	}
+	if m.accountsByType != nil {
+		return m.accountsByType[sourceType], nil
+	}
 	return m.accounts, m.err
 }
 
@@ -274,6 +306,67 @@ func TestHandleMessage_MissingAmount_SendsHint(t *testing.T) {
 	require.Len(t, session.sentMessages, 1)
 	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgMissingAmount))
 	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgUsageExamples))
+}
+
+func TestHandleMessage_CCPayment_MissingAmount(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "cc_payment",
+		PaymentType:   "custom",
+		Amount:        0,
+		MissingFields: []string{"amount"},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "pay card", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgCCPaymentMissingAmount))
+	require.Contains(t, session.sentMessages[0].Content, GetMessage(string(LangEn), MsgCCPaymentUsageExamples))
+}
+
+func TestHandleMessage_CCPayment_ShowsCreditCardMenu(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{
+		IsBookkeeping: true,
+		Action:        "cc_payment",
+		Amount:        15000,
+		Date:          "2026-04-05",
+		PaymentType:   "custom",
+		CategoryID:    "expense-transfer",
+	}}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"credit_card": {{ID: "cc-1", Name: "Citi Visa *1234", Type: "credit_card"}, {ID: "cc-2", Name: "Chase *5678", Type: "credit_card"}},
+	}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "pay card 15000", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	sent := session.sentMessages[0]
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentSelectCard), sent.Content)
+	require.Len(t, sent.Components, 1)
+	row := sent.Components[0].(discordgo.ActionsRow)
+	menu := row.Components[0].(*discordgo.SelectMenu)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentSelectCard), menu.Placeholder)
+	require.Len(t, menu.Options, 2)
+	require.Equal(t, "cc-1", menu.Options[0].Value)
+	require.Equal(t, "Citi Visa *1234", menu.Options[0].Label)
+	require.Contains(t, menu.CustomID, "select_cc:")
+	require.Contains(t, menu.CustomID, ":author-1")
+}
+
+func TestHandleMessage_CCPayment_NoCreditCards(t *testing.T) {
+	session := &mockSession{}
+	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "cc_payment", Amount: 15000, PaymentType: "custom"}}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{"credit_card": {}}}
+	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+
+	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "pay card 15000", Author: &discordgo.User{ID: "author-1"}}})
+
+	require.Len(t, session.sentMessages, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentNoCards), session.sentMessages[0].Content)
 }
 
 func TestHandleMessage_ChatAction_ZhTW(t *testing.T) {
@@ -1051,6 +1144,202 @@ func TestHandleInteraction_Confirm_PassesSourceType(t *testing.T) {
 
 	require.Len(t, creator.createdInputs, 1)
 	require.Equal(t, "credit_card", creator.createdInputs[0].SourceType)
+}
+
+func TestHandleInteraction_CCSelectCard_ShowsBankMenu(t *testing.T) {
+	session := &mockSession{}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"credit_card":  {{ID: "cc-1", Name: "Citi Visa *1234", Type: "credit_card"}},
+		"bank_account": {{ID: "bank-1", Name: "Chase Bank *8888", Type: "bank_account"}},
+	}}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["cc-key"] = pendingEntry{result: &ParseResult{Action: "cc_payment", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, authorID: "author-1", ccPayment: true, ccAmount: 15000, ccPaymentType: "custom"}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data:    discordgo.MessageComponentInteractionData{CustomID: "select_cc:cc-key:author-1", ComponentType: discordgo.SelectMenuComponent, Values: []string{"cc-1"}},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseUpdateMessage, resp.Type)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentSelectBank), resp.Data.Content)
+	row := resp.Data.Components[0].(discordgo.ActionsRow)
+	menu := row.Components[0].(*discordgo.SelectMenu)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentSelectBank), menu.Placeholder)
+	require.Len(t, menu.Options, 1)
+	require.Equal(t, "bank-1", menu.Options[0].Value)
+	require.Equal(t, "Chase Bank *8888", menu.Options[0].Label)
+	require.Equal(t, "select_cc_bank:cc-key:author-1", menu.CustomID)
+}
+
+func TestHandleInteraction_CCSelectCard_NoBankAccounts(t *testing.T) {
+	session := &mockSession{}
+	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"credit_card":  {{ID: "cc-1", Name: "Citi Visa *1234", Type: "credit_card"}},
+		"bank_account": {},
+	}}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["cc-key"] = pendingEntry{result: &ParseResult{Action: "cc_payment", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, authorID: "author-1", ccPayment: true, ccAmount: 15000, ccPaymentType: "custom"}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data:    discordgo.MessageComponentInteractionData{CustomID: "select_cc:cc-key:author-1", ComponentType: discordgo.SelectMenuComponent, Values: []string{"cc-1"}},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentNoBankAccounts), resp.Data.Content)
+	require.Empty(t, resp.Data.Components)
+}
+
+func TestHandleInteraction_CCSelectBank_ShowsPreview(t *testing.T) {
+	session := &mockSession{}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+		"bank_account": {{ID: "bank-1", Name: "Chase Bank *8888", Type: "bank_account"}},
+	}}, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["cc-key"] = pendingEntry{
+		result:        &ParseResult{Action: "cc_payment", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"},
+		authorID:      "author-1",
+		ccPayment:     true,
+		ccCardID:      "cc-1",
+		ccCardName:    "Citi Visa *1234",
+		ccAmount:      15000,
+		ccPaymentType: "custom",
+	}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1"},
+		Data:    discordgo.MessageComponentInteractionData{CustomID: "select_cc_bank:cc-key:author-1", ComponentType: discordgo.SelectMenuComponent, Values: []string{"bank-1"}},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	resp := session.interactionResponses[0]
+	require.Equal(t, discordgo.InteractionResponseUpdateMessage, resp.Type)
+	require.Len(t, resp.Data.Embeds, 1)
+	embed := resp.Data.Embeds[0]
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentPreview), embed.Title)
+	require.Equal(t, 0x3498DB, embed.Color)
+	require.Len(t, embed.Fields, 4)
+	require.Equal(t, GetMessage(string(LangEn), MsgFieldAmount), embed.Fields[0].Name)
+	require.Equal(t, "$15,000", embed.Fields[0].Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentFieldCard), embed.Fields[1].Name)
+	require.Equal(t, "Citi Visa *1234", embed.Fields[1].Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentFieldBank), embed.Fields[2].Name)
+	require.Equal(t, "Chase Bank *8888", embed.Fields[2].Value)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentTypeCustom), embed.Fields[3].Value)
+	require.Len(t, resp.Data.Components, 1)
+	row := resp.Data.Components[0].(discordgo.ActionsRow)
+	require.Len(t, row.Components, 2)
+	confirm := row.Components[0].(*discordgo.Button)
+	cancel := row.Components[1].(*discordgo.Button)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentConfirmButton), confirm.Label)
+	require.Contains(t, confirm.CustomID, "confirm_cc_payment:")
+	require.Equal(t, "cancel:author-1", cancel.CustomID)
+}
+
+func TestHandleInteraction_CCConfirm_Success(t *testing.T) {
+	session := &mockSession{}
+	ccCreator := &mockCCPaymentCreator{resultID: "payment-1", resultAmount: 15000}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCCPaymentCreator(ccCreator))
+
+	h.mu.Lock()
+	h.pending["confirm-key"] = pendingEntry{
+		result:        &ParseResult{Action: "cc_payment", Date: "2026-04-05", CategoryID: "category-1"},
+		authorID:      "author-1",
+		ccPayment:     true,
+		ccCardID:      "cc-1",
+		ccCardName:    "Citi Visa *1234",
+		ccBankID:      "bank-1",
+		ccBankName:    "Chase Bank *8888",
+		ccAmount:      15000,
+		ccPaymentType: "custom",
+	}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1", Embeds: []*discordgo.MessageEmbed{{Title: GetMessage(string(LangEn), MsgCCPaymentPreview)}}},
+		Data:    discordgo.MessageComponentInteractionData{CustomID: "confirm_cc_payment:confirm-key:author-1"},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, ccCreator.createdInputs, 1)
+	require.Equal(t, &BotCCPaymentInput{CreditCardID: "cc-1", BankAccountID: "bank-1", CategoryID: "category-1", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, ccCreator.createdInputs[0])
+	require.Len(t, session.interactionResponses, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentSuccess), session.interactionResponses[0].Data.Embeds[0].Title)
+	require.Empty(t, session.interactionResponses[0].Data.Components)
+}
+
+func TestHandleInteraction_CCConfirm_Failure(t *testing.T) {
+	session := &mockSession{}
+	ccCreator := &mockCCPaymentCreator{err: errors.New("payment failed")}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCCPaymentCreator(ccCreator))
+
+	h.mu.Lock()
+	h.pending["confirm-key"] = pendingEntry{
+		result:        &ParseResult{Action: "cc_payment", Date: "2026-04-05", CategoryID: "category-1"},
+		authorID:      "author-1",
+		ccPayment:     true,
+		ccCardID:      "cc-1",
+		ccBankID:      "bank-1",
+		ccAmount:      15000,
+		ccPaymentType: "custom",
+	}
+	h.mu.Unlock()
+
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1", Embeds: []*discordgo.MessageEmbed{{Title: GetMessage(string(LangEn), MsgCCPaymentPreview)}}},
+		Data:    discordgo.MessageComponentInteractionData{CustomID: "confirm_cc_payment:confirm-key:author-1"},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, ccCreator.createdInputs, 1)
+	require.Len(t, session.interactionResponses, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgCCPaymentFailed), session.interactionResponses[0].Data.Embeds[0].Title)
+	require.Equal(t, "payment failed", session.interactionResponses[0].Data.Embeds[0].Description)
+}
+
+func TestHandleInteraction_CCCancel(t *testing.T) {
+	session := &mockSession{}
+	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+		Type:    discordgo.InteractionMessageComponent,
+		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
+		Message: &discordgo.Message{ID: "reply-1", ChannelID: "channel-1", Embeds: []*discordgo.MessageEmbed{{Title: GetMessage(string(LangEn), MsgCCPaymentPreview)}}},
+		Data:    discordgo.MessageComponentInteractionData{CustomID: "cancel:author-1"},
+	}}
+
+	h.handleInteraction(session, interaction)
+
+	require.Len(t, session.interactionResponses, 1)
+	require.Equal(t, GetMessage(string(LangEn), MsgCancelled), session.interactionResponses[0].Data.Embeds[0].Title)
 }
 
 func TestHandleInteraction_SelectBankAccount_ShowsSecondSelectMenu(t *testing.T) {
