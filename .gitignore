@@ -55,8 +55,9 @@ yarn-debug.log*
 yarn-error.log*
 .remember/
 
-# Opencode
+# harness
 .opencode/
+.claude
 
 # Openspec
 openspec/
