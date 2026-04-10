@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -26,7 +27,7 @@ func TestIntegration_MessageToConfirmToCreate(t *testing.T) {
 	loader := &mockCategoryLoader{categories: []CategoryInfo{
 		{ID: "cat-food", Name: "飲食", Type: "expense"},
 	}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-1", ChannelID: "ch-1", Content: "午餐拉麵 180",
@@ -91,7 +92,7 @@ func TestIntegration_MessageToCancelFlow(t *testing.T) {
 	loader := &mockCategoryLoader{categories: []CategoryInfo{
 		{ID: "cat-food", Name: "飲食", Type: "expense"},
 	}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-2", ChannelID: "ch-1", Content: "咖啡 50",
@@ -122,7 +123,7 @@ func TestIntegration_MessageToCancelFlow(t *testing.T) {
 }
 
 func TestStorePending_CustomIDFormat(t *testing.T) {
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, nil, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, nil, nil, string(LangZhTW))
 	result := &ParseResult{
 		IsBookkeeping: true,
 		Type:          "expense",
@@ -139,7 +140,7 @@ func TestStorePending_CustomIDFormat(t *testing.T) {
 }
 
 func TestPopPending_RetrievesAndRemoves(t *testing.T) {
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, nil, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, nil, nil, string(LangZhTW))
 	result := &ParseResult{Type: "expense", Amount: 42}
 
 	customID := h.storePending(result, "user-1")
@@ -172,7 +173,7 @@ func TestIntegration_YesterdayDate_PassedToRecord(t *testing.T) {
 	loader := &mockCategoryLoader{categories: []CategoryInfo{
 		{ID: "cat-food", Name: "飲食", Type: "expense"},
 	}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-date-1", ChannelID: "ch-1", Content: "昨天午餐 180",
@@ -216,7 +217,7 @@ func TestIntegration_SpecificDate_PassedToRecord(t *testing.T) {
 	loader := &mockCategoryLoader{categories: []CategoryInfo{
 		{ID: "cat-food", Name: "飲食", Type: "expense"},
 	}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-date-2", ChannelID: "ch-1", Content: "4/3 午餐 180",
@@ -258,7 +259,7 @@ func TestIntegration_DefaultTodayDate(t *testing.T) {
 	loader := &mockCategoryLoader{categories: []CategoryInfo{
 		{ID: "cat-food", Name: "飲食", Type: "expense"},
 	}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-date-3", ChannelID: "ch-1", Content: "午餐 180",
@@ -302,7 +303,7 @@ func TestIntegration_SelectMenuToConfirmFlow(t *testing.T) {
 	acctLoader := &mockAccountLoader{accounts: []AccountInfo{
 		{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"},
 	}}
-	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, acctLoader, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-select-1", ChannelID: "ch-1", Content: "午餐 180",
@@ -399,7 +400,7 @@ func TestIntegration_KnownSourceType_StillAsksAccountID(t *testing.T) {
 	acctLoader := &mockAccountLoader{accounts: []AccountInfo{
 		{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"},
 	}}
-	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, acctLoader, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-known-1", ChannelID: "ch-1", Content: "刷卡買衣服 2000",
@@ -462,7 +463,7 @@ func TestIntegration_CCPayment_FullFlow(t *testing.T) {
 		"credit_card":  {{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"}},
 		"bank_account": {{ID: "bank-uuid-1", Name: "中信銀行 *5678", Type: "bank_account"}},
 	}}
-	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
+	h := NewHandler(context.Background(), parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-cc-1", ChannelID: "ch-1", Content: "繳中信卡 15000",
@@ -563,7 +564,7 @@ func TestIntegration_CCPayment_CancelFlow(t *testing.T) {
 		"credit_card":  {{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"}},
 		"bank_account": {{ID: "bank-uuid-1", Name: "中信銀行 *5678", Type: "bank_account"}},
 	}}
-	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
+	h := NewHandler(context.Background(), parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-cc-2", ChannelID: "ch-1", Content: "繳中信卡 15000",
@@ -638,7 +639,7 @@ func TestIntegration_CCPayment_FullPayment_AutoAmount(t *testing.T) {
 		"credit_card":  {{ID: "cc-uuid-1", Name: "中信 Visa *1234", Type: "credit_card"}},
 		"bank_account": {{ID: "bank-uuid-1", Name: "中信銀行 *5678", Type: "bank_account"}},
 	}}
-	h := NewHandler(parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
+	h := NewHandler(context.Background(), parser, creator, loader, acctLoader, string(LangZhTW), WithCCPaymentCreator(ccCreator))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-cc-3", ChannelID: "ch-1", Content: "繳清中信卡",
@@ -713,7 +714,7 @@ func TestIntegration_ChatGreeting(t *testing.T) {
 	parser := &mockParser{result: &ParseResult{Action: "chat", IsBookkeeping: false}}
 	creator := &mockCashFlowCreator{}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-food", Name: "飲食", Type: "expense"}}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-chat-1", ChannelID: "ch-1", Content: "你好",
@@ -732,7 +733,7 @@ func TestIntegration_UnsupportedAction(t *testing.T) {
 	parser := &mockParser{result: &ParseResult{Action: "unsupported", IsBookkeeping: false}}
 	creator := &mockCashFlowCreator{}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "cat-food", Name: "飲食", Type: "expense"}}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-unsupported-1", ChannelID: "ch-1", Content: "幫我做不支援的事",
@@ -767,7 +768,7 @@ func TestQueryFlow_EndToEnd(t *testing.T) {
 		TopCategories: []CategoryBreakdown{{Name: "飲食", Amount: 5000}, {Name: "交通", Amount: 3000}},
 	}}
 	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{}}
-	h := NewHandler(parser, creator, loader, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier), WithAccountBalanceQuerier(acctQuerier))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier), WithAccountBalanceQuerier(acctQuerier))
 
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID: "msg-query-1", ChannelID: "ch-1", Content: "本月支出摘要",

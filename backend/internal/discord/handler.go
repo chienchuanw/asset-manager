@@ -119,6 +119,7 @@ type AccountBalanceQuerier interface {
 type pendingEntry struct {
 	result            *ParseResult
 	authorID          string
+	createdAt         time.Time
 	awaitingAccount   bool
 	awaitingAccountID bool
 	ccPayment         bool
@@ -176,7 +177,7 @@ func (r realDiscordSession) InteractionRespond(interaction *discordgo.Interactio
 	return r.session.InteractionRespond(interaction, resp)
 }
 
-func NewHandler(parser Parser, creator CashFlowCreator, catLoader CategoryLoader, acctLoader AccountLoader, lang string, opts ...HandlerOption) *Handler {
+func NewHandler(ctx context.Context, parser Parser, creator CashFlowCreator, catLoader CategoryLoader, acctLoader AccountLoader, lang string, opts ...HandlerOption) *Handler {
 	if strings.TrimSpace(lang) == "" {
 		lang = string(LangZhTW)
 	}
@@ -194,6 +195,8 @@ func NewHandler(parser Parser, creator CashFlowCreator, catLoader CategoryLoader
 		opt(h)
 	}
 
+	go h.startCleanup(ctx)
+
 	return h
 }
 
@@ -210,6 +213,33 @@ func WithAccountBalanceQuerier(q AccountBalanceQuerier) HandlerOption {
 
 func WithCCPaymentCreator(c CreditCardPaymentCreator) HandlerOption {
 	return func(h *Handler) { h.ccPaymentCreator = c }
+}
+
+const pendingTTL = 15 * time.Minute
+const cleanupInterval = 5 * time.Minute
+
+func (h *Handler) cleanupExpired() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	now := time.Now()
+	for key, entry := range h.pending {
+		if now.Sub(entry.createdAt) > pendingTTL {
+			delete(h.pending, key)
+		}
+	}
+}
+
+func (h *Handler) startCleanup(ctx context.Context) {
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			h.cleanupExpired()
+		}
+	}
 }
 
 func (h *Handler) HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -391,6 +421,7 @@ func (h *Handler) handleCCPayment(s discordSession, channelID string, result *Pa
 	h.pending[key] = pendingEntry{
 		result:        result,
 		authorID:      authorID,
+		createdAt:     time.Now(),
 		ccPayment:     true,
 		ccAmount:      result.Amount,
 		ccPaymentType: result.PaymentType,
@@ -530,6 +561,7 @@ func (h *Handler) handleCCBankSelection(s discordSession, i *discordgo.Interacti
 	h.mu.Unlock()
 
 	confirmKey := randomHexKey()
+	entry.createdAt = time.Now()
 	h.mu.Lock()
 	h.pending[confirmKey] = entry
 	h.mu.Unlock()
@@ -818,7 +850,7 @@ func (h *Handler) sendAccountSelectMenu(s discordSession, channelID string, resu
 	key := hex.EncodeToString(b)
 
 	h.mu.Lock()
-	h.pending[key] = pendingEntry{result: result, authorID: authorID, awaitingAccount: true}
+	h.pending[key] = pendingEntry{result: result, authorID: authorID, createdAt: time.Now(), awaitingAccount: true}
 	h.mu.Unlock()
 
 	customID := "select_account:" + key + ":" + authorID
@@ -870,7 +902,7 @@ func (h *Handler) sendAccountIDMenu(s discordSession, channelID string, result *
 	key := hex.EncodeToString(b)
 
 	h.mu.Lock()
-	h.pending[key] = pendingEntry{result: result, authorID: authorID, awaitingAccountID: true}
+	h.pending[key] = pendingEntry{result: result, authorID: authorID, createdAt: time.Now(), awaitingAccountID: true}
 	h.mu.Unlock()
 
 	customID := "select_account_id:" + key + ":" + authorID
@@ -1035,7 +1067,7 @@ func (h *Handler) storePending(result *ParseResult, authorID string) string {
 	key := randomHexKey()
 
 	h.mu.Lock()
-	h.pending[key] = pendingEntry{result: result, authorID: authorID}
+	h.pending[key] = pendingEntry{result: result, authorID: authorID, createdAt: time.Now()}
 	h.mu.Unlock()
 
 	return "confirm:" + key + ":" + authorID
