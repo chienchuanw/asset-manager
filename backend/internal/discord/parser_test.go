@@ -640,3 +640,67 @@ func TestGeminiParser_Errors(t *testing.T) {
 		require.ErrorContains(t, err, context.DeadlineExceeded.Error())
 	})
 }
+
+func TestGeminiNow_ReturnsAsiaTaipeiTime(t *testing.T) {
+	// geminiNow() should return time in Asia/Taipei timezone
+	now := geminiNow()
+	taipei, _ := time.LoadLocation("Asia/Taipei")
+
+	require.Equal(t, taipei, now.Location(), "geminiNow should return Asia/Taipei time")
+}
+
+func TestParse_DateInPromptReflectsTimezone(t *testing.T) {
+	originalGenerate := geminiGenerateContent
+	originalNow := geminiNow
+	t.Cleanup(func() {
+		geminiGenerateContent = originalGenerate
+		geminiNow = originalNow
+	})
+
+	// UTC: 2026-04-05 23:00 → Asia/Taipei: 2026-04-06 07:00
+	geminiNow = func() time.Time {
+		taipei, _ := time.LoadLocation("Asia/Taipei")
+		return time.Date(2026, 4, 5, 23, 0, 0, 0, time.UTC).In(taipei)
+	}
+
+	var capturedPrompt string
+	geminiGenerateContent = func(ctx context.Context, apiKey, model, prompt string) (string, error) {
+		capturedPrompt = prompt
+		return `{"is_bookkeeping":true,"type":"expense","amount":180,"description":"午餐","category_id":"expense-food","category_name":"飲食","date":"2026-04-06","source_type":"","missing_fields":[]}`, nil
+	}
+
+	parser := NewGeminiParser("test-key")
+	_, err := parser.Parse(t.Context(), "午餐 180", testCategories())
+
+	require.NoError(t, err)
+	require.Contains(t, capturedPrompt, "2026-04-06", "prompt should contain Asia/Taipei date, not UTC date")
+	require.NotContains(t, capturedPrompt, "today (2026-04-05)", "prompt should not contain UTC date")
+}
+
+func TestApplyQueryParamDefaults_UsesTimezoneMonth(t *testing.T) {
+	originalGenerate := geminiGenerateContent
+	originalNow := geminiNow
+	t.Cleanup(func() {
+		geminiGenerateContent = originalGenerate
+		geminiNow = originalNow
+	})
+
+	// UTC: 2026-03-31 22:00 → Asia/Taipei: 2026-04-01 06:00
+	geminiNow = func() time.Time {
+		taipei, _ := time.LoadLocation("Asia/Taipei")
+		return time.Date(2026, 3, 31, 22, 0, 0, 0, time.UTC).In(taipei)
+	}
+
+	geminiGenerateContent = func(ctx context.Context, apiKey, model, prompt string) (string, error) {
+		return `{"is_bookkeeping":true,"action":"query","type":"","amount":0,"description":"","category_id":"","category_name":"","date":"2026-04-01","source_type":"","missing_fields":[],"query_type":"cash_flow_summary","query_params":{"month":0,"year":0,"category":""}}`, nil
+	}
+
+	parser := NewGeminiParser("test-key")
+	result, err := parser.Parse(t.Context(), "這個月花了多少", testCategories())
+
+	require.NoError(t, err)
+	require.Equal(t, "query", result.Action)
+	require.NotNil(t, result.QueryParams)
+	require.Equal(t, 4, result.QueryParams.Month, "month should be 4 (April in Asia/Taipei), not 3 (March in UTC)")
+	require.Equal(t, 2026, result.QueryParams.Year)
+}
