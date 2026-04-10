@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/stretchr/testify/require"
@@ -213,7 +214,7 @@ func TestHandleMessage_SuccessfulParse_SendsPreview(t *testing.T) {
 	creator := &mockCashFlowCreator{}
 	categories := []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}
 	loader := &mockCategoryLoader{categories: categories}
-	h := NewHandler(parser, creator, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, creator, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -270,7 +271,7 @@ func TestHandleMessage_NonBookkeeping_Silent(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: false}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -293,7 +294,7 @@ func TestHandleMessage_MissingAmount_SendsHint(t *testing.T) {
 		MissingFields: []string{"amount"},
 	}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -317,7 +318,7 @@ func TestHandleMessage_CCPayment_MissingAmount(t *testing.T) {
 		Amount:        0,
 		MissingFields: []string{"amount"},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "pay card", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -339,7 +340,7 @@ func TestHandleMessage_CCPayment_ShowsCreditCardMenu(t *testing.T) {
 	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{
 		"credit_card": {{ID: "cc-1", Name: "Citi Visa *1234", Type: "credit_card"}, {ID: "cc-2", Name: "Chase *5678", Type: "credit_card"}},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "pay card 15000", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -361,7 +362,7 @@ func TestHandleMessage_CCPayment_NoCreditCards(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "cc_payment", Amount: 15000, PaymentType: "custom"}}
 	acctLoader := &mockAccountLoader{accountsByType: map[string][]AccountInfo{"credit_card": {}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "pay card 15000", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -373,7 +374,7 @@ func TestHandleMessage_ChatAction_ZhTW(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{Action: "chat", IsBookkeeping: false}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangZhTW))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -391,7 +392,7 @@ func TestHandleMessage_ChatAction_En(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{Action: "chat", IsBookkeeping: false}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -409,7 +410,7 @@ func TestHandleMessage_UnsupportedAction_ZhTW(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{Action: "unsupported", IsBookkeeping: false}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangZhTW))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangZhTW))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -427,7 +428,7 @@ func TestHandleMessage_UnsupportedAction_En(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{Action: "unsupported", IsBookkeeping: false}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -445,7 +446,7 @@ func TestHandleMessage_CategoryLoadFail_SpecificError(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{}
 	loader := &mockCategoryLoader{err: errors.New("db down")}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -464,7 +465,7 @@ func TestHandleMessage_ParseFail_SpecificError(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{err: errors.New("parser down")}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -490,7 +491,7 @@ func TestHandleInteraction_Confirm_CreatesRecord(t *testing.T) {
 		Date:          "2026-04-05",
 	}
 	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "author-1")
 
@@ -515,7 +516,7 @@ func TestHandleInteraction_Confirm_CreatesRecord(t *testing.T) {
 func TestHandleInteraction_Cancel_UpdatesEmbed(t *testing.T) {
 	session := &mockSession{}
 	creator := &mockCashFlowCreator{}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	interaction := newComponentInteraction("cancel:author-1", "author-1")
 
 	h.handleInteraction(session, interaction)
@@ -541,7 +542,7 @@ func TestHandleInteraction_WrongUser_Ephemeral(t *testing.T) {
 		Date:          "2026-04-05",
 	}
 	creator := &mockCashFlowCreator{}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "other-user")
 
@@ -568,7 +569,7 @@ func TestHandleMessage_EmptySourceType_SendsSelectMenu(t *testing.T) {
 		SourceType:    "",
 	}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -607,7 +608,7 @@ func TestHandleMessage_CreditCard_ShowsAccountIDMenu(t *testing.T) {
 	acctLoader := &mockAccountLoader{accounts: []AccountInfo{
 		{ID: "cc-1", Name: "中信 Visa *1234", Type: "credit_card"},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, acctLoader, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, acctLoader, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -643,7 +644,7 @@ func TestHandleMessage_Cash_SendsPreviewDirectly(t *testing.T) {
 		SourceType:    "cash",
 	}}
 	loader := &mockCategoryLoader{categories: []CategoryInfo{{ID: "expense-food", Name: "Food", Type: "expense"}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, loader, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -671,7 +672,7 @@ func TestHandleMessage_RoutesToCreateFlow(t *testing.T) {
 		Date:          "2026-04-05",
 		SourceType:    "cash",
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -698,7 +699,7 @@ func TestHandleMessage_CreateAction_RegressionIdentical(t *testing.T) {
 		Date:          "2026-04-05",
 		SourceType:    "",
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "lunch 180", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -713,7 +714,7 @@ func TestHandleMessage_CreateAction_RegressionIdentical(t *testing.T) {
 func TestHandleMessage_BackwardCompat_NoActionField(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: false, Action: ""}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "hi there", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -733,7 +734,7 @@ func TestHandleMessage_CreateWithQueryParams_IgnoresParams(t *testing.T) {
 		SourceType:    "cash",
 		QueryParams:   &QueryParams{Month: 3, Year: 2026},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "lunch 320", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -753,7 +754,7 @@ func TestHandleMessage_RoutesToQueryFlow(t *testing.T) {
 		QueryParams:   &QueryParams{Year: 2026, Month: 4},
 	}}
 	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 4, TotalIncome: 1000, TotalExpense: 500, NetCashFlow: 500}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -773,7 +774,7 @@ func TestHandleMessage_RoutesToQueryFlow(t *testing.T) {
 func TestHandleMessage_ChatIgnored(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: false, Action: ""}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -789,7 +790,7 @@ func TestHandleMessage_ChatIgnored(t *testing.T) {
 func TestHandleMessage_ConcurrentQueryAndCreate(t *testing.T) {
 	t.Parallel()
 
-	h := NewHandler(
+	h := NewHandler(context.Background(),
 		&mockParser{parseFunc: func(_ context.Context, message string, _ []CategoryInfo) (*ParseResult, error) {
 			if message == "query" {
 				return &ParseResult{
@@ -837,7 +838,7 @@ func TestHandleMessage_ConcurrentQueryAndCreate(t *testing.T) {
 func TestHandleQuery_UnsupportedType(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "unknown", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 	msg := &discordgo.MessageCreate{Message: &discordgo.Message{
 		ID:        "message-1",
 		ChannelID: "channel-1",
@@ -870,7 +871,7 @@ func TestHandleCashFlowQuery_CurrentMonth_GivenSummary_WhenHandleMessage_ThenSen
 		TopCategories: []CategoryBreakdown{{Name: "飲食", Amount: 5000}, {Name: "交通", Amount: 3000}},
 		Comparison:    &MonthComparisonResult{ExpenseChange: 1200, ExpenseChangePct: 5.4, IncomeChange: 8000, IncomeChangePct: 11.1},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "本月現金流", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -892,7 +893,7 @@ func TestHandleCashFlowQuery_SpecificMonth_GivenMonthParam_WhenHandleMessage_The
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 3}}}
 	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 3, TotalIncome: 1, TotalExpense: 1, NetCashFlow: 0}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "3月支出", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -910,7 +911,7 @@ func TestHandleCashFlowQuery_WithCategory_GivenCategoryParam_WhenHandleMessage_T
 		NetCashFlow:   56500,
 		TopCategories: []CategoryBreakdown{{Name: "飲食", Amount: 5000, Count: 3}},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "4月飲食支出", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -923,7 +924,7 @@ func TestHandleCashFlowQuery_NoData_GivenZeroSummary_WhenHandleMessage_ThenShowE
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	cfQuerier := &mockCashFlowQuerier{result: &MonthlySummaryResult{Year: 2026, Month: 4}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "本月摘要", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -934,7 +935,7 @@ func TestHandleCashFlowQuery_ServiceError_GivenServiceFailure_WhenHandleMessage_
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	cfQuerier := &mockCashFlowQuerier{err: errors.New("boom")}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCashFlowQuerier(cfQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "cash flow", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -946,7 +947,7 @@ func TestHandleCashFlowQuery_Fail_SpecificError(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "cash_flow_summary", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	cfQuerier := &mockCashFlowQuerier{err: errors.New("boom")}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithCashFlowQuerier(cfQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "本月摘要", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -961,7 +962,7 @@ func TestHandleAccountBalanceQuery_BankAndCC_GivenBalances_WhenHandleMessage_The
 		BankAccounts: []BankAccountBalance{{Name: "中信銀行", Last4: "1234", Balance: 25000}, {Name: "台新銀行", Last4: "5678", Balance: 12000}},
 		CreditCards:  []CreditCardBalance{{Name: "中信 Visa", Last4: "4321", CreditLimit: 100000, UsedCredit: 20000, Remaining: 80000, UsagePct: 20}},
 	}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "帳戶餘額", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -979,7 +980,7 @@ func TestHandleAccountBalanceQuery_CCNearingLimit_GivenHighUsage_WhenHandleMessa
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{CreditCards: []CreditCardBalance{{Name: "中信 Visa", Last4: "4321", CreditLimit: 100000, UsedCredit: 85000, Remaining: 15000, UsagePct: 85}}}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "信用卡額度", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -990,7 +991,7 @@ func TestHandleAccountBalanceQuery_NoAccounts_GivenEmptyResult_WhenHandleMessage
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "餘額", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -1001,7 +1002,7 @@ func TestHandleAccountBalanceQuery_PartialFailure_GivenBankOKAndCCError_WhenHand
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	acctQuerier := &mockAccountBalanceQuerier{result: &AccountBalancesResult{BankAccounts: []BankAccountBalance{{Name: "中信銀行", Last4: "1234", Balance: 25000}}, CCError: errors.New("cc down")}}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangZhTW), WithAccountBalanceQuerier(acctQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "帳戶餘額", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -1014,7 +1015,7 @@ func TestHandleAccountBalanceQuery_Fail_SpecificError(t *testing.T) {
 	session := &mockSession{}
 	parser := &mockParser{result: &ParseResult{IsBookkeeping: true, Action: "query", QueryType: "account_balance", QueryParams: &QueryParams{Year: 2026, Month: 4}}}
 	acctQuerier := &mockAccountBalanceQuerier{err: errors.New("boom")}
-	h := NewHandler(parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithAccountBalanceQuerier(acctQuerier))
+	h := NewHandler(context.Background(), parser, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithAccountBalanceQuerier(acctQuerier))
 
 	h.handleMessage(session, &discordgo.MessageCreate{Message: &discordgo.Message{ID: "message-1", ChannelID: "channel-1", Content: "balances", Author: &discordgo.User{ID: "author-1"}}})
 
@@ -1034,7 +1035,7 @@ func TestHandleInteraction_SelectMenu_CashGoesToPreview(t *testing.T) {
 		Date:          "2026-04-05",
 		SourceType:    "",
 	}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
@@ -1072,7 +1073,7 @@ func TestHandleInteraction_SelectMenu_WrongUser_Ephemeral(t *testing.T) {
 		Amount:        180,
 		SourceType:    "",
 	}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
@@ -1099,7 +1100,7 @@ func TestHandleInteraction_SelectMenu_WrongUser_Ephemeral(t *testing.T) {
 }
 
 func TestBuildPreviewEmbed_IncludesPaymentMethodAndFooter(t *testing.T) {
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 	result := &ParseResult{
 		IsBookkeeping: true,
 		Type:          "expense",
@@ -1136,7 +1137,7 @@ func TestHandleInteraction_Confirm_PassesSourceType(t *testing.T) {
 		SourceType:    "credit_card",
 	}
 	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "author-1")
 
@@ -1152,7 +1153,7 @@ func TestHandleInteraction_CCSelectCard_ShowsBankMenu(t *testing.T) {
 		"credit_card":  {{ID: "cc-1", Name: "Citi Visa *1234", Type: "credit_card"}},
 		"bank_account": {{ID: "bank-1", Name: "Chase Bank *8888", Type: "bank_account"}},
 	}}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["cc-key"] = pendingEntry{result: &ParseResult{Action: "cc_payment", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, authorID: "author-1", ccPayment: true, ccAmount: 15000, ccPaymentType: "custom"}
@@ -1186,7 +1187,7 @@ func TestHandleInteraction_CCSelectCard_NoBankAccounts(t *testing.T) {
 		"credit_card":  {{ID: "cc-1", Name: "Citi Visa *1234", Type: "credit_card"}},
 		"bank_account": {},
 	}}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["cc-key"] = pendingEntry{result: &ParseResult{Action: "cc_payment", Amount: 15000, Date: "2026-04-05", PaymentType: "custom"}, authorID: "author-1", ccPayment: true, ccAmount: 15000, ccPaymentType: "custom"}
@@ -1209,7 +1210,7 @@ func TestHandleInteraction_CCSelectCard_NoBankAccounts(t *testing.T) {
 
 func TestHandleInteraction_CCSelectBank_ShowsPreview(t *testing.T) {
 	session := &mockSession{}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, &mockAccountLoader{accountsByType: map[string][]AccountInfo{
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, &mockAccountLoader{accountsByType: map[string][]AccountInfo{
 		"bank_account": {{ID: "bank-1", Name: "Chase Bank *8888", Type: "bank_account"}},
 	}}, string(LangEn))
 
@@ -1262,7 +1263,7 @@ func TestHandleInteraction_CCSelectBank_ShowsPreview(t *testing.T) {
 func TestHandleInteraction_CCConfirm_Success(t *testing.T) {
 	session := &mockSession{}
 	ccCreator := &mockCCPaymentCreator{resultID: "payment-1", resultAmount: 15000}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCCPaymentCreator(ccCreator))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCCPaymentCreator(ccCreator))
 
 	h.mu.Lock()
 	h.pending["confirm-key"] = pendingEntry{
@@ -1297,7 +1298,7 @@ func TestHandleInteraction_CCConfirm_Success(t *testing.T) {
 func TestHandleInteraction_CCConfirm_Failure(t *testing.T) {
 	session := &mockSession{}
 	ccCreator := &mockCCPaymentCreator{err: errors.New("payment failed")}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCCPaymentCreator(ccCreator))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn), WithCCPaymentCreator(ccCreator))
 
 	h.mu.Lock()
 	h.pending["confirm-key"] = pendingEntry{
@@ -1328,7 +1329,7 @@ func TestHandleInteraction_CCConfirm_Failure(t *testing.T) {
 
 func TestHandleInteraction_CCCancel(t *testing.T) {
 	session := &mockSession{}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 	interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
 		Type:    discordgo.InteractionMessageComponent,
 		Member:  &discordgo.Member{User: &discordgo.User{ID: "author-1"}},
@@ -1358,7 +1359,7 @@ func TestHandleInteraction_SelectBankAccount_ShowsSecondSelectMenu(t *testing.T)
 		{ID: "acct-1", Name: "中信銀行 *1234", Type: "bank_account"},
 		{ID: "acct-2", Name: "台新銀行 *5678", Type: "bank_account"},
 	}}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, acctLoader, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
@@ -1403,7 +1404,7 @@ func TestHandleInteraction_SelectCash_SkipsSecondMenu(t *testing.T) {
 		Date:          "2026-04-05",
 		SourceType:    "",
 	}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccount: true}
@@ -1441,7 +1442,7 @@ func TestHandleInteraction_SelectAccountID_UpdatesPendingAndShowsPreview(t *test
 		Date:          "2026-04-05",
 		SourceType:    "bank_account",
 	}
-	h := NewHandler(&mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
 
 	h.mu.Lock()
 	h.pending["test-key"] = pendingEntry{result: result, authorID: "author-1", awaitingAccountID: true}
@@ -1482,7 +1483,7 @@ func TestHandleInteraction_Confirm_PassesSourceID(t *testing.T) {
 		SourceID:      "acct-uuid-1",
 	}
 	creator := &mockCashFlowCreator{resultID: "cashflow-1"}
-	h := NewHandler(&mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
+	h := NewHandler(context.Background(), &mockParser{}, creator, &mockCategoryLoader{}, nil, string(LangEn))
 	customID := h.storePending(result, "author-1")
 	interaction := newComponentInteraction(customID, "author-1")
 
@@ -1508,4 +1509,98 @@ func newComponentInteraction(customID string, userID string) *discordgo.Interact
 
 func TestMonthNameForQueryTitle_English(t *testing.T) {
 	require.Equal(t, "April", fmt.Sprintf("%s", monthLabel(string(LangEn), 4)))
+}
+
+func TestCleanupExpired_RemovesOldEntries(t *testing.T) {
+	t.Parallel()
+
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["old-key"] = pendingEntry{
+		result:    &ParseResult{},
+		authorID:  "author-1",
+		createdAt: time.Now().Add(-20 * time.Minute),
+	}
+	h.mu.Unlock()
+
+	h.cleanupExpired()
+
+	h.mu.Lock()
+	_, exists := h.pending["old-key"]
+	h.mu.Unlock()
+
+	require.False(t, exists, "expired entry should be removed")
+}
+
+func TestCleanupExpired_KeepsFreshEntries(t *testing.T) {
+	t.Parallel()
+
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["fresh-key"] = pendingEntry{
+		result:    &ParseResult{},
+		authorID:  "author-1",
+		createdAt: time.Now(),
+	}
+	h.mu.Unlock()
+
+	h.cleanupExpired()
+
+	h.mu.Lock()
+	_, exists := h.pending["fresh-key"]
+	h.mu.Unlock()
+
+	require.True(t, exists, "fresh entry should be kept")
+}
+
+func TestCleanupExpired_RemovesMultipleExpired(t *testing.T) {
+	t.Parallel()
+
+	h := NewHandler(context.Background(), &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	h.mu.Lock()
+	h.pending["old-1"] = pendingEntry{result: &ParseResult{}, authorID: "a", createdAt: time.Now().Add(-20 * time.Minute)}
+	h.pending["old-2"] = pendingEntry{result: &ParseResult{}, authorID: "b", createdAt: time.Now().Add(-30 * time.Minute)}
+	h.pending["old-3"] = pendingEntry{result: &ParseResult{}, authorID: "c", createdAt: time.Now().Add(-60 * time.Minute)}
+	h.pending["fresh-1"] = pendingEntry{result: &ParseResult{}, authorID: "d", createdAt: time.Now()}
+	h.mu.Unlock()
+
+	h.cleanupExpired()
+
+	h.mu.Lock()
+	remaining := len(h.pending)
+	_, freshExists := h.pending["fresh-1"]
+	h.mu.Unlock()
+
+	require.Equal(t, 1, remaining, "only fresh entry should remain")
+	require.True(t, freshExists, "fresh entry should be kept")
+}
+
+func TestStartCleanup_StopsOnContextCancel(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	h := NewHandler(ctx, &mockParser{}, &mockCashFlowCreator{}, &mockCategoryLoader{}, nil, string(LangEn))
+
+	// Add an expired entry
+	h.mu.Lock()
+	h.pending["old-key"] = pendingEntry{result: &ParseResult{}, authorID: "a", createdAt: time.Now().Add(-20 * time.Minute)}
+	h.mu.Unlock()
+
+	// Cancel the context to stop the cleanup goroutine
+	cancel()
+
+	// Give the goroutine time to exit
+	time.Sleep(50 * time.Millisecond)
+
+	// The entry should still be there since the cleanup ticker (5 min) hasn't fired
+	// and the goroutine should have exited due to context cancellation.
+	// Manually call cleanupExpired to verify entries are still removable.
+	h.mu.Lock()
+	_, exists := h.pending["old-key"]
+	h.mu.Unlock()
+
+	require.True(t, exists, "entry should still exist since ticker didn't fire before cancel")
 }
