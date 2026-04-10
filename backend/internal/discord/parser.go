@@ -17,7 +17,10 @@ const defaultGeminiModel = "gemini-2.5-flash"
 
 var (
 	geminiNow = func() time.Time {
-		loc, _ := time.LoadLocation("Asia/Taipei")
+		loc, err := time.LoadLocation("Asia/Taipei")
+		if err != nil {
+			loc = time.FixedZone("Asia/Taipei", 8*3600)
+		}
 		return time.Now().In(loc)
 	}
 	geminiGenerateContent = defaultGeminiGenerateContent
