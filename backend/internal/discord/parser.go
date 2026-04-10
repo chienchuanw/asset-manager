@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
@@ -15,7 +16,10 @@ import (
 const defaultGeminiModel = "gemini-2.5-flash"
 
 var (
-	geminiNow             = time.Now
+	geminiNow = func() time.Time {
+		loc, _ := time.LoadLocation("Asia/Taipei")
+		return time.Now().In(loc)
+	}
 	geminiGenerateContent = defaultGeminiGenerateContent
 )
 
