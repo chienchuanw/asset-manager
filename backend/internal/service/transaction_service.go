@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -77,48 +78,13 @@ func (s *transactionService) CreateTransaction(input *models.CreateTransactionIn
 		return nil, fmt.Errorf("invalid currency: %s", input.Currency)
 	}
 
-	var transaction *models.Transaction
-	var err error
-
-	// 如果是 USD 交易，需要取得或建立匯率記錄
-	if input.Currency == models.CurrencyUSD {
-		// 取得交易日期的匯率（會自動處理 fallback）
-		rate, err := s.exchangeRateService.GetRate(models.CurrencyUSD, models.CurrencyTWD, input.Date)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get exchange rate for USD transaction: %w", err)
-		}
-
-		// 從資料庫取得匯率記錄的 ID
-		exchangeRate, err := s.exchangeRateService.GetRateRecord(models.CurrencyUSD, models.CurrencyTWD, input.Date)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get exchange rate record: %w", err)
-		}
-
-		// 使用帶匯率 ID 的方法建立交易
-		transaction, err = s.repo.CreateWithExchangeRate(input, exchangeRate.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		fmt.Printf("Created USD transaction with exchange rate %.4f (ID: %d)\n", rate, exchangeRate.ID)
-	} else {
-		// TWD 交易，直接建立
-		transaction, err = s.repo.Create(input)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// 如果是賣出交易，自動計算並記錄已實現損益
+	// 賣出交易需要在資料庫事務中同時建立交易和已實現損益
 	if input.TransactionType == models.TransactionTypeSell {
-		if err := s.createRealizedProfit(transaction); err != nil {
-			// 記錄錯誤但不影響交易建立
-			// TODO: 考慮是否要回滾交易或使用事務
-			fmt.Printf("Warning: failed to create realized profit for transaction %s: %v\n", transaction.ID, err)
-		}
+		return s.createSellTransactionAtomically(input)
 	}
 
-	return transaction, nil
+	// 非賣出交易（買入/股息/手續費），不需要事務
+	return s.createNonSellTransaction(input)
 }
 
 // CreateTransactionsBatch 批次建立交易記錄（全有或全無）
@@ -219,8 +185,79 @@ func (s *transactionService) DeleteTransaction(id uuid.UUID) error {
 	return s.repo.Delete(id)
 }
 
-// createRealizedProfit 建立已實現損益記錄（賣出交易時自動呼叫）
-func (s *transactionService) createRealizedProfit(sellTransaction *models.Transaction) error {
+// createNonSellTransaction 建立非賣出交易（買入/股息/手續費）
+func (s *transactionService) createNonSellTransaction(input *models.CreateTransactionInput) (*models.Transaction, error) {
+	if input.Currency == models.CurrencyUSD {
+		rate, err := s.exchangeRateService.GetRate(models.CurrencyUSD, models.CurrencyTWD, input.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate for USD transaction: %w", err)
+		}
+
+		exchangeRate, err := s.exchangeRateService.GetRateRecord(models.CurrencyUSD, models.CurrencyTWD, input.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate record: %w", err)
+		}
+
+		transaction, err := s.repo.CreateWithExchangeRate(input, exchangeRate.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("Created USD transaction with exchange rate %.4f (ID: %d)\n", rate, exchangeRate.ID)
+		return transaction, nil
+	}
+
+	return s.repo.Create(input)
+}
+
+// createSellTransactionAtomically 在資料庫事務中建立賣出交易和已實現損益
+func (s *transactionService) createSellTransactionAtomically(input *models.CreateTransactionInput) (*models.Transaction, error) {
+	dbTx, err := s.repo.DB().Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer dbTx.Rollback()
+
+	// 在事務中建立交易記錄
+	var transaction *models.Transaction
+	if input.Currency == models.CurrencyUSD {
+		rate, err := s.exchangeRateService.GetRate(models.CurrencyUSD, models.CurrencyTWD, input.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate for USD transaction: %w", err)
+		}
+
+		exchangeRate, err := s.exchangeRateService.GetRateRecord(models.CurrencyUSD, models.CurrencyTWD, input.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate record: %w", err)
+		}
+
+		transaction, err = s.repo.CreateWithExchangeRateTx(dbTx, input, exchangeRate.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("Created USD sell transaction with exchange rate %.4f (ID: %d)\n", rate, exchangeRate.ID)
+	} else {
+		transaction, err = s.repo.CreateTx(dbTx, input)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 在同一事務中建立已實現損益
+	if err := s.createRealizedProfitTx(dbTx, transaction); err != nil {
+		return nil, fmt.Errorf("failed to create realized profit: %w", err)
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return transaction, nil
+}
+
+// createRealizedProfitTx 在指定的資料庫事務中建立已實現損益記錄
+func (s *transactionService) createRealizedProfitTx(dbTx *sql.Tx, sellTransaction *models.Transaction) error {
 	// 取得該標的的所有交易記錄
 	filters := repository.TransactionFilters{
 		Symbol: &sellTransaction.Symbol,
@@ -260,7 +297,7 @@ func (s *transactionService) createRealizedProfit(sellTransaction *models.Transa
 		Currency:      string(sellTransaction.Currency),
 	}
 
-	_, err = s.realizedProfitRepo.Create(input)
+	_, err = s.realizedProfitRepo.CreateTx(dbTx, input)
 	if err != nil {
 		return fmt.Errorf("failed to create realized profit record: %w", err)
 	}

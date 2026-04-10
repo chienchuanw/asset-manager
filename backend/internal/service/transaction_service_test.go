@@ -1,10 +1,12 @@
 package service
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/google/uuid"
@@ -72,9 +74,41 @@ func (m *MockTransactionRepository) Delete(id uuid.UUID) error {
 	return args.Error(0)
 }
 
+func (m *MockTransactionRepository) CreateTx(tx *sql.Tx, input *models.CreateTransactionInput) (*models.Transaction, error) {
+	args := m.Called(tx, input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
+func (m *MockTransactionRepository) CreateWithExchangeRateTx(tx *sql.Tx, input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
+	args := m.Called(tx, input, exchangeRateID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
+func (m *MockTransactionRepository) DB() *sql.DB {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*sql.DB)
+}
+
 // MockRealizedProfitRepository 方法實作
 func (m *MockRealizedProfitRepository) Create(input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error) {
 	args := m.Called(input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RealizedProfit), args.Error(1)
+}
+
+func (m *MockRealizedProfitRepository) CreateTx(tx *sql.Tx, input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error) {
+	args := m.Called(tx, input)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -381,9 +415,13 @@ func TestDeleteTransaction_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// TestCreateTransaction_SellWithRealizedProfit 測試建立賣出交易並自動建立已實現損益
+// TestCreateTransaction_SellWithRealizedProfit 測試建立賣出交易並自動建立已實現損益（原子操作）
 func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
 	// Arrange
+	db, dbMock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
 	mockRepo := new(MockTransactionRepository)
 	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
 	mockFIFOCalc := new(MockFIFOCalculator)
@@ -437,8 +475,13 @@ func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
 		},
 	}
 
-	// Mock 期望
-	mockRepo.On("Create", sellInput).Return(sellTransaction, nil)
+	// Mock DB().Begin() → 回傳 sqlmock 的 tx
+	dbMock.ExpectBegin()
+	dbMock.ExpectCommit()
+	mockRepo.On("DB").Return(db)
+
+	// Mock CreateTx（在事務中建立交易）
+	mockRepo.On("CreateTx", mock.AnythingOfType("*sql.Tx"), sellInput).Return(sellTransaction, nil)
 
 	filters := repository.TransactionFilters{Symbol: &sellInput.Symbol}
 	mockRepo.On("GetAll", filters).Return(previousTransactions, nil)
@@ -446,7 +489,8 @@ func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
 	costBasis := 50028.0 // (50000 + 28)
 	mockFIFOCalc.On("CalculateCostBasis", "2330", sellTransaction, previousTransactions).Return(costBasis, nil)
 
-	mockRealizedProfitRepo.On("Create", mock.MatchedBy(func(input *models.CreateRealizedProfitInput) bool {
+	// Mock CreateTx（在事務中建立已實現損益）
+	mockRealizedProfitRepo.On("CreateTx", mock.AnythingOfType("*sql.Tx"), mock.MatchedBy(func(input *models.CreateRealizedProfitInput) bool {
 		return input.Symbol == "2330" &&
 			input.Quantity == 100 &&
 			input.SellAmount == 62000 &&
@@ -464,6 +508,142 @@ func TestCreateTransaction_SellWithRealizedProfit(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 	mockFIFOCalc.AssertExpectations(t)
 	mockRealizedProfitRepo.AssertExpectations(t)
+	assert.NoError(t, dbMock.ExpectationsWereMet())
+}
+
+// TestCreateTransaction_SellRollbackOnRealizedProfitError 測試賣出交易在已實現損益建立失敗時回滾
+func TestCreateTransaction_SellRollbackOnRealizedProfitError(t *testing.T) {
+	// Arrange
+	db, dbMock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mockRepo := new(MockTransactionRepository)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
+
+	fee := 28.0
+	sellInput := &models.CreateTransactionInput{
+		Date:            time.Date(2025, 10, 24, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeSell,
+		Quantity:        100,
+		Price:           620,
+		Amount:          62000,
+		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
+	}
+
+	sellTransaction := &models.Transaction{
+		ID:              uuid.New(),
+		Date:            sellInput.Date,
+		AssetType:       sellInput.AssetType,
+		Symbol:          sellInput.Symbol,
+		Name:            sellInput.Name,
+		TransactionType: sellInput.TransactionType,
+		Quantity:        sellInput.Quantity,
+		Price:           sellInput.Price,
+		Amount:          sellInput.Amount,
+		Fee:             sellInput.Fee,
+		Currency:        sellInput.Currency,
+	}
+
+	previousTransactions := []*models.Transaction{
+		{
+			ID:              uuid.New(),
+			Symbol:          "2330",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	// Mock DB().Begin() → 回傳 sqlmock 的 tx，期望 Rollback（不是 Commit）
+	dbMock.ExpectBegin()
+	dbMock.ExpectRollback()
+	mockRepo.On("DB").Return(db)
+
+	mockRepo.On("CreateTx", mock.AnythingOfType("*sql.Tx"), sellInput).Return(sellTransaction, nil)
+
+	filters := repository.TransactionFilters{Symbol: &sellInput.Symbol}
+	mockRepo.On("GetAll", filters).Return(previousTransactions, nil)
+
+	costBasis := 50028.0
+	mockFIFOCalc.On("CalculateCostBasis", "2330", sellTransaction, previousTransactions).Return(costBasis, nil)
+
+	// 模擬已實現損益建立失敗
+	mockRealizedProfitRepo.On("CreateTx", mock.AnythingOfType("*sql.Tx"), mock.Anything).Return(nil, fmt.Errorf("database error"))
+
+	// Act
+	result, err := service.CreateTransaction(sellInput)
+
+	// Assert — 交易應該失敗（回滾），而非僅記錄警告
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to create realized profit")
+	mockRepo.AssertExpectations(t)
+	mockRealizedProfitRepo.AssertExpectations(t)
+	// 確認 Commit 未被呼叫，Rollback 已被呼叫
+	assert.NoError(t, dbMock.ExpectationsWereMet())
+}
+
+// TestCreateTransaction_BuyDoesNotUseDBTransaction 測試買入交易不使用資料庫事務
+func TestCreateTransaction_BuyDoesNotUseDBTransaction(t *testing.T) {
+	// Arrange
+	mockRepo := new(MockTransactionRepository)
+	mockRealizedProfitRepo := new(MockRealizedProfitRepository)
+	mockFIFOCalc := new(MockFIFOCalculator)
+	mockExchangeRateService := new(MockExchangeRateService)
+	service := NewTransactionService(mockRepo, mockRealizedProfitRepo, mockFIFOCalc, mockExchangeRateService)
+
+	fee := 28.0
+	input := &models.CreateTransactionInput{
+		Date:            time.Date(2025, 10, 22, 0, 0, 0, 0, time.UTC),
+		AssetType:       models.AssetTypeTWStock,
+		Symbol:          "2330",
+		Name:            "台積電",
+		TransactionType: models.TransactionTypeBuy,
+		Quantity:        10,
+		Price:           620,
+		Amount:          6200,
+		Fee:             &fee,
+		Currency:        models.CurrencyTWD,
+	}
+
+	expectedTransaction := &models.Transaction{
+		ID:              uuid.New(),
+		Date:            input.Date,
+		AssetType:       input.AssetType,
+		Symbol:          input.Symbol,
+		Name:            input.Name,
+		TransactionType: input.TransactionType,
+		Quantity:        input.Quantity,
+		Price:           input.Price,
+		Amount:          input.Amount,
+		Fee:             input.Fee,
+		Currency:        input.Currency,
+	}
+
+	mockRepo.On("Create", input).Return(expectedTransaction, nil)
+
+	// Act
+	result, err := service.CreateTransaction(input)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	// 確認 DB() 和 Begin() 未被呼叫（買入交易不需要事務）
+	mockRepo.AssertNotCalled(t, "DB")
+	mockRepo.AssertNotCalled(t, "CreateTx", mock.Anything, mock.Anything)
+	mockRealizedProfitRepo.AssertNotCalled(t, "Create", mock.Anything)
+	mockRealizedProfitRepo.AssertNotCalled(t, "CreateTx", mock.Anything, mock.Anything)
 }
 
 // TestCreateTransaction_USD_Success 測試成功建立 USD 交易並自動建立匯率記錄

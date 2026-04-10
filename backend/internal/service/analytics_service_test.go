@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -41,6 +42,14 @@ func (m *MockRealizedProfitRepositoryForAnalytics) GetAll(filters models.Realize
 func (m *MockRealizedProfitRepositoryForAnalytics) Delete(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
+}
+
+func (m *MockRealizedProfitRepositoryForAnalytics) CreateTx(tx *sql.Tx, input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error) {
+	args := m.Called(tx, input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RealizedProfit), args.Error(1)
 }
 
 // TestAnalyticsService_GetSummary 測試取得分析摘要

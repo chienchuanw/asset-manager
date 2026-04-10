@@ -13,11 +13,14 @@ import (
 // TransactionRepository 交易記錄資料存取介面
 type TransactionRepository interface {
 	Create(input *models.CreateTransactionInput) (*models.Transaction, error)
+	CreateTx(tx *sql.Tx, input *models.CreateTransactionInput) (*models.Transaction, error)
 	CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error)
+	CreateWithExchangeRateTx(tx *sql.Tx, input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error)
 	GetByID(id uuid.UUID) (*models.Transaction, error)
 	GetAll(filters TransactionFilters) ([]*models.Transaction, error)
 	Update(id uuid.UUID, input *models.UpdateTransactionInput) (*models.Transaction, error)
 	Delete(id uuid.UUID) error
+	DB() *sql.DB
 }
 
 // TransactionFilters 查詢篩選條件
@@ -39,6 +42,11 @@ type transactionRepository struct {
 // NewTransactionRepository 建立新的交易記錄 repository
 func NewTransactionRepository(db *sql.DB) TransactionRepository {
 	return &transactionRepository{db: db}
+}
+
+// DB 回傳底層的 *sql.DB，供 service 層開啟交易使用
+func (r *transactionRepository) DB() *sql.DB {
+	return r.db
 }
 
 // Create 建立新的交易記錄
@@ -90,6 +98,55 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 	return transaction, nil
 }
 
+// CreateTx 在指定的資料庫交易中建立新的交易記錄
+func (r *transactionRepository) CreateTx(tx *sql.Tx, input *models.CreateTransactionInput) (*models.Transaction, error) {
+	query := `
+		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+	`
+
+	transaction := &models.Transaction{}
+	err := tx.QueryRow(
+		query,
+		input.Date,
+		input.AssetType,
+		input.Symbol,
+		input.Name,
+		input.TransactionType,
+		input.Quantity,
+		input.Price,
+		input.Amount,
+		input.Fee,
+		input.Tax,
+		input.Currency,
+		input.Note,
+	).Scan(
+		&transaction.ID,
+		&transaction.Date,
+		&transaction.AssetType,
+		&transaction.Symbol,
+		&transaction.Name,
+		&transaction.TransactionType,
+		&transaction.Quantity,
+		&transaction.Price,
+		&transaction.Amount,
+		&transaction.Fee,
+		&transaction.Tax,
+		&transaction.Currency,
+		&transaction.ExchangeRateID,
+		&transaction.Note,
+		&transaction.CreatedAt,
+		&transaction.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	return transaction, nil
+}
+
 // CreateWithExchangeRate 建立新的交易記錄（帶匯率 ID）
 func (r *transactionRepository) CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
 	query := `
@@ -100,6 +157,56 @@ func (r *transactionRepository) CreateWithExchangeRate(input *models.CreateTrans
 
 	transaction := &models.Transaction{}
 	err := r.db.QueryRow(
+		query,
+		input.Date,
+		input.AssetType,
+		input.Symbol,
+		input.Name,
+		input.TransactionType,
+		input.Quantity,
+		input.Price,
+		input.Amount,
+		input.Fee,
+		input.Tax,
+		input.Currency,
+		exchangeRateID,
+		input.Note,
+	).Scan(
+		&transaction.ID,
+		&transaction.Date,
+		&transaction.AssetType,
+		&transaction.Symbol,
+		&transaction.Name,
+		&transaction.TransactionType,
+		&transaction.Quantity,
+		&transaction.Price,
+		&transaction.Amount,
+		&transaction.Fee,
+		&transaction.Tax,
+		&transaction.Currency,
+		&transaction.ExchangeRateID,
+		&transaction.Note,
+		&transaction.CreatedAt,
+		&transaction.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction with exchange rate: %w", err)
+	}
+
+	return transaction, nil
+}
+
+// CreateWithExchangeRateTx 在指定的資料庫交易中建立新的交易記錄（帶匯率 ID）
+func (r *transactionRepository) CreateWithExchangeRateTx(tx *sql.Tx, input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
+	query := `
+		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+	`
+
+	transaction := &models.Transaction{}
+	err := tx.QueryRow(
 		query,
 		input.Date,
 		input.AssetType,

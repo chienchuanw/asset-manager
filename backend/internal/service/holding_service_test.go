@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -61,6 +62,30 @@ func (m *MockTransactionRepositoryForHolding) Update(id uuid.UUID, input *models
 func (m *MockTransactionRepositoryForHolding) Delete(id uuid.UUID) error {
 	args := m.Called(id)
 	return args.Error(0)
+}
+
+func (m *MockTransactionRepositoryForHolding) CreateTx(tx *sql.Tx, input *models.CreateTransactionInput) (*models.Transaction, error) {
+	args := m.Called(tx, input)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
+func (m *MockTransactionRepositoryForHolding) CreateWithExchangeRateTx(tx *sql.Tx, input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error) {
+	args := m.Called(tx, input, exchangeRateID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
+func (m *MockTransactionRepositoryForHolding) DB() *sql.DB {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*sql.DB)
 }
 
 // MockPriceService Price Service 的 Mock

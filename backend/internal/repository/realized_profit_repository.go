@@ -12,6 +12,9 @@ type RealizedProfitRepository interface {
 	// Create 建立已實現損益記錄
 	Create(input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error)
 
+	// CreateTx 在指定的資料庫交易中建立已實現損益記錄
+	CreateTx(tx *sql.Tx, input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error)
+
 	// GetByTransactionID 根據交易 ID 取得已實現損益
 	GetByTransactionID(transactionID string) (*models.RealizedProfit, error)
 
@@ -58,6 +61,69 @@ func (r *realizedProfitRepository) Create(input *models.CreateRealizedProfitInpu
 
 	var result models.RealizedProfit
 	err := r.db.QueryRow(
+		query,
+		input.TransactionID,
+		input.Symbol,
+		input.AssetType,
+		input.SellDate,
+		input.Quantity,
+		input.SellPrice,
+		input.SellAmount,
+		input.SellFee,
+		input.CostBasis,
+		realizedPL,
+		realizedPLPct,
+		input.Currency,
+	).Scan(
+		&result.ID,
+		&result.TransactionID,
+		&result.Symbol,
+		&result.AssetType,
+		&result.SellDate,
+		&result.Quantity,
+		&result.SellPrice,
+		&result.SellAmount,
+		&result.SellFee,
+		&result.CostBasis,
+		&result.RealizedPL,
+		&result.RealizedPLPct,
+		&result.Currency,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create realized profit: %w", err)
+	}
+
+	return &result, nil
+}
+
+// CreateTx 在指定的資料庫交易中建立已實現損益記錄
+func (r *realizedProfitRepository) CreateTx(tx *sql.Tx, input *models.CreateRealizedProfitInput) (*models.RealizedProfit, error) {
+	// 計算已實現損益
+	realizedPL := (input.SellAmount - input.SellFee) - input.CostBasis
+
+	// 計算已實現損益百分比
+	var realizedPLPct float64
+	if input.CostBasis > 0 {
+		realizedPLPct = (realizedPL / input.CostBasis) * 100
+	}
+
+	query := `
+		INSERT INTO realized_profits (
+			transaction_id, symbol, asset_type, sell_date, quantity,
+			sell_price, sell_amount, sell_fee, cost_basis,
+			realized_pl, realized_pl_pct, currency
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id, transaction_id, symbol, asset_type, sell_date, quantity,
+		          sell_price, sell_amount, sell_fee, cost_basis,
+		          realized_pl, realized_pl_pct, currency, created_at, updated_at
+	`
+
+	var result models.RealizedProfit
+	err := tx.QueryRow(
 		query,
 		input.TransactionID,
 		input.Symbol,
