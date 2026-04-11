@@ -75,6 +75,7 @@
     "cashFlows": "現金流記錄",
     "recurring": "訂閱分期",
     "analytics": "分析報表",
+    "rebalance": "資產再平衡",
     "settings": "設定",
     "userManagement": "使用者管理",
     "notification": "通知管理",
@@ -648,6 +649,24 @@
     "installmentCompletionNotificationDesc": "分期即將完成時發送提醒通知",
     "expiryReminderDays": "到期提醒天數",
     "expiryReminderDaysHint": "提前幾天發送到期提醒（1-30 天）"
+  },
+  "rebalance": {
+    "title": "資產再平衡",
+    "description": "檢查資產配置偏差與再平衡建議",
+    "currentAllocation": "目前配置",
+    "targetAllocation": "目標配置",
+    "deviation": "偏差",
+    "threshold": "閾值",
+    "needsRebalance": "需要再平衡",
+    "balanced": "您的投資組合配置良好，目前不需要再平衡。",
+    "suggestions": "調整建議",
+    "buy": "買入",
+    "sell": "賣出",
+    "assetType": "資產類別",
+    "amount": "金額",
+    "reason": "原因",
+    "totalPortfolioValue": "投資組合總值",
+    "refresh": "重新整理"
   },
   "errors": {
     "loadFailed": "載入資料失敗",
