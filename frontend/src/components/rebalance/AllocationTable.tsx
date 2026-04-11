@@ -22,15 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AssetTypeDeviation } from "@/types/rebalance";
-
-/**
- * 資產類別顯示名稱對應
- */
-const ASSET_TYPE_MAP: Record<string, string> = {
-  "tw-stock": "twStock",
-  "us-stock": "usStock",
-  crypto: "crypto",
-};
+import { ASSET_TYPE_MAP } from "./constants";
 
 interface AllocationTableProps {
   deviations: AssetTypeDeviation[];

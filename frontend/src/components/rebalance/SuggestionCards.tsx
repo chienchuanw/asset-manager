@@ -16,15 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2Icon } from "lucide-react";
 import type { RebalanceSuggestion } from "@/types/rebalance";
-
-/**
- * 資產類別顯示名稱對應
- */
-const ASSET_TYPE_MAP: Record<string, string> = {
-  "tw-stock": "twStock",
-  "us-stock": "usStock",
-  crypto: "crypto",
-};
+import { ASSET_TYPE_MAP } from "./constants";
 
 interface SuggestionCardsProps {
   suggestions: RebalanceSuggestion[];
