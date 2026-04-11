@@ -19,7 +19,7 @@ NC     := \033[0m # No Color
 # Go 工具路徑
 GOTESTSUM := ./scripts/run-tests.sh
 
-.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot swagger
+.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot swagger swagger-check
 
 # 顯示幫助訊息
 help:
@@ -57,6 +57,7 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Documentation:$(NC)"
 	@echo "  $(GREEN)make swagger$(NC)          - 產生 Swagger/OpenAPI 文件"
+	@echo "  $(GREEN)make swagger-check$(NC)    - 檢查 Swagger 文件是否為最新"
 	@echo ""
 
 # 安裝依賴套件
@@ -194,4 +195,9 @@ swagger:
 	@echo "$(BLUE)Generating Swagger documentation...$(NC)"
 	swag init -g cmd/api/main.go -o docs/ --parseDependency --parseInternal
 	@echo "$(GREEN)Swagger docs generated in docs/$(NC)"
+
+# 檢查 Swagger 文件是否為最新
+swagger-check: swagger
+	@git diff --quiet docs/ || (echo "$(RED)Swagger spec is out of date. Run 'make swagger' and commit.$(NC)" && exit 1)
+	@echo "$(GREEN)Swagger spec is up to date.$(NC)"
 

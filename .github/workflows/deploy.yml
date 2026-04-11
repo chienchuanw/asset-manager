@@ -127,6 +127,15 @@ jobs:
         run: |
           gotestsum --format testname -- -cover ./...
 
+      - name: 📝 Install swag CLI
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.4
+
+      - name: 📝 Verify Swagger spec is up-to-date
+        working-directory: backend
+        run: |
+          swag init -g cmd/api/main.go -o docs/ --parseDependency --parseInternal
+          git diff --exit-code docs/ || (echo "::error::Swagger spec is out of date. Run 'make swagger' in backend/ and commit the changes." && exit 1)
+
       - name: ✅ Tests passed
         run: echo "All tests passed successfully!"
 
