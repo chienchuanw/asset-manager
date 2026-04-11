@@ -1,0 +1,5298 @@
+basePath: /
+definitions:
+  github_com_chienchuanw_asset-manager_internal_models.AddCardsToGroupInput:
+    properties:
+      card_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - card_ids
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AllocationByAsset:
+    properties:
+      asset_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+        description: 資產類型
+      market_value:
+        description: 市值
+        type: number
+      name:
+        description: 資產名稱
+        type: string
+      percentage:
+        description: 佔比（%）
+        type: number
+      quantity:
+        description: 持有數量
+        type: number
+      symbol:
+        description: 資產代碼
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AllocationByType:
+    properties:
+      asset_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+        description: 資產類型
+      count:
+        description: 持倉數量
+        type: integer
+      market_value:
+        description: 市值
+        type: number
+      name:
+        description: 資產類型名稱
+        type: string
+      percentage:
+        description: 佔比（%）
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AllocationSettings:
+    properties:
+      crypto:
+        description: 加密貨幣目標配置百分比
+        type: number
+      rebalance_threshold:
+        description: 再平衡閾值百分比
+        type: number
+      tw_stock:
+        description: 台股目標配置百分比
+        type: number
+      us_stock:
+        description: 美股目標配置百分比
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AllocationSummary:
+    properties:
+      as_of_date:
+        description: 資料日期
+        type: string
+      by_asset:
+        description: 按個別資產分類
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationByAsset'
+        type: array
+      by_type:
+        description: 按資產類型分類
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationByType'
+        type: array
+      currency:
+        description: 幣別
+        type: string
+      total_market_value:
+        description: 總市值
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AnalyticsSummary:
+    properties:
+      currency:
+        description: 幣別
+        type: string
+      end_date:
+        description: 結束日期
+        type: string
+      start_date:
+        description: 起始日期
+        type: string
+      time_range:
+        description: 時間範圍
+        type: string
+      total_cost_basis:
+        description: 總成本基礎
+        type: number
+      total_realized_pl:
+        description: 總已實現損益
+        type: number
+      total_realized_pl_pct:
+        description: 總已實現損益百分比
+        type: number
+      total_sell_amount:
+        description: 總賣出金額
+        type: number
+      total_sell_fee:
+        description: 總賣出手續費
+        type: number
+      transaction_count:
+        description: 交易筆數
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AssetSnapshot:
+    properties:
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SnapshotAssetType'
+      created_at:
+        type: string
+      id:
+        type: string
+      snapshot_date:
+        type: string
+      updated_at:
+        type: string
+      value_twd:
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.AssetType:
+    enum:
+    - cash
+    - tw-stock
+    - us-stock
+    - crypto
+    type: string
+    x-enum-varnames:
+    - AssetTypeCash
+    - AssetTypeTWStock
+    - AssetTypeUSStock
+    - AssetTypeCrypto
+  github_com_chienchuanw_asset-manager_internal_models.AssetTypeDeviation:
+    properties:
+      asset_type:
+        description: 資產類型
+        type: string
+      current_percent:
+        description: 當前配置百分比
+        type: number
+      current_value:
+        description: 當前市值
+        type: number
+      deviation:
+        description: 偏離百分比（當前 - 目標）
+        type: number
+      deviation_abs:
+        description: 絕對偏離百分比
+        type: number
+      exceeds_threshold:
+        description: 是否超過閾值
+        type: boolean
+      target_percent:
+        description: 目標配置百分比
+        type: number
+      target_value:
+        description: 目標市值
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.BankAccount:
+    properties:
+      account_number_last4:
+        type: string
+      account_type:
+        type: string
+      balance:
+        type: number
+      bank_name:
+        type: string
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      id:
+        type: string
+      note:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.BatchCreateTransactionsInput:
+    properties:
+      transactions:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateTransactionInput'
+        type: array
+    required:
+    - transactions
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.BillingCycle:
+    enum:
+    - monthly
+    - quarterly
+    - yearly
+    type: string
+    x-enum-comments:
+      BillingCycleMonthly: 月繳
+      BillingCycleQuarterly: 季繳
+      BillingCycleYearly: 年繳
+    x-enum-descriptions:
+    - 月繳
+    - 季繳
+    - 年繳
+    x-enum-varnames:
+    - BillingCycleMonthly
+    - BillingCycleQuarterly
+    - BillingCycleYearly
+  github_com_chienchuanw_asset-manager_internal_models.CSVImportResult:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CSVValidationError'
+        type: array
+      success:
+        type: boolean
+      transactions:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateTransactionInput'
+        type: array
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CSVValidationError:
+    properties:
+      field:
+        description: 錯誤欄位
+        type: string
+      message:
+        description: 錯誤訊息
+        type: string
+      row:
+        description: 錯誤發生的行號（從 1 開始，不含 header）
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CashFlow:
+    properties:
+      amount:
+        type: number
+      category:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+        description: 關聯資料（Join 時使用）
+      category_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      date:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      source_id:
+        type: string
+      source_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+      target_id:
+        description: 轉帳目標ID
+        type: string
+      target_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+        description: 轉帳目標類型
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowType'
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      is_system:
+        type: boolean
+      name:
+        type: string
+      sort_order:
+        type: integer
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowType'
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CashFlowType:
+    enum:
+    - income
+    - expense
+    - transfer_in
+    - transfer_out
+    type: string
+    x-enum-comments:
+      CashFlowTypeExpense: 支出
+      CashFlowTypeIncome: 收入
+      CashFlowTypeTransferIn: 存入帳戶
+      CashFlowTypeTransferOut: 從帳戶轉出
+    x-enum-descriptions:
+    - 收入
+    - 支出
+    - 存入帳戶
+    - 從帳戶轉出
+    x-enum-varnames:
+    - CashFlowTypeIncome
+    - CashFlowTypeExpense
+    - CashFlowTypeTransferIn
+    - CashFlowTypeTransferOut
+  github_com_chienchuanw_asset-manager_internal_models.CategoryOrderItem:
+    properties:
+      id:
+        type: string
+      sort_order:
+        minimum: 0
+        type: integer
+    required:
+    - id
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CategorySummary:
+    properties:
+      amount:
+        type: number
+      category_id:
+        type: string
+      category_name:
+        type: string
+      count:
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateBankAccountInput:
+    properties:
+      account_number_last4:
+        type: string
+      account_type:
+        maxLength: 50
+        type: string
+      balance:
+        minimum: 0
+        type: number
+      bank_name:
+        maxLength: 255
+        type: string
+      currency:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+        enum:
+        - TWD
+        - USD
+      note:
+        maxLength: 1000
+        type: string
+    required:
+    - account_number_last4
+    - account_type
+    - bank_name
+    - currency
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateCashFlowInput:
+    properties:
+      amount:
+        type: number
+      category_id:
+        type: string
+      date:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      note:
+        type: string
+      source_id:
+        type: string
+      source_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+      target_id:
+        description: 轉帳目標ID
+        type: string
+      target_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+        description: 轉帳目標類型
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowType'
+    required:
+    - amount
+    - category_id
+    - date
+    - description
+    - type
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateCategoryInput:
+    properties:
+      name:
+        maxLength: 20
+        type: string
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowType'
+    required:
+    - name
+    - type
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateCreditCardGroupInput:
+    properties:
+      card_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      issuing_bank:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      note:
+        maxLength: 1000
+        type: string
+      shared_credit_limit:
+        type: number
+    required:
+    - card_ids
+    - issuing_bank
+    - name
+    - shared_credit_limit
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateCreditCardInput:
+    properties:
+      billing_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      card_name:
+        maxLength: 255
+        type: string
+      card_number_last4:
+        type: string
+      credit_limit:
+        type: number
+      issuing_bank:
+        maxLength: 255
+        type: string
+      note:
+        maxLength: 1000
+        type: string
+      payment_due_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      used_credit:
+        minimum: 0
+        type: number
+    required:
+    - billing_day
+    - card_name
+    - card_number_last4
+    - credit_limit
+    - issuing_bank
+    - payment_due_day
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateInstallmentInput:
+    properties:
+      account_id:
+        description: 帳戶 ID
+        type: string
+      billing_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      category_id:
+        type: string
+      installment_count:
+        type: integer
+      interest_rate:
+        minimum: 0
+        type: number
+      name:
+        maxLength: 255
+        type: string
+      note:
+        type: string
+      payment_method:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PaymentMethod'
+        description: 付款方式
+      start_date:
+        type: string
+      total_amount:
+        type: number
+    required:
+    - billing_day
+    - category_id
+    - installment_count
+    - name
+    - payment_method
+    - start_date
+    - total_amount
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateSubscriptionInput:
+    properties:
+      account_id:
+        description: 帳戶 ID（銀行帳戶或信用卡）
+        type: string
+      amount:
+        type: number
+      auto_renew:
+        type: boolean
+      billing_cycle:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BillingCycle'
+      billing_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      category_id:
+        type: string
+      end_date:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      note:
+        type: string
+      payment_method:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PaymentMethod'
+        description: 付款方式
+      start_date:
+        type: string
+    required:
+    - amount
+    - billing_cycle
+    - billing_day
+    - category_id
+    - name
+    - payment_method
+    - start_date
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreateTransactionInput:
+    properties:
+      amount:
+        type: number
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      date:
+        type: string
+      fee:
+        minimum: 0
+        type: number
+      name:
+        type: string
+      note:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      quantity:
+        minimum: 0
+        type: number
+      symbol:
+        type: string
+      tax:
+        minimum: 0
+        type: number
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.TransactionType'
+    required:
+    - amount
+    - asset_type
+    - currency
+    - date
+    - name
+    - price
+    - quantity
+    - symbol
+    - type
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreditCard:
+    properties:
+      billing_day:
+        type: integer
+      card_name:
+        type: string
+      card_number_last4:
+        type: string
+      created_at:
+        type: string
+      credit_limit:
+        type: number
+      group_id:
+        type: string
+      id:
+        type: string
+      issuing_bank:
+        type: string
+      note:
+        type: string
+      payment_due_day:
+        type: integer
+      updated_at:
+        type: string
+      used_credit:
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreditCardGroup:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      issuing_bank:
+        type: string
+      name:
+        type: string
+      note:
+        type: string
+      shared_credit_limit:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.CreditCardGroupWithCards:
+    properties:
+      cards:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      issuing_bank:
+        type: string
+      name:
+        type: string
+      note:
+        type: string
+      shared_credit_limit:
+        type: number
+      total_used_credit:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.Currency:
+    enum:
+    - TWD
+    - USD
+    type: string
+    x-enum-comments:
+      CurrencyTWD: 新台幣
+      CurrencyUSD: 美金
+    x-enum-descriptions:
+    - 新台幣
+    - 美金
+    x-enum-varnames:
+    - CurrencyTWD
+    - CurrencyUSD
+  github_com_chienchuanw_asset-manager_internal_models.DailyPerformanceSnapshot:
+    properties:
+      created_at:
+        type: string
+      currency:
+        type: string
+      holding_count:
+        type: integer
+      id:
+        type: string
+      snapshot_date:
+        type: string
+      total_cost:
+        type: number
+      total_market_value:
+        type: number
+      total_realized_pct:
+        type: number
+      total_realized_pl:
+        type: number
+      total_unrealized_pct:
+        type: number
+      total_unrealized_pl:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.DiscordSettings:
+    properties:
+      enabled:
+        type: boolean
+      monthly_report_day:
+        description: 每月幾號發送 (1-10)
+        type: integer
+      monthly_report_enabled:
+        description: 月度現金流報告開關
+        type: boolean
+      report_time:
+        description: HH:MM 格式
+        type: string
+      webhook_url:
+        type: string
+      yearly_report_day:
+        description: 每年幾號發送 (1-10)
+        type: integer
+      yearly_report_enabled:
+        description: 年度現金流報告開關
+        type: boolean
+      yearly_report_month:
+        description: 每年幾月發送 (1-12)
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.FixInsufficientQuantityInput:
+    properties:
+      current_holding:
+        description: 使用者當前實際持有股數
+        type: number
+      estimated_cost:
+        description: 估計成本（fallback，當價格 API 失敗時使用）
+        type: number
+      symbol:
+        description: 標的代碼
+        type: string
+    required:
+    - current_holding
+    - symbol
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.Installment:
+    properties:
+      account_id:
+        description: 帳戶 ID
+        type: string
+      billing_day:
+        type: integer
+      category:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+        description: 關聯資料（Join 時使用）
+      category_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      id:
+        type: string
+      installment_amount:
+        type: number
+      installment_count:
+        type: integer
+      interest_rate:
+        type: number
+      name:
+        type: string
+      note:
+        type: string
+      paid_count:
+        type: integer
+      payment_method:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PaymentMethod'
+        description: 付款方式
+      start_date:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.InstallmentStatus'
+      total_amount:
+        type: number
+      total_interest:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.InstallmentStatus:
+    enum:
+    - active
+    - completed
+    - cancelled
+    type: string
+    x-enum-comments:
+      InstallmentStatusActive: 進行中
+      InstallmentStatusCancelled: 已取消
+      InstallmentStatusCompleted: 已完成
+    x-enum-descriptions:
+    - 進行中
+    - 已完成
+    - 已取消
+    x-enum-varnames:
+    - InstallmentStatusActive
+    - InstallmentStatusCompleted
+    - InstallmentStatusCancelled
+  github_com_chienchuanw_asset-manager_internal_models.MonthComparison:
+    properties:
+      expense_change:
+        description: 支出變化金額
+        type: number
+      expense_change_pct:
+        description: 支出變化百分比
+        type: number
+      income_change:
+        description: 收入變化金額
+        type: number
+      income_change_pct:
+        description: 收入變化百分比
+        type: number
+      net_cash_flow_change:
+        description: 淨現金流變化
+        type: number
+      previous_month:
+        type: integer
+      previous_year:
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.MonthlyBreakdown:
+    properties:
+      expense:
+        type: number
+      income:
+        type: number
+      month:
+        type: integer
+      net_cash_flow:
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.MonthlyCashFlowSummary:
+    properties:
+      comparison_to_prev:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.MonthComparison'
+      expense_category_breakdown:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CategorySummary'
+        type: array
+      expense_count:
+        type: integer
+      income_category_breakdown:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CategorySummary'
+        type: array
+      income_count:
+        type: integer
+      month:
+        type: integer
+      net_cash_flow:
+        type: number
+      top_expenses:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+        type: array
+      total_expense:
+        type: number
+      total_income:
+        type: number
+      year:
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.NotificationSettings:
+    properties:
+      daily_billing:
+        description: 每日扣款通知
+        type: boolean
+      expiry_days:
+        description: 到期提醒天數
+        type: integer
+      installment_completion:
+        description: 分期完成通知
+        type: boolean
+      subscription_expiry:
+        description: 訂閱到期通知
+        type: boolean
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.PaymentMethod:
+    enum:
+    - cash
+    - bank_account
+    - credit_card
+    type: string
+    x-enum-comments:
+      PaymentMethodBankAccount: 銀行帳戶
+      PaymentMethodCash: 現金
+      PaymentMethodCreditCard: 信用卡
+    x-enum-descriptions:
+    - 現金
+    - 銀行帳戶
+    - 信用卡
+    x-enum-varnames:
+    - PaymentMethodCash
+    - PaymentMethodBankAccount
+    - PaymentMethodCreditCard
+  github_com_chienchuanw_asset-manager_internal_models.PerformanceData:
+    properties:
+      asset_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+        description: 資產類型
+      cost_basis:
+        description: 成本基礎
+        type: number
+      name:
+        description: 資產類型名稱
+        type: string
+      realized_pl:
+        description: 已實現損益
+        type: number
+      realized_pl_pct:
+        description: 已實現損益百分比
+        type: number
+      sell_amount:
+        description: 賣出金額
+        type: number
+      transaction_count:
+        description: 交易筆數
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendByType:
+    properties:
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+      data:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendPoint'
+        type: array
+      name:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendPoint:
+    properties:
+      cost:
+        type: number
+      date:
+        type: string
+      holding_count:
+        type: integer
+      market_value:
+        type: number
+      realized_pct:
+        type: number
+      realized_pl:
+        type: number
+      total_pct:
+        description: 總報酬率
+        type: number
+      total_pl:
+        description: 總損益 = 已實現 + 未實現
+        type: number
+      unrealized_pct:
+        type: number
+      unrealized_pl:
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendSummary:
+    properties:
+      by_type:
+        description: 按資產類型的趨勢
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendByType'
+        type: array
+      currency:
+        type: string
+      data_point_count:
+        description: 資料點數量
+        type: integer
+      end_date:
+        type: string
+      start_date:
+        type: string
+      total_data:
+        description: 總體趨勢
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendPoint'
+        type: array
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.RebalanceCheck:
+    properties:
+      current_total:
+        description: 當前總資產
+        type: number
+      deviations:
+        description: 各資產類型的偏離情況
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetTypeDeviation'
+        type: array
+      needs_rebalance:
+        description: 是否需要再平衡
+        type: boolean
+      suggestions:
+        description: 再平衡建議
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.RebalanceSuggestion'
+        type: array
+      threshold:
+        description: 閾值百分比
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.RebalanceSuggestion:
+    properties:
+      action:
+        description: 動作：buy（買入）或 sell（賣出）
+        type: string
+      amount:
+        description: 金額（TWD）
+        type: number
+      asset_type:
+        description: 資產類型
+        type: string
+      reason:
+        description: 原因說明
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.RemoveCardsFromGroupInput:
+    properties:
+      card_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - card_ids
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReorderCategoryInput:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CategoryOrderItem'
+        minItems: 1
+        type: array
+    required:
+    - orders
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.SchedulerLogSummary:
+    properties:
+      last_error_message:
+        type: string
+      last_run_status:
+        type: string
+      last_run_time:
+        type: string
+      last_success_time:
+        type: string
+      task_name:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.SettingsGroup:
+    properties:
+      allocation:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationSettings'
+      discord:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.DiscordSettings'
+      notification:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.NotificationSettings'
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.SnapshotAssetType:
+    enum:
+    - tw-stock
+    - us-stock
+    - crypto
+    - total
+    type: string
+    x-enum-varnames:
+    - SnapshotAssetTypeTWStock
+    - SnapshotAssetTypeUSStock
+    - SnapshotAssetTypeCrypto
+    - SnapshotAssetTypeTotal
+  github_com_chienchuanw_asset-manager_internal_models.SourceType:
+    enum:
+    - manual
+    - subscription
+    - installment
+    - bank_account
+    - credit_card
+    - cash
+    type: string
+    x-enum-comments:
+      SourceTypeBankAccount: 銀行帳戶交易
+      SourceTypeCash: 現金
+      SourceTypeCreditCard: 信用卡交易
+      SourceTypeInstallment: 分期自動產生
+      SourceTypeManual: 手動建立（現金交易）
+      SourceTypeSubscription: 訂閱自動產生
+    x-enum-descriptions:
+    - 手動建立（現金交易）
+    - 訂閱自動產生
+    - 分期自動產生
+    - 銀行帳戶交易
+    - 信用卡交易
+    - 現金
+    x-enum-varnames:
+    - SourceTypeManual
+    - SourceTypeSubscription
+    - SourceTypeInstallment
+    - SourceTypeBankAccount
+    - SourceTypeCreditCard
+    - SourceTypeCash
+  github_com_chienchuanw_asset-manager_internal_models.Subscription:
+    properties:
+      account_id:
+        description: 帳戶 ID（銀行帳戶或信用卡）
+        type: string
+      amount:
+        type: number
+      auto_renew:
+        type: boolean
+      billing_cycle:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BillingCycle'
+      billing_day:
+        type: integer
+      category:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+        description: 關聯資料（Join 時使用）
+      category_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      end_date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      note:
+        type: string
+      payment_method:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PaymentMethod'
+        description: 付款方式
+      start_date:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SubscriptionStatus'
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.SubscriptionStatus:
+    enum:
+    - active
+    - cancelled
+    type: string
+    x-enum-comments:
+      SubscriptionStatusActive: 進行中
+      SubscriptionStatusCancelled: 已取消
+    x-enum-descriptions:
+    - 進行中
+    - 已取消
+    x-enum-varnames:
+    - SubscriptionStatusActive
+    - SubscriptionStatusCancelled
+  github_com_chienchuanw_asset-manager_internal_models.TopAsset:
+    properties:
+      asset_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+        description: 資產類型
+      cost_basis:
+        description: 成本基礎
+        type: number
+      name:
+        description: 標的名稱
+        type: string
+      realized_pl:
+        description: 已實現損益
+        type: number
+      realized_pl_pct:
+        description: 已實現損益百分比
+        type: number
+      sell_amount:
+        description: 賣出金額
+        type: number
+      symbol:
+        description: 標的代碼
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.Transaction:
+    properties:
+      amount:
+        type: number
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+      created_at:
+        type: string
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      date:
+        type: string
+      exchange_rate_id:
+        type: integer
+      fee:
+        type: number
+      id:
+        type: string
+      name:
+        type: string
+      note:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: number
+      symbol:
+        type: string
+      tax:
+        type: number
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.TransactionType'
+      updated_at:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.TransactionType:
+    enum:
+    - buy
+    - sell
+    - dividend
+    - fee
+    type: string
+    x-enum-varnames:
+    - TransactionTypeBuy
+    - TransactionTypeSell
+    - TransactionTypeDividend
+    - TransactionTypeFee
+  github_com_chienchuanw_asset-manager_internal_models.UnrealizedPerformance:
+    properties:
+      asset_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+        description: 資產類型
+      cost:
+        description: 成本
+        type: number
+      holding_count:
+        description: 持倉數量
+        type: integer
+      market_value:
+        description: 市值
+        type: number
+      name:
+        description: 資產類型名稱
+        type: string
+      unrealized_pct:
+        description: 未實現報酬率
+        type: number
+      unrealized_pl:
+        description: 未實現損益
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UnrealizedSummary:
+    properties:
+      currency:
+        description: 幣別
+        type: string
+      holding_count:
+        description: 持倉數量
+        type: integer
+      total_cost:
+        description: 總成本
+        type: number
+      total_market_value:
+        description: 總市值
+        type: number
+      total_unrealized_pct:
+        description: 總未實現報酬率
+        type: number
+      total_unrealized_pl:
+        description: 總未實現損益
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UnrealizedTopAsset:
+    properties:
+      asset_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+        description: 資產類型
+      avg_cost:
+        description: 平均成本
+        type: number
+      cost:
+        description: 總成本
+        type: number
+      current_price:
+        description: 當前價格
+        type: number
+      market_value:
+        description: 市值
+        type: number
+      name:
+        description: 標的名稱
+        type: string
+      quantity:
+        description: 持有數量
+        type: number
+      symbol:
+        description: 標的代碼
+        type: string
+      unrealized_pct:
+        description: 未實現報酬率
+        type: number
+      unrealized_pl:
+        description: 未實現損益
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateBankAccountInput:
+    properties:
+      account_number_last4:
+        type: string
+      account_type:
+        maxLength: 50
+        type: string
+      balance:
+        minimum: 0
+        type: number
+      bank_name:
+        maxLength: 255
+        type: string
+      currency:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+        enum:
+        - TWD
+        - USD
+      note:
+        maxLength: 1000
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateCashFlowInput:
+    properties:
+      amount:
+        type: number
+      category_id:
+        type: string
+      date:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      note:
+        type: string
+      source_id:
+        type: string
+      source_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+      target_id:
+        description: 轉帳目標ID
+        type: string
+      target_type:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+        description: 轉帳目標類型
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateCategoryInput:
+    properties:
+      name:
+        maxLength: 20
+        type: string
+    required:
+    - name
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateCreditCardGroupInput:
+    properties:
+      name:
+        maxLength: 255
+        type: string
+      note:
+        maxLength: 1000
+        type: string
+      shared_credit_limit:
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateCreditCardInput:
+    properties:
+      billing_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      card_name:
+        maxLength: 255
+        type: string
+      card_number_last4:
+        type: string
+      credit_limit:
+        type: number
+      issuing_bank:
+        maxLength: 255
+        type: string
+      note:
+        maxLength: 1000
+        type: string
+      payment_due_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      used_credit:
+        minimum: 0
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateInstallmentInput:
+    properties:
+      account_id:
+        description: 帳戶 ID
+        type: string
+      billing_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      category_id:
+        type: string
+      interest_rate:
+        minimum: 0
+        type: number
+      name:
+        maxLength: 255
+        type: string
+      note:
+        type: string
+      paid_count:
+        minimum: 0
+        type: integer
+      payment_method:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PaymentMethod'
+        description: 付款方式
+      status:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.InstallmentStatus'
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateSettingsGroupInput:
+    properties:
+      allocation:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationSettings'
+      discord:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.DiscordSettings'
+      notification:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.NotificationSettings'
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateSubscriptionInput:
+    properties:
+      account_id:
+        description: 帳戶 ID
+        type: string
+      amount:
+        type: number
+      auto_renew:
+        type: boolean
+      billing_cycle:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BillingCycle'
+      billing_day:
+        maximum: 31
+        minimum: 1
+        type: integer
+      category_id:
+        type: string
+      end_date:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      note:
+        type: string
+      payment_method:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PaymentMethod'
+        description: 付款方式
+      status:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SubscriptionStatus'
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.UpdateTransactionInput:
+    properties:
+      amount:
+        type: number
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      date:
+        type: string
+      fee:
+        minimum: 0
+        type: number
+      name:
+        type: string
+      note:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      quantity:
+        minimum: 0
+        type: number
+      symbol:
+        type: string
+      tax:
+        minimum: 0
+        type: number
+      type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.TransactionType'
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.YearComparison:
+    properties:
+      expense_change:
+        description: 支出變化金額
+        type: number
+      expense_change_pct:
+        description: 支出變化百分比
+        type: number
+      income_change:
+        description: 收入變化金額
+        type: number
+      income_change_pct:
+        description: 收入變化百分比
+        type: number
+      net_cash_flow_change:
+        description: 淨現金流變化
+        type: number
+      previous_year:
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.YearlyCashFlowSummary:
+    properties:
+      comparison_to_prev:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.YearComparison'
+      expense_category_breakdown:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CategorySummary'
+        type: array
+      expense_count:
+        type: integer
+      income_category_breakdown:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CategorySummary'
+        type: array
+      income_count:
+        type: integer
+      monthly_breakdown:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.MonthlyBreakdown'
+        type: array
+      net_cash_flow:
+        type: number
+      top_expenses:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+        type: array
+      total_expense:
+        type: number
+      total_income:
+        type: number
+      year:
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_repository.CashFlowSummary:
+    properties:
+      net_cash_flow:
+        type: number
+      total_expense:
+        type: number
+      total_income:
+        type: number
+    type: object
+  github_com_chienchuanw_asset-manager_internal_scheduler.SchedulerStatus:
+    properties:
+      discord_enabled:
+        type: boolean
+      discord_report_time:
+        type: string
+      enabled:
+        type: boolean
+      next_discord_run:
+        type: string
+      next_snapshot_run:
+        type: string
+      snapshot_time:
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_service.BillingError:
+    properties:
+      id:
+        description: 訂閱或分期的 ID
+        type: string
+      message:
+        description: 錯誤訊息
+        type: string
+      name:
+        description: 訂閱或分期的名稱
+        type: string
+    type: object
+  github_com_chienchuanw_asset-manager_internal_service.BillingResult:
+    properties:
+      created_cash_flows:
+        description: 建立的現金流記錄
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+        type: array
+      errors:
+        description: 錯誤列表
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_service.BillingError'
+        type: array
+      failed_count:
+        description: 失敗的數量
+        type: integer
+      processed_count:
+        description: 處理的數量
+        type: integer
+    type: object
+  github_com_chienchuanw_asset-manager_internal_service.DailyBillingResult:
+    properties:
+      date:
+        description: 扣款日期
+        type: string
+      installment_count:
+        description: 分期扣款數量
+        type: integer
+      installment_result:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_service.BillingResult'
+        description: 分期扣款結果
+      subscription_count:
+        description: 訂閱扣款數量
+        type: integer
+      subscription_result:
+        allOf:
+        - $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_service.BillingResult'
+        description: 訂閱扣款結果
+      total_amount:
+        description: 總扣款金額
+        type: number
+    type: object
+  internal_api.APIError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  internal_api.APIResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/internal_api.APIError'
+    type: object
+  internal_api.AssetTrendResponse:
+    properties:
+      date:
+        description: 日期 (YYYY-MM-DD)
+        type: string
+      value_twd:
+        description: 資產價值 (TWD)
+        type: number
+    type: object
+  internal_api.CancelSubscriptionInput:
+    properties:
+      end_date:
+        type: string
+    required:
+    - end_date
+    type: object
+  internal_api.CreateSnapshotRequest:
+    properties:
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SnapshotAssetType'
+      snapshot_date:
+        description: '格式: YYYY-MM-DD'
+        type: string
+      value_twd:
+        minimum: 0
+        type: number
+    required:
+    - asset_type
+    - snapshot_date
+    - value_twd
+    type: object
+  internal_api.ExchangeRateResponse:
+    properties:
+      date:
+        description: 日期 (YYYY-MM-DD)
+        type: string
+      from_currency:
+        description: 來源幣別
+        type: string
+      rate:
+        description: 匯率
+        type: number
+      source:
+        description: 資料來源
+        type: string
+      to_currency:
+        description: 目標幣別
+        type: string
+      updated_at:
+        description: 更新時間
+        type: string
+    type: object
+  internal_api.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  internal_api.ProcessBillingInput:
+    properties:
+      date:
+        type: string
+    type: object
+  internal_api.ProcessDailyBillingInput:
+    properties:
+      date:
+        type: string
+    type: object
+  internal_api.TestDiscordInput:
+    properties:
+      message:
+        description: 測試訊息
+        type: string
+    required:
+    - message
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Personal finance system API for tracking investment portfolios, cash
+    flows, subscriptions, and financial analytics.
+  title: Asset Manager API
+  version: "1.0"
+paths:
+  /api/allocation/by-asset:
+    get:
+      consumes:
+      - application/json
+      description: 取得按個別資產分類的資產配置
+      parameters:
+      - default: 20
+        description: 回傳數量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationByAsset'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得按個別資產的配置
+      tags:
+      - allocation
+  /api/allocation/by-type:
+    get:
+      consumes:
+      - application/json
+      description: 取得按資產類型分類的資產配置
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationByType'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得按資產類型的配置
+      tags:
+      - allocation
+  /api/allocation/current:
+    get:
+      consumes:
+      - application/json
+      description: 取得當前所有持倉的資產配置摘要，包含按資產類型和個別資產的分類
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AllocationSummary'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得當前資產配置摘要
+      tags:
+      - allocation
+  /api/analytics/performance:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定時間範圍內各資產類型的已實現損益績效
+      parameters:
+      - default: month
+        description: 時間範圍 (week, month, quarter, year, all)
+        in: query
+        name: time_range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PerformanceData'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得各資產類型績效
+      tags:
+      - analytics
+  /api/analytics/summary:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定時間範圍的已實現損益摘要
+      parameters:
+      - default: month
+        description: 時間範圍 (week, month, quarter, year, all)
+        in: query
+        name: time_range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AnalyticsSummary'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得分析摘要
+      tags:
+      - analytics
+  /api/analytics/top-assets:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定時間範圍內表現最佳的資產（按已實現損益排序）
+      parameters:
+      - default: month
+        description: 時間範圍 (week, month, quarter, year, all)
+        in: query
+        name: time_range
+        type: string
+      - default: 5
+        description: 回傳數量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.TopAsset'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得最佳/最差表現資產
+      tags:
+      - analytics
+  /api/analytics/unrealized/performance:
+    get:
+      consumes:
+      - application/json
+      description: 取得當前各資產類型的未實現損益績效
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UnrealizedPerformance'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得各資產類型未實現績效
+      tags:
+      - unrealized-analytics
+  /api/analytics/unrealized/summary:
+    get:
+      consumes:
+      - application/json
+      description: 取得當前所有持倉的未實現損益摘要
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UnrealizedSummary'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得未實現損益摘要
+      tags:
+      - unrealized-analytics
+  /api/analytics/unrealized/top-assets:
+    get:
+      consumes:
+      - application/json
+      description: 取得未實現損益最佳的資產（按未實現損益排序）
+      parameters:
+      - default: 10
+        description: 回傳數量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UnrealizedTopAsset'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得 Top 未實現損益資產
+      tags:
+      - unrealized-analytics
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 驗證使用者帳號密碼並返回 JWT token (存在 httpOnly cookie)
+      parameters:
+      - description: 登入資訊
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 使用者登入
+      tags:
+      - auth
+  /api/auth/logout:
+    post:
+      description: 清除 JWT token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 使用者登出
+      tags:
+      - auth
+  /api/auth/me:
+    get:
+      description: 取得當前登入使用者的資訊 (需要驗證)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: 取得當前使用者
+      tags:
+      - auth
+  /api/bank-accounts:
+    get:
+      description: 列出所有銀行帳戶，可選擇性依幣別篩選
+      parameters:
+      - description: 幣別篩選 (TWD, USD)
+        in: query
+        name: currency
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BankAccount'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 列出銀行帳戶
+      tags:
+      - bank-accounts
+    post:
+      consumes:
+      - application/json
+      description: 建立新的銀行帳戶
+      parameters:
+      - description: 銀行帳戶資料
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateBankAccountInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BankAccount'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立銀行帳戶
+      tags:
+      - bank-accounts
+  /api/bank-accounts/{id}:
+    delete:
+      description: 刪除銀行帳戶
+      parameters:
+      - description: 銀行帳戶 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除銀行帳戶
+      tags:
+      - bank-accounts
+    get:
+      description: 根據 ID 取得單筆銀行帳戶
+      parameters:
+      - description: 銀行帳戶 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BankAccount'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得銀行帳戶
+      tags:
+      - bank-accounts
+    put:
+      consumes:
+      - application/json
+      description: 更新銀行帳戶資料
+      parameters:
+      - description: 銀行帳戶 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateBankAccountInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BankAccount'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新銀行帳戶
+      tags:
+      - bank-accounts
+  /api/billing/process-daily:
+    post:
+      consumes:
+      - application/json
+      description: 手動觸發每日扣款處理（訂閱 + 分期）
+      parameters:
+      - description: 扣款日期（選填，預設為今天）
+        in: body
+        name: input
+        schema:
+          $ref: '#/definitions/internal_api.ProcessDailyBillingInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_service.DailyBillingResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 處理每日扣款
+      tags:
+      - billing
+  /api/billing/process-installments:
+    post:
+      consumes:
+      - application/json
+      description: 手動觸發分期扣款處理
+      parameters:
+      - description: 扣款日期（選填，預設為今天）
+        in: body
+        name: input
+        schema:
+          $ref: '#/definitions/internal_api.ProcessBillingInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_service.BillingResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 處理分期扣款
+      tags:
+      - billing
+  /api/billing/process-subscriptions:
+    post:
+      consumes:
+      - application/json
+      description: 手動觸發訂閱扣款處理
+      parameters:
+      - description: 扣款日期（選填，預設為今天）
+        in: body
+        name: input
+        schema:
+          $ref: '#/definitions/internal_api.ProcessBillingInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_service.BillingResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 處理訂閱扣款
+      tags:
+      - billing
+  /api/cash-flows:
+    get:
+      description: 取得所有現金流記錄，支援篩選
+      parameters:
+      - description: 現金流類型 (income/expense)
+        in: query
+        name: type
+        type: string
+      - description: 分類 ID
+        in: query
+        name: category_id
+        type: string
+      - description: 開始日期 (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: 結束日期 (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: 每頁筆數
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得現金流記錄列表
+      tags:
+      - cash-flows
+    post:
+      consumes:
+      - application/json
+      description: 建立新的現金流記錄
+      parameters:
+      - description: 現金流記錄資料
+        in: body
+        name: cash_flow
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateCashFlowInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立現金流記錄
+      tags:
+      - cash-flows
+  /api/cash-flows/{id}:
+    delete:
+      description: 刪除現金流記錄
+      parameters:
+      - description: 現金流記錄 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除現金流記錄
+      tags:
+      - cash-flows
+    get:
+      description: 根據 ID 取得單筆現金流記錄
+      parameters:
+      - description: 現金流記錄 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得現金流記錄
+      tags:
+      - cash-flows
+    put:
+      consumes:
+      - application/json
+      description: 更新現金流記錄
+      parameters:
+      - description: 現金流記錄 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: cash_flow
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateCashFlowInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlow'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新現金流記錄
+      tags:
+      - cash-flows
+  /api/cash-flows/monthly-summary:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定月份的現金流摘要，包含與前一個月的比較
+      parameters:
+      - description: 年份
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: 月份 (1-12)
+        in: query
+        name: month
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.MonthlyCashFlowSummary'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得月度現金流摘要
+      tags:
+      - cash-flows
+  /api/cash-flows/send-monthly-report:
+    post:
+      consumes:
+      - application/json
+      description: 手動觸發發送指定月份的現金流報告到 Discord
+      parameters:
+      - description: 年份
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: 月份 (1-12)
+        in: query
+        name: month
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 發送月度現金流報告
+      tags:
+      - cash-flows
+  /api/cash-flows/send-yearly-report:
+    post:
+      consumes:
+      - application/json
+      description: 手動觸發發送指定年度的現金流報告到 Discord
+      parameters:
+      - description: 年份
+        in: query
+        name: year
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 發送年度現金流報告
+      tags:
+      - cash-flows
+  /api/cash-flows/summary:
+    get:
+      description: 取得指定日期範圍的現金流摘要統計
+      parameters:
+      - description: 開始日期 (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: 結束日期 (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_repository.CashFlowSummary'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得現金流摘要
+      tags:
+      - cash-flows
+  /api/cash-flows/yearly-summary:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定年度的現金流摘要，包含與前一年的比較
+      parameters:
+      - description: 年份
+        in: query
+        name: year
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.YearlyCashFlowSummary'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得年度現金流摘要
+      tags:
+      - cash-flows
+  /api/categories:
+    get:
+      description: 取得所有分類，支援類型篩選
+      parameters:
+      - description: 現金流類型 (income/expense)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得分類列表
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: 建立新的現金流分類
+      parameters:
+      - description: 分類資料
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立分類
+      tags:
+      - categories
+  /api/categories/{id}:
+    delete:
+      description: 刪除分類（僅限自訂分類）
+      parameters:
+      - description: 分類 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除分類
+      tags:
+      - categories
+    get:
+      description: 根據 ID 取得單筆分類
+      parameters:
+      - description: 分類 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得分類
+      tags:
+      - categories
+    put:
+      consumes:
+      - application/json
+      description: 更新分類（僅限自訂分類）
+      parameters:
+      - description: 分類 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CashFlowCategory'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新分類
+      tags:
+      - categories
+  /api/categories/reorder:
+    put:
+      consumes:
+      - application/json
+      description: 批次更新分類的排序順序
+      parameters:
+      - description: 排序資料
+        in: body
+        name: orders
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReorderCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 重新排序分類
+      tags:
+      - categories
+  /api/credit-card-groups:
+    get:
+      description: 取得所有信用卡群組列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCardGroupWithCards'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得所有信用卡群組
+      tags:
+      - credit-card-groups
+    post:
+      consumes:
+      - application/json
+      description: 建立新的信用卡群組,將多張信用卡組成共享額度群組
+      parameters:
+      - description: 信用卡群組資料
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateCreditCardGroupInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCardGroupWithCards'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立信用卡群組
+      tags:
+      - credit-card-groups
+  /api/credit-card-groups/{id}:
+    delete:
+      description: 刪除信用卡群組,群組內的卡片將恢復為獨立卡片
+      parameters:
+      - description: 信用卡群組 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除信用卡群組
+      tags:
+      - credit-card-groups
+    get:
+      description: 根據 ID 取得單筆信用卡群組及其包含的卡片
+      parameters:
+      - description: 信用卡群組 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCardGroupWithCards'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得信用卡群組
+      tags:
+      - credit-card-groups
+    put:
+      consumes:
+      - application/json
+      description: 更新信用卡群組資料
+      parameters:
+      - description: 信用卡群組 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新的信用卡群組資料
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateCreditCardGroupInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCardGroup'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新信用卡群組
+      tags:
+      - credit-card-groups
+  /api/credit-card-groups/{id}/cards:
+    delete:
+      consumes:
+      - application/json
+      description: 將一張或多張信用卡從群組中移除,卡片將恢復為獨立卡片
+      parameters:
+      - description: 信用卡群組 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 要移除的卡片 ID 列表
+        in: body
+        name: cards
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.RemoveCardsFromGroupInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 從群組移除卡片
+      tags:
+      - credit-card-groups
+    post:
+      consumes:
+      - application/json
+      description: 將一張或多張信用卡加入到現有群組
+      parameters:
+      - description: 信用卡群組 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 要加入的卡片 ID 列表
+        in: body
+        name: cards
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AddCardsToGroupInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 新增卡片到群組
+      tags:
+      - credit-card-groups
+  /api/credit-cards:
+    get:
+      description: 列出所有信用卡
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 列出信用卡
+      tags:
+      - credit-cards
+    post:
+      consumes:
+      - application/json
+      description: 建立新的信用卡
+      parameters:
+      - description: 信用卡資料
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateCreditCardInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立信用卡
+      tags:
+      - credit-cards
+  /api/credit-cards/{id}:
+    delete:
+      description: 刪除信用卡
+      parameters:
+      - description: 信用卡 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除信用卡
+      tags:
+      - credit-cards
+    get:
+      description: 根據 ID 取得單筆信用卡
+      parameters:
+      - description: 信用卡 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得信用卡
+      tags:
+      - credit-cards
+    put:
+      consumes:
+      - application/json
+      description: 更新信用卡資料
+      parameters:
+      - description: 信用卡 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateCreditCardInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新信用卡
+      tags:
+      - credit-cards
+  /api/credit-cards/upcoming-billing:
+    get:
+      description: 取得未來 N 天內的帳單日信用卡
+      parameters:
+      - description: '未來天數 (預設: 7)'
+        in: query
+        name: days_ahead
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得即將到來的帳單日信用卡
+      tags:
+      - credit-cards
+  /api/credit-cards/upcoming-payment:
+    get:
+      description: 取得未來 N 天內的繳款截止日信用卡
+      parameters:
+      - description: '未來天數 (預設: 7)'
+        in: query
+        name: days_ahead
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreditCard'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得即將到來的繳款截止日信用卡
+      tags:
+      - credit-cards
+  /api/discord/daily-report:
+    post:
+      consumes:
+      - application/json
+      description: 發送每日資產報告到 Discord
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 發送每日報告
+      tags:
+      - discord
+  /api/discord/test:
+    post:
+      consumes:
+      - application/json
+      description: 發送測試訊息到 Discord Webhook
+      parameters:
+      - description: 測試訊息
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api.TestDiscordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 測試 Discord 發送
+      tags:
+      - discord
+  /api/exchange-rates/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 從 ExchangeRate-API 更新今日的 USD/TWD 匯率
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_api.ExchangeRateResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 更新今日匯率
+      tags:
+      - exchange-rates
+  /api/holdings:
+    get:
+      consumes:
+      - application/json
+      description: 取得所有持倉列表，支援按資產類型和標的代碼篩選
+      parameters:
+      - description: 資產類型 (cash, tw-stock, us-stock, crypto)
+        in: query
+        name: asset_type
+        type: string
+      - description: 標的代碼
+        in: query
+        name: symbol
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回持倉列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 伺服器錯誤
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 取得所有持倉
+      tags:
+      - holdings
+  /api/holdings/{symbol}:
+    get:
+      consumes:
+      - application/json
+      description: 根據標的代碼取得持倉詳情
+      parameters:
+      - description: 標的代碼
+        in: path
+        name: symbol
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回持倉詳情
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 伺服器錯誤
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 取得單一標的持倉
+      tags:
+      - holdings
+  /api/holdings/fix-insufficient-quantity:
+    post:
+      consumes:
+      - application/json
+      description: 透過新增股票股利記錄來補足缺少的股數
+      parameters:
+      - description: 修復輸入
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.FixInsufficientQuantityInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回新增的交易記錄
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 請求參數錯誤
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 伺服器錯誤
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 修復持倉數量不足
+      tags:
+      - holdings
+  /api/installments:
+    get:
+      description: 取得分期列表，支援篩選和分頁
+      parameters:
+      - description: 狀態篩選 (active, completed, cancelled)
+        in: query
+        name: status
+        type: string
+      - default: 100
+        description: 每頁筆數
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: 略過筆數
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Installment'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得分期列表
+      tags:
+      - installments
+    post:
+      consumes:
+      - application/json
+      description: 建立新的分期
+      parameters:
+      - description: 分期資料
+        in: body
+        name: installment
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateInstallmentInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Installment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立分期
+      tags:
+      - installments
+  /api/installments/{id}:
+    delete:
+      description: 刪除分期
+      parameters:
+      - description: 分期 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除分期
+      tags:
+      - installments
+    get:
+      description: 根據 ID 取得單筆分期
+      parameters:
+      - description: 分期 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Installment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得分期
+      tags:
+      - installments
+    put:
+      consumes:
+      - application/json
+      description: 更新分期資料
+      parameters:
+      - description: 分期 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: installment
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateInstallmentInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Installment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新分期
+      tags:
+      - installments
+  /api/installments/completing-soon:
+    get:
+      description: 取得剩餘期數小於等於指定值的分期
+      parameters:
+      - default: 3
+        description: 剩餘期數
+        in: query
+        name: remaining_count
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Installment'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得即將完成的分期
+      tags:
+      - installments
+  /api/performance-trends/latest:
+    get:
+      consumes:
+      - application/json
+      description: 取得最新 N 天的績效趨勢資料
+      parameters:
+      - default: 30
+        description: 天數
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendPoint'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得最新的績效趨勢
+      tags:
+      - performance-trends
+  /api/performance-trends/range:
+    get:
+      consumes:
+      - application/json
+      description: 取得指定日期範圍內的績效趨勢資料
+      parameters:
+      - description: 起始日期 (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: 結束日期 (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.PerformanceTrendSummary'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得日期範圍內的績效趨勢
+      tags:
+      - performance-trends
+  /api/performance-trends/snapshot:
+    post:
+      consumes:
+      - application/json
+      description: 建立當天的績效快照，包含總體和各資產類型的績效指標
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.DailyPerformanceSnapshot'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 建立每日績效快照
+      tags:
+      - performance-trends
+  /api/rebalance/check:
+    get:
+      consumes:
+      - application/json
+      description: 檢查當前資產配置是否偏離目標配置，並提供再平衡建議
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.RebalanceCheck'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 檢查是否需要再平衡
+      tags:
+      - rebalance
+  /api/scheduler/reload/discord:
+    post:
+      consumes:
+      - application/json
+      description: 當 Discord 設定變更時，重新載入排程
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 重新載入 Discord 排程
+      tags:
+      - scheduler
+  /api/scheduler/status:
+    get:
+      consumes:
+      - application/json
+      description: 取得排程器的當前狀態和下次執行時間
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_scheduler.SchedulerStatus'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得排程器狀態
+      tags:
+      - scheduler
+  /api/scheduler/summaries:
+    get:
+      consumes:
+      - application/json
+      description: 取得所有排程任務的最後執行狀態和時間
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SchedulerLogSummary'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得排程任務執行摘要
+      tags:
+      - scheduler
+  /api/scheduler/trigger/discord-report:
+    post:
+      consumes:
+      - application/json
+      description: 立即執行每日 Discord 報告任務
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 手動觸發 Discord 報告任務
+      tags:
+      - scheduler
+  /api/scheduler/trigger/snapshot:
+    post:
+      consumes:
+      - application/json
+      description: 立即執行每日快照任務
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 手動觸發快照任務
+      tags:
+      - scheduler
+  /api/settings:
+    get:
+      consumes:
+      - application/json
+      description: 取得所有設定（群組格式）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SettingsGroup'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得所有設定
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: 更新設定（群組格式）
+      parameters:
+      - description: 更新設定輸入
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateSettingsGroupInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SettingsGroup'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 更新設定
+      tags:
+      - settings
+  /api/snapshots:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 日期 (YYYY-MM-DD)
+        in: query
+        name: date
+        required: true
+        type: string
+      - description: 資產類型
+        in: query
+        name: asset_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 刪除快照
+      tags:
+      - snapshots
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 建立快照請求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api.CreateSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetSnapshot'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 建立資產快照
+      tags:
+      - snapshots
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 日期 (YYYY-MM-DD)
+        in: query
+        name: date
+        required: true
+        type: string
+      - description: 資產類型
+        in: query
+        name: asset_type
+        required: true
+        type: string
+      - description: 資產價值 (TWD)
+        in: query
+        name: value_twd
+        required: true
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetSnapshot'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 更新快照
+      tags:
+      - snapshots
+  /api/snapshots/latest:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 資產類型
+        enum:
+        - total
+        - tw-stock
+        - us-stock
+        - crypto
+        in: query
+        name: asset_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetSnapshot'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得最新快照
+      tags:
+      - snapshots
+  /api/snapshots/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 天數
+        in: query
+        maximum: 365
+        minimum: 1
+        name: days
+        required: true
+        type: integer
+      - description: 資產類型
+        enum:
+        - total
+        - tw-stock
+        - us-stock
+        - crypto
+        in: query
+        name: asset_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_api.AssetTrendResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 取得資產價值趨勢
+      tags:
+      - snapshots
+  /api/snapshots/trigger:
+    post:
+      consumes:
+      - application/json
+      description: 立即執行每日快照建立任務，計算當前所有持倉的價值並建立快照
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功建立快照
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: 伺服器錯誤
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 手動觸發每日快照建立
+      tags:
+      - snapshots
+  /api/subscriptions:
+    get:
+      description: 取得訂閱列表，支援篩選和分頁
+      parameters:
+      - description: 狀態篩選 (active, cancelled)
+        in: query
+        name: status
+        type: string
+      - description: 計費週期篩選 (monthly, quarterly, yearly)
+        in: query
+        name: billing_cycle
+        type: string
+      - default: 100
+        description: 每頁筆數
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: 略過筆數
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Subscription'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得訂閱列表
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: 建立新的訂閱
+      parameters:
+      - description: 訂閱資料
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateSubscriptionInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Subscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立訂閱
+      tags:
+      - subscriptions
+  /api/subscriptions/{id}:
+    delete:
+      description: 刪除訂閱
+      parameters:
+      - description: 訂閱 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除訂閱
+      tags:
+      - subscriptions
+    get:
+      description: 根據 ID 取得單筆訂閱
+      parameters:
+      - description: 訂閱 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Subscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得訂閱
+      tags:
+      - subscriptions
+    put:
+      consumes:
+      - application/json
+      description: 更新訂閱資料
+      parameters:
+      - description: 訂閱 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateSubscriptionInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Subscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新訂閱
+      tags:
+      - subscriptions
+  /api/subscriptions/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: 取消訂閱（設定結束日期）
+      parameters:
+      - description: 訂閱 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 取消訂閱資料
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api.CancelSubscriptionInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Subscription'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取消訂閱
+      tags:
+      - subscriptions
+  /api/transactions:
+    get:
+      description: 取得所有交易記錄，支援篩選
+      parameters:
+      - description: 資產類型
+        in: query
+        name: asset_type
+        type: string
+      - description: 交易類型
+        in: query
+        name: transaction_type
+        type: string
+      - description: 代碼
+        in: query
+        name: symbol
+        type: string
+      - description: 開始日期 (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: 結束日期 (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: 每頁筆數
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Transaction'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得交易記錄列表
+      tags:
+      - transactions
+    post:
+      consumes:
+      - application/json
+      description: 建立新的交易記錄
+      parameters:
+      - description: 交易記錄資料
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CreateTransactionInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Transaction'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 建立交易記錄
+      tags:
+      - transactions
+  /api/transactions/{id}:
+    delete:
+      description: 刪除指定的交易記錄
+      parameters:
+      - description: 交易記錄 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 刪除交易記錄
+      tags:
+      - transactions
+    get:
+      description: 根據 ID 取得單筆交易記錄
+      parameters:
+      - description: 交易記錄 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Transaction'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 取得交易記錄
+      tags:
+      - transactions
+    put:
+      consumes:
+      - application/json
+      description: 更新指定的交易記錄
+      parameters:
+      - description: 交易記錄 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新資料
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.UpdateTransactionInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Transaction'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 更新交易記錄
+      tags:
+      - transactions
+  /api/transactions/batch:
+    post:
+      consumes:
+      - application/json
+      description: 批次建立多筆交易記錄（全有或全無）
+      parameters:
+      - description: 批次交易記錄資料
+        in: body
+        name: batch
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.BatchCreateTransactionsInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Transaction'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 批次建立交易記錄
+      tags:
+      - transactions
+  /api/transactions/parse-csv:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 解析上傳的 CSV 檔案並返回解析後的交易資料或錯誤訊息
+      parameters:
+      - description: CSV 檔案
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.CSVImportResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 解析 CSV 檔案
+      tags:
+      - transactions
+  /api/transactions/template:
+    get:
+      description: 下載交易記錄 CSV 匯入樣板檔案
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: CSV 樣板檔案
+          schema:
+            type: file
+      summary: 下載 CSV 樣板
+      tags:
+      - transactions
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

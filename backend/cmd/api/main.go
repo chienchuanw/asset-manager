@@ -25,8 +25,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/chienchuanw/asset-manager/docs" // swagger docs
 )
 
+// @title Asset Manager API
+// @version 1.0
+// @description Personal finance system API for tracking investment portfolios, cash flows, subscriptions, and financial analytics.
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// 載入環境變數
 	if err := godotenv.Load(".env.local"); err != nil {
@@ -372,6 +384,9 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 
 	// 添加 i18n middleware
 	router.Use(middleware.I18nMiddleware())
+
+	// Swagger UI
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check endpoint (不需要驗證)
 	router.GET("/health", func(c *gin.Context) {

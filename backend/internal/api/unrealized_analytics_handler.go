@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	// imported for swag annotation resolution
+	_ "github.com/chienchuanw/asset-manager/internal/models"
+
 	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +30,7 @@ func NewUnrealizedAnalyticsHandler(service service.UnrealizedAnalyticsService) *
 // @Accept json
 // @Produce json
 // @Success 200 {object} models.UnrealizedSummary
-// @Failure 500 {object} ErrorResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/analytics/unrealized/summary [get]
 func (h *UnrealizedAnalyticsHandler) GetSummary(c *gin.Context) {
 	// 呼叫 service
@@ -54,7 +57,7 @@ func (h *UnrealizedAnalyticsHandler) GetSummary(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200 {array} models.UnrealizedPerformance
-// @Failure 500 {object} ErrorResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/analytics/unrealized/performance [get]
 func (h *UnrealizedAnalyticsHandler) GetPerformance(c *gin.Context) {
 	// 呼叫 service
@@ -82,7 +85,7 @@ func (h *UnrealizedAnalyticsHandler) GetPerformance(c *gin.Context) {
 // @Produce json
 // @Param limit query int false "回傳數量限制" default(10)
 // @Success 200 {array} models.UnrealizedTopAsset
-// @Failure 500 {object} ErrorResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/analytics/unrealized/top-assets [get]
 func (h *UnrealizedAnalyticsHandler) GetTopAssets(c *gin.Context) {
 	// 取得 limit 參數

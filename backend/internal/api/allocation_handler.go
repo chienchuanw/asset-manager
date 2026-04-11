@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	// imported for swag annotation resolution
+	_ "github.com/chienchuanw/asset-manager/internal/models"
+
 	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/gin-gonic/gin"
 )

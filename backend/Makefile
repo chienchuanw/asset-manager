@@ -19,7 +19,7 @@ NC     := \033[0m # No Color
 # Go 工具路徑
 GOTESTSUM := ./scripts/run-tests.sh
 
-.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot
+.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot swagger
 
 # 顯示幫助訊息
 help:
@@ -54,6 +54,9 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Snapshots:$(NC)"
 	@echo "  $(GREEN)make snapshot$(NC)         - 手動建立當日資產與績效快照"
+	@echo ""
+	@echo "$(YELLOW)Documentation:$(NC)"
+	@echo "  $(GREEN)make swagger$(NC)          - 產生 Swagger/OpenAPI 文件"
 	@echo ""
 
 # 安裝依賴套件
@@ -185,4 +188,10 @@ snapshot:
 	@echo "$(BLUE)Creating daily snapshots...$(NC)"
 	@go run cmd/snapshot/main.go
 	@echo "$(GREEN)Snapshots created successfully!$(NC)"
+
+# 產生 Swagger/OpenAPI 文件
+swagger:
+	@echo "$(BLUE)Generating Swagger documentation...$(NC)"
+	swag init -g cmd/api/main.go -o docs/ --parseDependency --parseInternal
+	@echo "$(GREEN)Swagger docs generated in docs/$(NC)"
 
