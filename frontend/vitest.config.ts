@@ -9,6 +9,12 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    pool: "forks",
+    poolOptions: {
+      forks: {
+        execArgv: ["--experimental-require-module"],
+      },
+    },
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
