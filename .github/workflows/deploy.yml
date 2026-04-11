@@ -139,11 +139,44 @@ jobs:
       - name: ✅ Tests passed
         run: echo "All tests passed successfully!"
 
+  # Job 2.5: 前端測試
+  test-frontend:
+    name: Run Frontend Tests
+    runs-on: ubuntu-latest
+    needs: notify-start
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 📦 Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧪 Run frontend tests
+        working-directory: frontend
+        run: pnpm test
+
+      - name: ✅ Frontend tests passed
+        run: echo "All frontend tests passed successfully!"
+
   # Job 3: 建置 Docker Images
   build:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, test-frontend]
 
     steps:
       - name: 📥 Checkout code
@@ -354,7 +387,7 @@ jobs:
   notify:
     name: Send Notification
     runs-on: ubuntu-latest
-    needs: [notify-start, test, build, deploy]
+    needs: [notify-start, test, test-frontend, build, deploy]
     if: always()
 
     steps:
@@ -415,11 +448,13 @@ jobs:
           }'
 
       - name: 📢 Send Discord Notification - Failure
-        if: needs.test.result == 'failure' || needs.build.result == 'failure' || needs.deploy.result == 'failure'
+        if: needs.test.result == 'failure' || needs.test-frontend.result == 'failure' || needs.build.result == 'failure' || needs.deploy.result == 'failure'
         run: |
           FAILED_STAGE="Deploy"
           if [ "${{ needs.test.result }}" = "failure" ]; then
             FAILED_STAGE="Test"
+          elif [ "${{ needs.test-frontend.result }}" = "failure" ]; then
+            FAILED_STAGE="Frontend Test"
           elif [ "${{ needs.build.result }}" = "failure" ]; then
             FAILED_STAGE="Build"
           fi
