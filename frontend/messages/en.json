@@ -75,6 +75,7 @@
     "cashFlows": "Cash Flows",
     "recurring": "Recurring",
     "analytics": "Analytics",
+    "rebalance": "Rebalance",
     "settings": "Settings",
     "userManagement": "User Management",
     "notification": "Notifications",
@@ -612,6 +613,24 @@
     "installmentCompletionNotificationDesc": "Send reminder when installment is about to complete",
     "expiryReminderDays": "Expiry Reminder Days",
     "expiryReminderDaysHint": "How many days in advance to send expiry reminder (1-30 days)"
+  },
+  "rebalance": {
+    "title": "Rebalance",
+    "description": "Check asset allocation deviation and rebalancing suggestions",
+    "currentAllocation": "Current Allocation",
+    "targetAllocation": "Target Allocation",
+    "deviation": "Deviation",
+    "threshold": "Threshold",
+    "needsRebalance": "Needs Rebalance",
+    "balanced": "Your portfolio is well balanced. No rebalancing is needed at this time.",
+    "suggestions": "Suggestions",
+    "buy": "Buy",
+    "sell": "Sell",
+    "assetType": "Asset Type",
+    "amount": "Amount",
+    "reason": "Reason",
+    "totalPortfolioValue": "Total Portfolio Value",
+    "refresh": "Refresh"
   },
   "errors": {
     "loadFailed": "Failed to load data",

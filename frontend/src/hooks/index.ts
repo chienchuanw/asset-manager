@@ -72,6 +72,8 @@ export {
 
 export { useInstruments } from "./use-instruments";
 
+export { useRebalanceCheck, rebalanceKeys } from "./useRebalanceCheck";
+
 export {
   useBankAccounts,
   useBankAccount,

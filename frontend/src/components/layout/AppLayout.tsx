@@ -20,6 +20,7 @@ import {
   LogOutIcon,
   TrendingUpIcon,
   RepeatIcon,
+  ScaleIcon,
   BellIcon,
 } from "lucide-react";
 import {
@@ -99,6 +100,12 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
       label: t("analytics"),
       icon: BarChart3Icon,
       href: "/analytics",
+    },
+    {
+      id: "rebalance",
+      label: t("rebalance"),
+      icon: ScaleIcon,
+      href: "/rebalance",
     },
   ];
 
