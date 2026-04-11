@@ -48,8 +48,8 @@ type AssetTrendResponse struct {
 // @Produce json
 // @Param request body CreateSnapshotRequest true "建立快照請求"
 // @Success 201 {object} APIResponse{data=models.AssetSnapshot}
-// @Failure 400 {object} Response
-// @Failure 500 {object} Response
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/snapshots [post]
 func (h *AssetSnapshotHandler) CreateSnapshot(c *gin.Context) {
 	var req CreateSnapshotRequest
@@ -106,8 +106,8 @@ func (h *AssetSnapshotHandler) CreateSnapshot(c *gin.Context) {
 // @Param days query int true "天數" minimum(1) maximum(365)
 // @Param asset_type query string true "資產類型" Enums(total, tw-stock, us-stock, crypto)
 // @Success 200 {object} APIResponse{data=[]AssetTrendResponse}
-// @Failure 400 {object} Response
-// @Failure 500 {object} Response
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/snapshots/trend [get]
 func (h *AssetSnapshotHandler) GetAssetTrend(c *gin.Context) {
 	var req GetAssetTrendRequest
@@ -158,9 +158,9 @@ func (h *AssetSnapshotHandler) GetAssetTrend(c *gin.Context) {
 // @Produce json
 // @Param asset_type query string true "資產類型" Enums(total, tw-stock, us-stock, crypto)
 // @Success 200 {object} APIResponse{data=models.AssetSnapshot}
-// @Failure 400 {object} Response
-// @Failure 404 {object} Response
-// @Failure 500 {object} Response
+// @Failure 400 {object} APIResponse
+// @Failure 404 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/snapshots/latest [get]
 func (h *AssetSnapshotHandler) GetLatestSnapshot(c *gin.Context) {
 	assetTypeStr := c.Query("asset_type")
@@ -201,8 +201,8 @@ func (h *AssetSnapshotHandler) GetLatestSnapshot(c *gin.Context) {
 // @Param asset_type query string true "資產類型"
 // @Param value_twd query number true "資產價值 (TWD)"
 // @Success 200 {object} APIResponse{data=models.AssetSnapshot}
-// @Failure 400 {object} Response
-// @Failure 500 {object} Response
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/snapshots [put]
 func (h *AssetSnapshotHandler) UpdateSnapshot(c *gin.Context) {
 	dateStr := c.Query("date")
@@ -268,9 +268,9 @@ func (h *AssetSnapshotHandler) UpdateSnapshot(c *gin.Context) {
 // @Produce json
 // @Param date query string true "日期 (YYYY-MM-DD)"
 // @Param asset_type query string true "資產類型"
-// @Success 200 {object} Response
-// @Failure 400 {object} Response
-// @Failure 500 {object} Response
+// @Success 200 {object} APIResponse
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/snapshots [delete]
 func (h *AssetSnapshotHandler) DeleteSnapshot(c *gin.Context) {
 	dateStr := c.Query("date")

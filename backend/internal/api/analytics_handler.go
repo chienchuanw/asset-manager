@@ -29,8 +29,8 @@ func NewAnalyticsHandler(analyticsService service.AnalyticsService) *AnalyticsHa
 // @Produce json
 // @Param time_range query string false "時間範圍 (week, month, quarter, year, all)" default(month)
 // @Success 200 {object} models.AnalyticsSummary
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/analytics/summary [get]
 func (h *AnalyticsHandler) GetSummary(c *gin.Context) {
 	// 取得時間範圍參數
@@ -62,8 +62,8 @@ func (h *AnalyticsHandler) GetSummary(c *gin.Context) {
 // @Produce json
 // @Param time_range query string false "時間範圍 (week, month, quarter, year, all)" default(month)
 // @Success 200 {array} models.PerformanceData
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/analytics/performance [get]
 func (h *AnalyticsHandler) GetPerformance(c *gin.Context) {
 	// 取得時間範圍參數
@@ -96,8 +96,8 @@ func (h *AnalyticsHandler) GetPerformance(c *gin.Context) {
 // @Param time_range query string false "時間範圍 (week, month, quarter, year, all)" default(month)
 // @Param limit query int false "回傳數量限制" default(5)
 // @Success 200 {array} models.TopAsset
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /api/analytics/top-assets [get]
 func (h *AnalyticsHandler) GetTopAssets(c *gin.Context) {
 	// 取得時間範圍參數
