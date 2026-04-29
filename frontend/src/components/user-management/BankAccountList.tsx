@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MoreHorizontalIcon, PencilIcon, TrashIcon } from "lucide-react";
+import { MoreHorizontalIcon, PencilIcon, ScaleIcon, TrashIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +30,7 @@ interface BankAccountListProps {
   isLoading?: boolean;
   onEdit?: (bankAccount: BankAccount) => void;
   onDelete?: (id: string) => void;
+  onReconcile?: (bankAccount: BankAccount) => void;
 }
 
 /**
@@ -51,6 +52,7 @@ export function BankAccountList({
   isLoading = false,
   onEdit,
   onDelete,
+  onReconcile,
 }: BankAccountListProps) {
   return (
     <div className="rounded-md border mx-4">
@@ -124,6 +126,12 @@ export function BankAccountList({
                         <DropdownMenuItem onClick={() => onEdit(account)}>
                           <PencilIcon className="mr-2 h-4 w-4" />
                           編輯
+                        </DropdownMenuItem>
+                      )}
+                      {onReconcile && (
+                        <DropdownMenuItem onClick={() => onReconcile(account)}>
+                          <ScaleIcon className="mr-2 h-4 w-4" />
+                          校準餘額
                         </DropdownMenuItem>
                       )}
                       {onDelete && (
