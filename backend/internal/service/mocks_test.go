@@ -162,6 +162,14 @@ func (m *MockCategoryRepository) GetByID(id uuid.UUID) (*models.CashFlowCategory
 	return args.Get(0).(*models.CashFlowCategory), args.Error(1)
 }
 
+func (m *MockCategoryRepository) GetByNameAndType(name string, flowType models.CashFlowType) (*models.CashFlowCategory, error) {
+	args := m.Called(name, flowType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.CashFlowCategory), args.Error(1)
+}
+
 func (m *MockCategoryRepository) Create(input *models.CreateCategoryInput) (*models.CashFlowCategory, error) {
 	args := m.Called(input)
 	if args.Get(0) == nil {
