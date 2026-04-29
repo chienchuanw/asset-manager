@@ -12,6 +12,7 @@ import (
 type CategoryRepository interface {
 	Create(input *models.CreateCategoryInput) (*models.CashFlowCategory, error)
 	GetByID(id uuid.UUID) (*models.CashFlowCategory, error)
+	GetByNameAndType(name string, flowType models.CashFlowType) (*models.CashFlowCategory, error)
 	GetAll(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error)
 	Update(id uuid.UUID, input *models.UpdateCategoryInput) (*models.CashFlowCategory, error)
 	Delete(id uuid.UUID) error
@@ -92,6 +93,36 @@ func (r *categoryRepository) GetByID(id uuid.UUID) (*models.CashFlowCategory, er
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get category: %w", err)
+	}
+
+	return category, nil
+}
+
+// GetByNameAndType 根據名稱與類型取得分類
+func (r *categoryRepository) GetByNameAndType(name string, flowType models.CashFlowType) (*models.CashFlowCategory, error) {
+	query := `
+		SELECT id, name, type, is_system, sort_order, created_at, updated_at
+		FROM cash_flow_categories
+		WHERE name = $1 AND type = $2
+		LIMIT 1
+	`
+
+	category := &models.CashFlowCategory{}
+	err := r.db.QueryRow(query, name, flowType).Scan(
+		&category.ID,
+		&category.Name,
+		&category.Type,
+		&category.IsSystem,
+		&category.SortOrder,
+		&category.CreatedAt,
+		&category.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("category not found: %s/%s", name, flowType)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get category by name and type: %w", err)
 	}
 
 	return category, nil

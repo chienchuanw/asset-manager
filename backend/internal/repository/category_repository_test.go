@@ -469,3 +469,54 @@ func TestCategoryRepository_Create_WithSortOrder(t *testing.T) {
 	assert.Greater(t, cat2.SortOrder, firstSortOrder, "第二個分類的 sort_order 應該比第一個大")
 }
 
+// TestCategoryRepository_GetByNameAndType 測試依名稱與類型查詢分類
+func TestCategoryRepository_GetByNameAndType(t *testing.T) {
+	db, err := setupTestDB()
+	require.NoError(t, err)
+	defer db.Close()
+
+	require.NoError(t, cleanupCategories(db))
+	ensureBalanceAdjustmentCategories(db)
+
+	repo := NewCategoryRepository(db)
+
+	t.Run("找到收入調整分類", func(t *testing.T) {
+		cat, err := repo.GetByNameAndType("餘額調整-收入", models.CashFlowTypeIncome)
+		require.NoError(t, err)
+		require.NotNil(t, cat)
+		assert.Equal(t, "餘額調整-收入", cat.Name)
+		assert.Equal(t, models.CashFlowTypeIncome, cat.Type)
+		assert.True(t, cat.IsSystem)
+	})
+
+	t.Run("找到支出調整分類", func(t *testing.T) {
+		cat, err := repo.GetByNameAndType("餘額調整-支出", models.CashFlowTypeExpense)
+		require.NoError(t, err)
+		require.NotNil(t, cat)
+		assert.Equal(t, "餘額調整-支出", cat.Name)
+		assert.Equal(t, models.CashFlowTypeExpense, cat.Type)
+	})
+
+	t.Run("找不到時回傳錯誤", func(t *testing.T) {
+		cat, err := repo.GetByNameAndType("不存在分類", models.CashFlowTypeIncome)
+		assert.Error(t, err)
+		assert.Nil(t, cat)
+	})
+
+	t.Run("名稱相同但類型不符仍找不到", func(t *testing.T) {
+		cat, err := repo.GetByNameAndType("餘額調整-收入", models.CashFlowTypeExpense)
+		assert.Error(t, err)
+		assert.Nil(t, cat)
+	})
+}
+
+// ensureBalanceAdjustmentCategories 確保餘額調整 system categories 存在（idempotent）
+func ensureBalanceAdjustmentCategories(db *sql.DB) {
+	_, _ = db.Exec(`
+		INSERT INTO cash_flow_categories (name, type, is_system, sort_order)
+		VALUES ('餘額調整-收入', 'income', true, 9000),
+		       ('餘額調整-支出', 'expense', true, 9000)
+		ON CONFLICT (name, type) DO NOTHING
+	`)
+}
+
