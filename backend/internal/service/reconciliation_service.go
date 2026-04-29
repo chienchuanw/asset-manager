@@ -72,7 +72,115 @@ func (s *reconciliationService) ReconcileBankAccount(id uuid.UUID, input *models
 
 // ReconcileCreditCard 校準信用卡 used_credit / credit_limit
 func (s *reconciliationService) ReconcileCreditCard(id uuid.UUID, input *models.ReconcileCreditCardInput) (*models.ReconcileResult, error) {
-	return nil, fmt.Errorf("not implemented")
+	if err := input.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid input: %w", err)
+	}
+	cats, err := s.loadAdjustmentCategories()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := s.reconcileCreditCardTx(tx, id, input, cats)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
+	return res, nil
+}
+
+// reconcileCreditCardTx 在指定 tx 內校準單一信用卡
+func (s *reconciliationService) reconcileCreditCardTx(
+	tx *sql.Tx,
+	id uuid.UUID,
+	input *models.ReconcileCreditCardInput,
+	cats *adjustmentCategoryIDs,
+) (*models.ReconcileResult, error) {
+	var (
+		currUsed    float64
+		currLimit   float64
+		issuingBank string
+		cardName    string
+		last4       string
+	)
+	err := tx.QueryRow(
+		`SELECT used_credit, credit_limit, issuing_bank, card_name, card_number_last4
+		 FROM credit_cards WHERE id = $1`,
+		id,
+	).Scan(&currUsed, &currLimit, &issuingBank, &cardName, &last4)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("credit card not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("fetch credit card: %w", err)
+	}
+
+	nextUsed := currUsed
+	if input.NewUsedCredit != nil {
+		nextUsed = *input.NewUsedCredit
+	}
+	nextLimit := currLimit
+	if input.NewCreditLimit != nil {
+		nextLimit = *input.NewCreditLimit
+	}
+	if nextUsed > nextLimit {
+		return nil, fmt.Errorf("used_credit (%v) cannot exceed credit_limit (%v)", nextUsed, nextLimit)
+	}
+
+	if _, err := tx.Exec(
+		`UPDATE credit_cards
+		 SET used_credit = $1, credit_limit = $2, updated_at = CURRENT_TIMESTAMP
+		 WHERE id = $3`,
+		nextUsed, nextLimit, id,
+	); err != nil {
+		return nil, fmt.Errorf("update credit card: %w", err)
+	}
+
+	delta := nextUsed - currUsed
+	res := &models.ReconcileResult{
+		TargetType:     models.SourceTypeCreditCard,
+		TargetID:       id,
+		Delta:          delta,
+		NewUsedCredit:  ptrFloat(nextUsed),
+		NewCreditLimit: ptrFloat(nextLimit),
+	}
+	if delta == 0 {
+		return res, nil
+	}
+
+	flowType := models.CashFlowTypeExpense
+	categoryID := cats.expense
+	amount := delta
+	if delta < 0 {
+		flowType = models.CashFlowTypeIncome
+		categoryID = cats.income
+		amount = -delta
+	}
+	description := fmt.Sprintf("[餘額調整] %s %s (****%s)", issuingBank, cardName, last4)
+	srcType := models.SourceTypeCreditCard
+	srcID := id
+
+	var newID uuid.UUID
+	err = tx.QueryRow(
+		`INSERT INTO cash_flows
+		 (date, type, category_id, amount, currency, description, note, source_type, source_id)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 RETURNING id`,
+		input.Date, flowType, categoryID, amount, models.CurrencyTWD,
+		description, input.Note, srcType, srcID,
+	).Scan(&newID)
+	if err != nil {
+		return nil, fmt.Errorf("insert adjustment cash flow: %w", err)
+	}
+	res.CashFlowID = &newID
+	return res, nil
 }
 
 // ReconcileBatch 批次校準（共用單一 transaction）

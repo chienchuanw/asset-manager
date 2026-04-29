@@ -154,6 +154,123 @@ func TestReconcileBankAccount_NotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func seedCreditCard(t *testing.T, env *reconciliationTestEnv, used, limit float64) *models.CreditCard {
+	t.Helper()
+	card, err := env.cardRepo.Create(&models.CreateCreditCardInput{
+		IssuingBank:     "玉山",
+		CardName:        "Pi 卡",
+		CardNumberLast4: "5678",
+		BillingDay:      5,
+		PaymentDueDay:   15,
+		CreditLimit:     limit,
+		UsedCredit:      used,
+	})
+	require.NoError(t, err)
+	return card
+}
+
+func TestReconcileCreditCard_UsedCreditIncrease_CreatesExpenseCashFlow(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	card := seedCreditCard(t, env, 5000, 100000)
+	newUsed := 8000.0
+	res, err := env.svc.ReconcileCreditCard(card.ID, &models.ReconcileCreditCardInput{
+		NewUsedCredit: &newUsed,
+		Date:          time.Now(),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 3000.0, res.Delta)
+	require.NotNil(t, res.CashFlowID)
+
+	cf, err := env.cfRepo.GetByID(*res.CashFlowID)
+	require.NoError(t, err)
+	assert.Equal(t, models.CashFlowTypeExpense, cf.Type)
+	assert.Equal(t, 3000.0, cf.Amount)
+
+	updated, err := env.cardRepo.GetByID(card.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 8000.0, updated.UsedCredit)
+}
+
+func TestReconcileCreditCard_UsedCreditDecrease_CreatesIncomeCashFlow(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	card := seedCreditCard(t, env, 5000, 100000)
+	newUsed := 2000.0
+	res, err := env.svc.ReconcileCreditCard(card.ID, &models.ReconcileCreditCardInput{
+		NewUsedCredit: &newUsed,
+		Date:          time.Now(),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, -3000.0, res.Delta)
+	require.NotNil(t, res.CashFlowID)
+
+	cf, err := env.cfRepo.GetByID(*res.CashFlowID)
+	require.NoError(t, err)
+	assert.Equal(t, models.CashFlowTypeIncome, cf.Type)
+	assert.Equal(t, 3000.0, cf.Amount)
+}
+
+func TestReconcileCreditCard_OnlyCreditLimitChanged_NoCashFlow(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	card := seedCreditCard(t, env, 5000, 100000)
+	newLimit := 120000.0
+	res, err := env.svc.ReconcileCreditCard(card.ID, &models.ReconcileCreditCardInput{
+		NewCreditLimit: &newLimit,
+		Date:           time.Now(),
+	})
+	require.NoError(t, err)
+	assert.Nil(t, res.CashFlowID)
+
+	updated, err := env.cardRepo.GetByID(card.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 120000.0, updated.CreditLimit)
+	assert.Equal(t, 5000.0, updated.UsedCredit)
+}
+
+func TestReconcileCreditCard_BothFieldsChanged_OnlyOneCashFlow(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	card := seedCreditCard(t, env, 5000, 100000)
+	newUsed := 8000.0
+	newLimit := 120000.0
+	res, err := env.svc.ReconcileCreditCard(card.ID, &models.ReconcileCreditCardInput{
+		NewUsedCredit:  &newUsed,
+		NewCreditLimit: &newLimit,
+		Date:           time.Now(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res.CashFlowID)
+	assert.Equal(t, 3000.0, res.Delta)
+
+	updated, err := env.cardRepo.GetByID(card.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 120000.0, updated.CreditLimit)
+	assert.Equal(t, 8000.0, updated.UsedCredit)
+}
+
+func TestReconcileCreditCard_UsedCreditExceedsLimit_Rejected(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	card := seedCreditCard(t, env, 5000, 100000)
+	newUsed := 120000.0
+	_, err := env.svc.ReconcileCreditCard(card.ID, &models.ReconcileCreditCardInput{
+		NewUsedCredit: &newUsed,
+		Date:          time.Now(),
+	})
+	assert.Error(t, err)
+
+	updated, err := env.cardRepo.GetByID(card.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 5000.0, updated.UsedCredit)
+}
+
 func TestReconcileBankAccount_NegativeBalance(t *testing.T) {
 	env := newReconciliationTestEnv(t)
 	defer env.db.Close()
