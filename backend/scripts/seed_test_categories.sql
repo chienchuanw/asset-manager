@@ -27,3 +27,9 @@ INSERT INTO cash_flow_categories (name, type, is_system) VALUES
     ('移轉', 'transfer_out', true),
     ('提領', 'transfer_out', true)
 ON CONFLICT (name, type) DO NOTHING;
+
+-- 餘額調整分類（用於 reconciliation 功能）
+INSERT INTO cash_flow_categories (name, type, is_system) VALUES
+    ('餘額調整-收入', 'income', true),
+    ('餘額調整-支出', 'expense', true)
+ON CONFLICT (name, type) DO NOTHING;
