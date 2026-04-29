@@ -27,6 +27,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BankAccountList } from "@/components/user-management/BankAccountList";
+import { ReconcileBankAccountDialog } from "@/components/user-management/ReconcileBankAccountDialog";
+import { ReconcileCreditCardDialog } from "@/components/user-management/ReconcileCreditCardDialog";
+import { BatchReconcileDialog } from "@/components/user-management/BatchReconcileDialog";
 import { BankAccountForm } from "@/components/user-management/BankAccountForm";
 import { CreditCardList } from "@/components/user-management/CreditCardList";
 import { CreditCardForm } from "@/components/user-management/CreditCardForm";
@@ -51,7 +54,7 @@ import {
   useDeleteCreditCardGroup,
   useRemoveCardsFromGroup,
 } from "@/hooks/useCreditCardGroups";
-import { PlusIcon, FolderPlusIcon } from "lucide-react";
+import { PlusIcon, FolderPlusIcon, ScaleIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type {
   BankAccount,
@@ -92,6 +95,15 @@ export default function UserManagementPage() {
     CreditCardGroupWithCards | undefined
   >();
   const [deletingGroupId, setDeletingGroupId] = useState<string | undefined>();
+
+  // 校準相關狀態
+  const [reconcilingBankAccount, setReconcilingBankAccount] = useState<
+    BankAccount | undefined
+  >();
+  const [reconcilingCreditCard, setReconcilingCreditCard] = useState<
+    CreditCard | undefined
+  >();
+  const [batchReconcileOpen, setBatchReconcileOpen] = useState(false);
 
   // 資料查詢
   const { data: bankAccounts, isLoading: bankAccountsLoading } =
@@ -352,10 +364,19 @@ export default function UserManagementPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>{t("bankAccounts")}</CardTitle>
-                <Button onClick={handleCreateBankAccount}>
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  {t("addBankAccount")}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setBatchReconcileOpen(true)}
+                  >
+                    <ScaleIcon className="mr-2 h-4 w-4" />
+                    {t("reconcile.batchTrigger")}
+                  </Button>
+                  <Button onClick={handleCreateBankAccount}>
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    {t("addBankAccount")}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <BankAccountList
@@ -363,6 +384,7 @@ export default function UserManagementPage() {
               isLoading={bankAccountsLoading}
               onEdit={handleEditBankAccount}
               onDelete={setDeletingBankAccountId}
+              onReconcile={setReconcilingBankAccount}
             />
           </Card>
 
@@ -389,6 +411,7 @@ export default function UserManagementPage() {
               isLoading={creditCardsLoading || groupsLoading}
               onEdit={handleEditCreditCard}
               onDelete={setDeletingCreditCardId}
+              onReconcile={setReconcilingCreditCard}
               onEditGroup={handleEditGroup}
               onDeleteGroup={setDeletingGroupId}
               onRemoveCardFromGroup={handleRemoveCardFromGroup}
@@ -396,6 +419,30 @@ export default function UserManagementPage() {
           </Card>
         </div>
       </div>
+
+      {/* 校準 Dialogs */}
+      {reconcilingBankAccount && (
+        <ReconcileBankAccountDialog
+          open
+          account={reconcilingBankAccount}
+          onClose={() => setReconcilingBankAccount(undefined)}
+        />
+      )}
+      {reconcilingCreditCard && (
+        <ReconcileCreditCardDialog
+          open
+          card={reconcilingCreditCard}
+          onClose={() => setReconcilingCreditCard(undefined)}
+        />
+      )}
+      {batchReconcileOpen && (
+        <BatchReconcileDialog
+          open
+          bankAccounts={bankAccounts ?? []}
+          creditCards={creditCards ?? []}
+          onClose={() => setBatchReconcileOpen(false)}
+        />
+      )}
 
       {/* 銀行帳戶 Dialog */}
       <Dialog

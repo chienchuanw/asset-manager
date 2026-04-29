@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MoreHorizontalIcon,
   PencilIcon,
+  ScaleIcon,
   TrashIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -44,6 +45,7 @@ interface CreditCardListProps {
   isLoading?: boolean;
   onEdit?: (creditCard: CreditCard) => void;
   onDelete?: (id: string) => void;
+  onReconcile?: (creditCard: CreditCard) => void;
   onEditGroup?: (group: CreditCardGroupWithCards) => void;
   onDeleteGroup?: (id: string) => void;
   onRemoveCardFromGroup?: (groupId: string, cardId: string) => void;
@@ -79,6 +81,7 @@ export function CreditCardList({
   isLoading = false,
   onEdit,
   onDelete,
+  onReconcile,
   onEditGroup,
   onDeleteGroup,
   onRemoveCardFromGroup,
@@ -141,6 +144,7 @@ export function CreditCardList({
                   group={group}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onReconcile={onReconcile}
                   onEditGroup={onEditGroup}
                   onDeleteGroup={onDeleteGroup}
                   onRemoveCardFromGroup={onRemoveCardFromGroup}
@@ -155,6 +159,7 @@ export function CreditCardList({
                     card={card}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onReconcile={onReconcile}
                   />
                 );
               })}
@@ -173,6 +178,7 @@ interface CreditCardGroupRowProps {
   group: CreditCardGroupWithCards;
   onEdit?: (creditCard: CreditCard) => void;
   onDelete?: (id: string) => void;
+  onReconcile?: (creditCard: CreditCard) => void;
   onEditGroup?: (group: CreditCardGroupWithCards) => void;
   onDeleteGroup?: (id: string) => void;
   onRemoveCardFromGroup?: (groupId: string, cardId: string) => void;
@@ -182,6 +188,7 @@ function CreditCardGroupRow({
   group,
   onEdit,
   onDelete,
+  onReconcile,
   onEditGroup,
   onDeleteGroup,
   onRemoveCardFromGroup,
@@ -299,6 +306,7 @@ function CreditCardGroupRow({
             groupId={group.id}
             onEdit={onEdit}
             onDelete={onDelete}
+            onReconcile={onReconcile}
             onRemoveFromGroup={onRemoveCardFromGroup}
           />
         ))}
@@ -315,6 +323,7 @@ interface CreditCardRowProps {
   groupId?: string;
   onEdit?: (creditCard: CreditCard) => void;
   onDelete?: (id: string) => void;
+  onReconcile?: (creditCard: CreditCard) => void;
   onRemoveFromGroup?: (groupId: string, cardId: string) => void;
 }
 
@@ -324,6 +333,7 @@ function CreditCardRow({
   groupId,
   onEdit,
   onDelete,
+  onReconcile,
   onRemoveFromGroup,
 }: CreditCardRowProps) {
   const utilization = calculateUtilization(card);
@@ -395,6 +405,12 @@ function CreditCardRow({
               <DropdownMenuItem onClick={() => onEdit(card)}>
                 <PencilIcon className="mr-2 h-4 w-4" />
                 編輯
+              </DropdownMenuItem>
+            )}
+            {onReconcile && (
+              <DropdownMenuItem onClick={() => onReconcile(card)}>
+                <ScaleIcon className="mr-2 h-4 w-4" />
+                校準餘額
               </DropdownMenuItem>
             )}
             {isInGroup && onRemoveFromGroup && groupId && (
