@@ -185,7 +185,53 @@ func (s *reconciliationService) reconcileCreditCardTx(
 
 // ReconcileBatch 批次校準（共用單一 transaction）
 func (s *reconciliationService) ReconcileBatch(input *models.ReconcileBatchInput) ([]*models.ReconcileResult, error) {
-	return nil, fmt.Errorf("not implemented")
+	if err := input.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid input: %w", err)
+	}
+	cats, err := s.loadAdjustmentCategories()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	results := make([]*models.ReconcileResult, 0, len(input.Items))
+	for i, item := range input.Items {
+		switch item.TargetType {
+		case models.SourceTypeBankAccount:
+			r, err := s.reconcileBankAccountTx(tx, item.TargetID, &models.ReconcileBankAccountInput{
+				NewBalance: *item.NewBalance,
+				Date:       input.Date,
+				Note:       input.Note,
+			}, cats)
+			if err != nil {
+				return nil, fmt.Errorf("items[%d]: %w", i, err)
+			}
+			results = append(results, r)
+		case models.SourceTypeCreditCard:
+			r, err := s.reconcileCreditCardTx(tx, item.TargetID, &models.ReconcileCreditCardInput{
+				NewUsedCredit:  item.NewUsedCredit,
+				NewCreditLimit: item.NewCreditLimit,
+				Date:           input.Date,
+				Note:           input.Note,
+			}, cats)
+			if err != nil {
+				return nil, fmt.Errorf("items[%d]: %w", i, err)
+			}
+			results = append(results, r)
+		default:
+			return nil, fmt.Errorf("items[%d]: unsupported target_type %s", i, item.TargetType)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
+	return results, nil
 }
 
 // reconcileBankAccountTx 在指定 tx 內校準單一銀行帳戶

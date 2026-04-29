@@ -271,6 +271,73 @@ func TestReconcileCreditCard_UsedCreditExceedsLimit_Rejected(t *testing.T) {
 	assert.Equal(t, 5000.0, updated.UsedCredit)
 }
 
+func TestReconcileBatch_PartialChanges(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	a, err := env.bankRepo.Create(&models.CreateBankAccountInput{
+		BankName: "玉山", AccountType: "活存", AccountNumberLast4: "1111",
+		Currency: models.CurrencyTWD, Balance: 10000,
+	})
+	require.NoError(t, err)
+	b, err := env.bankRepo.Create(&models.CreateBankAccountInput{
+		BankName: "國泰", AccountType: "活存", AccountNumberLast4: "2222",
+		Currency: models.CurrencyTWD, Balance: 20000,
+	})
+	require.NoError(t, err)
+	c := seedCreditCard(t, env, 5000, 50000)
+
+	bal := 10000.0  // unchanged
+	bal2 := 21000.0 // +1000
+	used := 4500.0  // -500
+	res, err := env.svc.ReconcileBatch(&models.ReconcileBatchInput{
+		Date: time.Now(),
+		Items: []models.ReconcileBatchItem{
+			{TargetType: models.SourceTypeBankAccount, TargetID: a.ID, NewBalance: &bal},
+			{TargetType: models.SourceTypeBankAccount, TargetID: b.ID, NewBalance: &bal2},
+			{TargetType: models.SourceTypeCreditCard, TargetID: c.ID, NewUsedCredit: &used},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, res, 3)
+
+	assert.Nil(t, res[0].CashFlowID)
+	require.NotNil(t, res[1].CashFlowID)
+	cf1, err := env.cfRepo.GetByID(*res[1].CashFlowID)
+	require.NoError(t, err)
+	assert.Equal(t, models.CashFlowTypeIncome, cf1.Type)
+	require.NotNil(t, res[2].CashFlowID)
+	cf2, err := env.cfRepo.GetByID(*res[2].CashFlowID)
+	require.NoError(t, err)
+	assert.Equal(t, models.CashFlowTypeIncome, cf2.Type)
+}
+
+func TestReconcileBatch_OneItemFails_RollsBackAll(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	a := seedBankAccount(t, env, 10000)
+	c := seedCreditCard(t, env, 5000, 50000)
+
+	balOK := 12000.0
+	tooMuch := 99999.0
+	_, err := env.svc.ReconcileBatch(&models.ReconcileBatchInput{
+		Date: time.Now(),
+		Items: []models.ReconcileBatchItem{
+			{TargetType: models.SourceTypeBankAccount, TargetID: a.ID, NewBalance: &balOK},
+			{TargetType: models.SourceTypeCreditCard, TargetID: c.ID, NewUsedCredit: &tooMuch},
+		},
+	})
+	require.Error(t, err)
+
+	gotA, err := env.bankRepo.GetByID(a.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 10000.0, gotA.Balance)
+	gotC, err := env.cardRepo.GetByID(c.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 5000.0, gotC.UsedCredit)
+}
+
 func TestReconcileBankAccount_NegativeBalance(t *testing.T) {
 	env := newReconciliationTestEnv(t)
 	defer env.db.Close()
