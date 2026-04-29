@@ -183,6 +183,9 @@ func (m *mockCCPaymentCategoryRepo) Create(input *models.CreateCategoryInput) (*
 func (m *mockCCPaymentCategoryRepo) GetByID(id uuid.UUID) (*models.CashFlowCategory, error) {
 	panic("unexpected")
 }
+func (m *mockCCPaymentCategoryRepo) GetByNameAndType(name string, flowType models.CashFlowType) (*models.CashFlowCategory, error) {
+	panic("unexpected")
+}
 func (m *mockCCPaymentCategoryRepo) GetAll(flowType *models.CashFlowType) ([]*models.CashFlowCategory, error) {
 	return m.categories, m.err
 }
