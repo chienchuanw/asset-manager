@@ -139,6 +139,7 @@ func main() {
 		bankAccountService := service.NewBankAccountService(bankAccountRepo)
 		creditCardService := service.NewCreditCardService(creditCardRepo)
 		creditCardGroupService := service.NewCreditCardGroupService(creditCardGroupRepo, creditCardRepo)
+		reconciliationService := service.NewReconciliationService(database, categoryRepo)
 
 		// 初始化 Asset Snapshot Service（不帶排程器）
 		assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -167,6 +168,7 @@ func main() {
 		bankAccountHandler := api.NewBankAccountHandler(bankAccountService)
 		creditCardHandler := api.NewCreditCardHandler(creditCardService)
 		creditCardGroupHandler := api.NewCreditCardGroupHandler(creditCardGroupService)
+		reconciliationHandler := api.NewReconciliationHandler(reconciliationService)
 		exchangeRateHandler := api.NewExchangeRateHandler(exchangeRateService)
 
 		// 初始化排程器管理器（不啟動）
@@ -193,7 +195,7 @@ func main() {
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
 		bot := startDiscordBot(botCtx, cashFlowService, categoryRepo, bankAccountRepo, creditCardRepo)
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, nil, bot)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, reconciliationHandler, exchangeRateHandler, nil, bot)
 		return
 	}
 	defer redisCache.Close()
@@ -257,6 +259,7 @@ func main() {
 	bankAccountService := service.NewBankAccountService(bankAccountRepo)
 	creditCardService := service.NewCreditCardService(creditCardRepo)
 	creditCardGroupService := service.NewCreditCardGroupService(creditCardGroupRepo, creditCardRepo)
+	reconciliationService := service.NewReconciliationService(database, categoryRepo)
 
 	// 初始化 Asset Snapshot Service（包含依賴）
 	assetSnapshotService := service.NewAssetSnapshotServiceWithDeps(assetSnapshotRepo, holdingService)
@@ -285,6 +288,7 @@ func main() {
 	bankAccountHandler := api.NewBankAccountHandler(bankAccountService)
 	creditCardHandler := api.NewCreditCardHandler(creditCardService)
 	creditCardGroupHandler := api.NewCreditCardGroupHandler(creditCardGroupService)
+	reconciliationHandler := api.NewReconciliationHandler(reconciliationService)
 	exchangeRateHandler := api.NewExchangeRateHandler(exchangeRateService)
 
 	// 初始化並啟動排程器管理器
@@ -315,7 +319,7 @@ func main() {
 
 	// 啟動伺服器（會在內部處理 graceful shutdown）
 	bot := startDiscordBot(botCtx, cashFlowService, categoryRepo, bankAccountRepo, creditCardRepo)
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, exchangeRateHandler, schedulerManager, bot)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, reconciliationHandler, exchangeRateHandler, schedulerManager, bot)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -362,7 +366,7 @@ func startDiscordBot(ctx context.Context, cashFlowSvc service.CashFlowService, c
 	return bot
 }
 
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, creditCardGroupHandler *api.CreditCardGroupHandler, exchangeRateHandler *api.ExchangeRateHandler, schedulerManager *scheduler.SchedulerManager, discordBot *discordbot.Bot) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, creditCardGroupHandler *api.CreditCardGroupHandler, reconciliationHandler *api.ReconciliationHandler, exchangeRateHandler *api.ExchangeRateHandler, schedulerManager *scheduler.SchedulerManager, discordBot *discordbot.Bot) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -566,6 +570,7 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			bankAccounts.GET("/:id", bankAccountHandler.GetBankAccount)
 			bankAccounts.PUT("/:id", bankAccountHandler.UpdateBankAccount)
 			bankAccounts.DELETE("/:id", bankAccountHandler.DeleteBankAccount)
+			bankAccounts.POST("/:id/reconcile", reconciliationHandler.ReconcileBankAccount)
 		}
 
 		// Credit Cards 路由
@@ -578,6 +583,7 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 			creditCards.GET("/:id", creditCardHandler.GetCreditCard)
 			creditCards.PUT("/:id", creditCardHandler.UpdateCreditCard)
 			creditCards.DELETE("/:id", creditCardHandler.DeleteCreditCard)
+			creditCards.POST("/:id/reconcile", reconciliationHandler.ReconcileCreditCard)
 		}
 
 		// Credit Card Groups 路由
@@ -596,6 +602,12 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		exchangeRates := apiGroup.Group("/exchange-rates")
 		{
 			exchangeRates.POST("/refresh", exchangeRateHandler.RefreshExchangeRate)
+		}
+
+		// User Management 路由（批次校準）
+		userMgmt := apiGroup.Group("/user-management")
+		{
+			userMgmt.POST("/reconcile-batch", reconciliationHandler.ReconcileBatch)
 		}
 	}
 
