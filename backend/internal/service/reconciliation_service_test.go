@@ -339,6 +339,31 @@ func TestReconcileBatch_OneItemFails_RollsBackAll(t *testing.T) {
 	assert.Equal(t, 5000.0, gotC.UsedCredit)
 }
 
+func TestReconcileBankAccount_NonTWD_CashFlowUsesAccountCurrency(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	acc, err := env.bankRepo.Create(&models.CreateBankAccountInput{
+		BankName:           "玉山",
+		AccountType:        "活存",
+		AccountNumberLast4: "9999",
+		Currency:           models.CurrencyUSD,
+		Balance:            1000,
+	})
+	require.NoError(t, err)
+
+	res, err := env.svc.ReconcileBankAccount(acc.ID, &models.ReconcileBankAccountInput{
+		NewBalance: 1500,
+		Date:       time.Now(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res.CashFlowID)
+
+	cf, err := env.cfRepo.GetByID(*res.CashFlowID)
+	require.NoError(t, err)
+	assert.Equal(t, models.CurrencyUSD, cf.Currency)
+}
+
 func TestReconcileBankAccount_ConcurrentReconcile_CashFlowMatchesFinalDelta(t *testing.T) {
 	env := newReconciliationTestEnv(t)
 	defer env.db.Close()

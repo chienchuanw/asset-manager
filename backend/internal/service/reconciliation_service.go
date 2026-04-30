@@ -174,6 +174,7 @@ func (s *reconciliationService) reconcileCreditCardTx(
 		 (date, type, category_id, amount, currency, description, note, source_type, source_id)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		 RETURNING id`,
+		// TODO: credit_cards 目前無 currency 欄位，先沿用 TWD；新增欄位後改讀卡片自身 currency。
 		input.Date, flowType, categoryID, amount, models.CurrencyTWD,
 		description, input.Note, srcType, srcID,
 	).Scan(&newID)
@@ -246,12 +247,13 @@ func (s *reconciliationService) reconcileBankAccountTx(
 		currentBalance float64
 		bankName       string
 		last4          string
+		currency       string
 	)
 	err := tx.QueryRow(
-		`SELECT balance, bank_name, account_number_last4 FROM bank_accounts WHERE id = $1
+		`SELECT balance, bank_name, account_number_last4, currency FROM bank_accounts WHERE id = $1
 		 FOR UPDATE`,
 		id,
-	).Scan(&currentBalance, &bankName, &last4)
+	).Scan(&currentBalance, &bankName, &last4, &currency)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("bank account not found")
 	}
@@ -297,7 +299,7 @@ func (s *reconciliationService) reconcileBankAccountTx(
 		 (date, type, category_id, amount, currency, description, note, source_type, source_id)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		 RETURNING id`,
-		input.Date, flowType, categoryID, amount, models.CurrencyTWD,
+		input.Date, flowType, categoryID, amount, currency,
 		description, input.Note, srcType, srcID,
 	).Scan(&newID)
 	if err != nil {
