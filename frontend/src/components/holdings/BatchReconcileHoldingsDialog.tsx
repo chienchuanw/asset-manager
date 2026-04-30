@@ -192,15 +192,21 @@ export function BatchReconcileHoldingsDialog({
                 <div className="col-span-1" />
               </div>
               {rows.map((r, i) => (
-                <div key={i} className="grid grid-cols-12 items-center gap-2">
+                <div
+                  key={i}
+                  data-testid={`reconcile-batch-row-${i}`}
+                  className="grid grid-cols-12 items-center gap-2"
+                >
                   <Input
                     className="col-span-2"
+                    data-testid={`reconcile-batch-symbol-${i}`}
                     disabled={r.__existing}
                     value={r.symbol}
                     onChange={(e) => updateRow(i, { symbol: e.target.value })}
                   />
                   <Input
                     className="col-span-3"
+                    data-testid={`reconcile-batch-name-${i}`}
                     disabled={r.__existing}
                     value={r.name ?? ""}
                     onChange={(e) => updateRow(i, { name: e.target.value })}
@@ -214,7 +220,10 @@ export function BatchReconcileHoldingsDialog({
                       })
                     }
                   >
-                    <SelectTrigger className="col-span-2">
+                    <SelectTrigger
+                      className="col-span-2"
+                      data-testid={`reconcile-batch-currency-${i}`}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -224,6 +233,7 @@ export function BatchReconcileHoldingsDialog({
                   </Select>
                   <Input
                     className="col-span-2"
+                    data-testid={`reconcile-batch-quantity-${i}`}
                     type="number"
                     step="0.00000001"
                     value={r.target_quantity}
@@ -233,6 +243,7 @@ export function BatchReconcileHoldingsDialog({
                   />
                   <Input
                     className="col-span-2"
+                    data-testid={`reconcile-batch-avg-cost-${i}`}
                     type="number"
                     step="0.00000001"
                     value={r.target_avg_cost}
@@ -333,6 +344,7 @@ function PreviewList({
       {preview.map((p, i) => (
         <div
           key={i}
+          data-testid={`reconcile-preview-row-${p.action}`}
           className={`rounded-md border p-2 ${
             p.action === "noop" ? "opacity-50" : ""
           }`}
