@@ -1,6 +1,5 @@
 import { apiClient, type APIResponseWithWarnings } from "./client";
 import type { Holding, HoldingFilters } from "@/types/holding";
-import type { APIWarning } from "@/types/transaction";
 
 /**
  * Holdings API 端點
@@ -9,7 +8,36 @@ const ENDPOINTS = {
   HOLDINGS: "/api/holdings",
   HOLDING_BY_SYMBOL: (symbol: string) => `/api/holdings/${symbol}`,
   FIX_INSUFFICIENT_QUANTITY: "/api/holdings/fix-insufficient-quantity",
+  RECONCILE_PREVIEW: "/api/holdings/reconcile/preview",
+  RECONCILE: "/api/holdings/reconcile",
 } as const;
+
+/** 對帳項目（請求） */
+export interface HoldingReconcileItem {
+  asset_type: "tw-stock" | "us-stock" | "crypto";
+  symbol: string;
+  name?: string;
+  currency: "TWD" | "USD";
+  target_quantity: number;
+  target_avg_cost: number;
+  reason?: string;
+}
+
+export type ReconcileAction = "create" | "update" | "liquidate" | "noop";
+
+/** 對帳預覽單筆結果 */
+export interface HoldingReconcilePreviewItem {
+  item: HoldingReconcileItem;
+  prev_quantity: number;
+  prev_avg_cost: number;
+  quantity_delta: number;
+  avg_cost_delta: number;
+  action: ReconcileAction;
+}
+
+export interface HoldingReconcilePreview {
+  items: HoldingReconcilePreviewItem[];
+}
 
 /**
  * 修復不足數量的輸入
@@ -85,5 +113,23 @@ export const holdingsAPI = {
    */
   fixInsufficientQuantity: async (input: FixInsufficientQuantityInput) => {
     return apiClient.post(ENDPOINTS.FIX_INSUFFICIENT_QUANTITY, input);
+  },
+
+  /** 預覽持倉對帳（dry-run，不寫入） */
+  reconcilePreview: async (
+    items: HoldingReconcileItem[]
+  ): Promise<HoldingReconcilePreview> => {
+    return apiClient.post<HoldingReconcilePreview>(ENDPOINTS.RECONCILE_PREVIEW, {
+      items,
+    });
+  },
+
+  /** 執行持倉對帳（寫入 adjustment 交易） */
+  reconcile: async (
+    items: HoldingReconcileItem[]
+  ): Promise<HoldingReconcilePreview> => {
+    return apiClient.post<HoldingReconcilePreview>(ENDPOINTS.RECONCILE, {
+      items,
+    });
   },
 };

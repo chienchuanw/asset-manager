@@ -229,7 +229,49 @@
     "searchPlaceholder": "Search symbol or name...",
     "loadingHoldings": "Loading holdings...",
     "loadError": "Failed to load holdings",
-    "fixSuccess": "Successfully fixed data inconsistency"
+    "fixSuccess": "Successfully fixed data inconsistency",
+    "reconcile": {
+      "button": "Reconcile",
+      "batchButton": "Batch Reconcile",
+      "dialogTitle": "Reconcile Holding",
+      "batchDialogTitle": "Batch Reconcile Holdings",
+      "description": "This snaps the holding to the target state. It does NOT realize P&L and does NOT touch your cash balance. To record an actual buy or sell, use Add Transaction.",
+      "field": {
+        "symbol": "Symbol",
+        "name": "Name",
+        "quantity": "Target Quantity",
+        "avgCost": "Target Average Cost",
+        "currency": "Currency",
+        "reason": "Reason (optional)"
+      },
+      "preview": {
+        "title": "Preview Changes",
+        "noChanges": "No changes to write",
+        "action": {
+          "create": "Create",
+          "update": "Update",
+          "liquidate": "Liquidate",
+          "noop": "No change"
+        },
+        "delta": {
+          "qty": "Qty change",
+          "avgCost": "Avg cost change"
+        }
+      },
+      "addRow": "Add new symbol",
+      "removeRow": "Remove",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "toast": {
+        "success": "Holdings reconciled successfully"
+      },
+      "error": {
+        "invalidQuantity": "Quantity must be ≥ 0",
+        "invalidAvgCost": "Average cost must be > 0 (or 0 only when liquidating)",
+        "nameRequired": "Name is required for first-time entry",
+        "currencyMismatch": "Currency does not match the existing holding"
+      }
+    }
   },
   "assetTypes": {
     "twStock": "TW Stock",
