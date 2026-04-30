@@ -19,7 +19,7 @@ NC     := \033[0m # No Color
 # Go 工具路徑
 GOTESTSUM := ./scripts/run-tests.sh
 
-.PHONY: help install test test-verbose test-unit test-integration test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot swagger swagger-check
+.PHONY: help install test test-verbose test-unit test-integration test-bdd test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot swagger swagger-check
 
 # 顯示幫助訊息
 help:
@@ -92,6 +92,12 @@ test-integration:
 	@printf "\033[0;34mRunning integration tests...\033[0m\n"
 	@printf "\033[1;33mMake sure test database is running and TEST_DB_* environment variables are set\033[0m\n"
 	@$(GOTESTSUM) --format testname -- -cover ./internal/repository/...
+
+# 執行 BDD scenarios（需要 test DB；feature 檔在 features/）
+test-bdd:
+	@printf "\033[0;34mRunning BDD scenarios...\033[0m\n"
+	@printf "\033[1;33mMake sure test database is running and TEST_DB_* environment variables are set\033[0m\n"
+	@go test ./features/... -v
 
 # 執行測試並產生覆蓋率報告
 test-coverage:

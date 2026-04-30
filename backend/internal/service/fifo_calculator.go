@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
+	"github.com/google/uuid"
 )
 
 // FIFOCalculatorResult FIFO 計算結果（包含持倉和警告）
@@ -47,9 +48,14 @@ func (c *fifoCalculator) CalculateHoldingForSymbol(symbol string, transactions [
 		return nil, nil
 	}
 
-	// 按日期排序（FIFO 需要按時間順序處理）
-	sort.Slice(symbolTransactions, func(i, j int) bool {
-		return symbolTransactions[i].Date.Before(symbolTransactions[j].Date)
+	// 按日期排序（FIFO 需要按時間順序處理）；同日期以 created_at 為 tiebreaker，
+	// 確保 sell/adjustment 等同日交易維持寫入順序。使用穩定排序保證 deterministic。
+	sort.SliceStable(symbolTransactions, func(i, j int) bool {
+		a, b := symbolTransactions[i], symbolTransactions[j]
+		if a.Date.Equal(b.Date) {
+			return a.CreatedAt.Before(b.CreatedAt)
+		}
+		return a.Date.Before(b.Date)
 	})
 
 	// 初始化成本批次列表
@@ -292,12 +298,17 @@ func (c *fifoCalculator) CalculateCostBasis(symbol string, sellTransaction *mode
 		return 0, fmt.Errorf("transaction symbol %s does not match requested symbol %s", sellTransaction.Symbol, symbol)
 	}
 
-	// 篩選出該標的在賣出交易之前的所有交易
-	symbolTransactions := filterTransactionsBeforeSell(allTransactions, symbol, sellTransaction.Date)
+	// 篩選出該標的在賣出交易之前的所有交易（含同日但 created_at 較早者，例如同日的 adjustment）
+	symbolTransactions := filterTransactionsBeforeSell(allTransactions, symbol, sellTransaction)
 
-	// 按日期排序（FIFO 需要按時間順序處理）
-	sort.Slice(symbolTransactions, func(i, j int) bool {
-		return symbolTransactions[i].Date.Before(symbolTransactions[j].Date)
+	// 按日期排序（FIFO 需要按時間順序處理）；同日期以 created_at 為 tiebreaker，
+	// 確保 sell/adjustment 等同日交易維持寫入順序。使用穩定排序保證 deterministic。
+	sort.SliceStable(symbolTransactions, func(i, j int) bool {
+		a, b := symbolTransactions[i], symbolTransactions[j]
+		if a.Date.Equal(b.Date) {
+			return a.CreatedAt.Before(b.CreatedAt)
+		}
+		return a.Date.Before(b.Date)
 	})
 
 	// 建立成本批次
@@ -398,12 +409,22 @@ func getUniqueSymbols(transactions []*models.Transaction) []string {
 	return symbols
 }
 
-// filterTransactionsBeforeSell 篩選出賣出交易之前的所有交易
-func filterTransactionsBeforeSell(transactions []*models.Transaction, symbol string, sellDate time.Time) []*models.Transaction {
+// filterTransactionsBeforeSell 篩選出賣出交易之前（不含目標 sell 自身）的所有同標的交易；
+// 同日期以 created_at 為 tiebreaker，避免將同日 adjustment 等資料前置事件遺漏。
+func filterTransactionsBeforeSell(transactions []*models.Transaction, symbol string, sellTx *models.Transaction) []*models.Transaction {
 	result := []*models.Transaction{}
 	for _, tx := range transactions {
-		// 只保留相同標的且在賣出日期之前的交易
-		if tx.Symbol == symbol && tx.Date.Before(sellDate) {
+		if tx.Symbol != symbol {
+			continue
+		}
+		// 跳過目標 sell 自身（僅當 ID 已賦值時才視為相同；測試常以零值 UUID 傳入個別 sellTx）
+		if tx.ID == sellTx.ID && tx.ID != (uuid.UUID{}) {
+			continue
+		}
+		switch {
+		case tx.Date.Before(sellTx.Date):
+			result = append(result, tx)
+		case tx.Date.Equal(sellTx.Date) && tx.CreatedAt.Before(sellTx.CreatedAt):
 			result = append(result, tx)
 		}
 	}
