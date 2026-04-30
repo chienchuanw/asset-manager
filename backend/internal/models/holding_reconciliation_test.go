@@ -67,6 +67,15 @@ func TestHoldingReconcileItem_Validate(t *testing.T) {
 			},
 			wantErr: models.ErrInvalidReconcileAssetType,
 		},
+		{
+			name: "reason exceeding max length rejected",
+			item: models.HoldingReconcileItem{
+				AssetType: models.AssetTypeUSStock, Symbol: "AAPL", Currency: models.CurrencyUSD,
+				TargetQuantity: 10, TargetAvgCost: 50,
+				Reason: stringOfLen(models.MaxReconcileReasonLength + 1),
+			},
+			wantErr: models.ErrReconcileReasonTooLong,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,4 +113,12 @@ func TestHoldingReconcileBatchInput_Validate(t *testing.T) {
 
 func TestTransactionType_AdjustmentValidates(t *testing.T) {
 	assert.True(t, models.TransactionTypeAdjustment.Validate())
+}
+
+func stringOfLen(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = 'x'
+	}
+	return string(b)
 }

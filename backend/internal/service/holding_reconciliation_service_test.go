@@ -222,5 +222,39 @@ func TestHoldingReconciliation_AuditFieldsCaptured(t *testing.T) {
 	assert.Equal(t, "broker statement", reason.String)
 }
 
+func TestHoldingReconciliation_NoopUsesEpsilonAgainstFloatDrift(t *testing.T) {
+	env := newHoldingReconcileTestEnv(t)
+	defer env.db.Close()
+	// 兩筆同價買入會在 FIFO 平均後產生 IEEE 754 累積誤差；使用者用「現況」對帳應視為 noop。
+	env.seedBuy(t, models.AssetTypeUSStock, "AAPL", "Apple", models.CurrencyUSD, 33, 100.1, time.Now().Add(-2*24*time.Hour))
+	env.seedBuy(t, models.AssetTypeUSStock, "AAPL", "Apple", models.CurrencyUSD, 67, 100.1, time.Now().Add(-24*time.Hour))
+
+	preview, err := env.svc.ReconcileHoldings(context.Background(), []models.HoldingReconcileItem{
+		{AssetType: models.AssetTypeUSStock, Symbol: "AAPL", Currency: models.CurrencyUSD, TargetQuantity: 100, TargetAvgCost: 100.1},
+	}, false)
+	require.NoError(t, err)
+	require.Len(t, preview.Items, 1)
+	assert.Equal(t, models.ReconcileActionNoop, preview.Items[0].Action)
+	assert.Equal(t, 0, env.countTxByType(t, models.TransactionTypeAdjustment), "noop should not write adjustment")
+}
+
+func TestHoldingReconciliation_CanonicalLockOrderingPreservesPreviewOrder(t *testing.T) {
+	env := newHoldingReconcileTestEnv(t)
+	defer env.db.Close()
+	env.seedBuy(t, models.AssetTypeUSStock, "ZZZ", "Last", models.CurrencyUSD, 10, 50, time.Now().Add(-24*time.Hour))
+	env.seedBuy(t, models.AssetTypeUSStock, "AAA", "First", models.CurrencyUSD, 10, 50, time.Now().Add(-24*time.Hour))
+
+	// caller 傳入順序 ZZZ → AAA；內部會以 (asset_type, symbol) 排序鎖定為 AAA → ZZZ，
+	// 但 preview 必須維持 caller 順序。
+	preview, err := env.svc.ReconcileHoldings(context.Background(), []models.HoldingReconcileItem{
+		{AssetType: models.AssetTypeUSStock, Symbol: "ZZZ", Currency: models.CurrencyUSD, TargetQuantity: 10, TargetAvgCost: 60},
+		{AssetType: models.AssetTypeUSStock, Symbol: "AAA", Currency: models.CurrencyUSD, TargetQuantity: 10, TargetAvgCost: 60},
+	}, false)
+	require.NoError(t, err)
+	require.Len(t, preview.Items, 2)
+	assert.Equal(t, "ZZZ", preview.Items[0].Item.Symbol)
+	assert.Equal(t, "AAA", preview.Items[1].Item.Symbol)
+}
+
 // 確保編譯依賴 os 套件（避免 lint 警告）
 var _ = os.Getenv

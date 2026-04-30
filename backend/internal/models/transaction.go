@@ -53,10 +53,9 @@ type Transaction struct {
 	Note            *string         `json:"note,omitempty" db:"note"`
 
 	// Adjustment 稽核欄位（僅 transaction_type='adjustment' 時填值）
-	AdjustmentPrevQuantity *float64   `json:"adjustment_prev_quantity,omitempty" db:"adjustment_prev_quantity"`
-	AdjustmentPrevAvgCost  *float64   `json:"adjustment_prev_avg_cost,omitempty" db:"adjustment_prev_avg_cost"`
-	AdjustmentReason       *string    `json:"adjustment_reason,omitempty" db:"adjustment_reason"`
-	BrokerAccountID        *uuid.UUID `json:"broker_account_id,omitempty" db:"broker_account_id"`
+	AdjustmentPrevQuantity *float64 `json:"adjustment_prev_quantity,omitempty" db:"adjustment_prev_quantity"`
+	AdjustmentPrevAvgCost  *float64 `json:"adjustment_prev_avg_cost,omitempty" db:"adjustment_prev_avg_cost"`
+	AdjustmentReason       *string  `json:"adjustment_reason,omitempty" db:"adjustment_reason"`
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`

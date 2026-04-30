@@ -3,7 +3,6 @@ DELETE FROM transactions WHERE transaction_type = 'adjustment';
 
 -- 移除對帳稽核欄位
 ALTER TABLE transactions
-    DROP COLUMN broker_account_id,
     DROP COLUMN adjustment_reason,
     DROP COLUMN adjustment_prev_avg_cost,
     DROP COLUMN adjustment_prev_quantity;

@@ -279,7 +279,7 @@ func (s *scenarioState) assertCostBasis(symbol string, expected float64) error {
 func allSymbolTxs(db *sql.DB, symbol string) ([]*models.Transaction, error) {
 	rows, err := db.Query(`
 		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note,
-		       adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id,
+		       adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason,
 		       created_at, updated_at
 		FROM transactions
 		WHERE symbol = $1
@@ -295,7 +295,7 @@ func allSymbolTxs(db *sql.DB, symbol string) ([]*models.Transaction, error) {
 		if err := rows.Scan(
 			&t.ID, &t.Date, &t.AssetType, &t.Symbol, &t.Name, &t.TransactionType,
 			&t.Quantity, &t.Price, &t.Amount, &t.Fee, &t.Tax, &t.Currency, &t.ExchangeRateID, &t.Note,
-			&t.AdjustmentPrevQuantity, &t.AdjustmentPrevAvgCost, &t.AdjustmentReason, &t.BrokerAccountID,
+			&t.AdjustmentPrevQuantity, &t.AdjustmentPrevAvgCost, &t.AdjustmentReason,
 			&t.CreatedAt, &t.UpdatedAt,
 		); err != nil {
 			return nil, err

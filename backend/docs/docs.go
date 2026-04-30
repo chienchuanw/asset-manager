@@ -8601,9 +8601,6 @@ const docTemplate = `{
                 "asset_type": {
                     "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType"
                 },
-                "broker_account_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },

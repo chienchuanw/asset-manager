@@ -11,7 +11,11 @@ var (
 	ErrReconcileNameRequired     = errors.New("name required for first-time reconciliation")
 	ErrReconcileEmptyBatch       = errors.New("reconcile batch is empty")
 	ErrReconcileCurrencyMismatch = errors.New("currency mismatch with existing holding")
+	ErrReconcileReasonTooLong    = errors.New("reconcile reason exceeds maximum length")
 )
+
+// MaxReconcileReasonLength 對 Reason 欄位的長度上限（即使 schema 是 TEXT 也避免異常輸入）
+const MaxReconcileReasonLength = 500
 
 // HoldingReconcileItem 描述單一 (asset_type, symbol, currency) 的目標狀態
 type HoldingReconcileItem struct {
@@ -43,6 +47,9 @@ func (i *HoldingReconcileItem) Validate() error {
 	// avg_cost == 0 僅在清倉（qty == 0）時合法
 	if i.TargetAvgCost == 0 && i.TargetQuantity > 0 {
 		return ErrInvalidReconcileAvgCost
+	}
+	if len(i.Reason) > MaxReconcileReasonLength {
+		return ErrReconcileReasonTooLong
 	}
 	return nil
 }
