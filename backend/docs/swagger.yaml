@@ -730,6 +730,58 @@ definitions:
     - current_holding
     - symbol
     type: object
+  github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileBatchInput:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem'
+        type: array
+    required:
+    - items
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem:
+    properties:
+      asset_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+      currency:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency'
+      name:
+        type: string
+      reason:
+        type: string
+      symbol:
+        type: string
+      target_avg_cost:
+        type: number
+      target_quantity:
+        type: number
+    required:
+    - asset_type
+    - currency
+    - symbol
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreviewItem'
+        type: array
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreviewItem:
+    properties:
+      action:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileAction'
+      avg_cost_delta:
+        type: number
+      item:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem'
+      prev_avg_cost:
+        type: number
+      prev_quantity:
+        type: number
+      quantity_delta:
+        type: number
+    type: object
   github_com_chienchuanw_asset-manager_internal_models.Installment:
     properties:
       account_id:
@@ -1003,6 +1055,18 @@ definitions:
         description: 原因說明
         type: string
     type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReconcileAction:
+    enum:
+    - create
+    - update
+    - liquidate
+    - noop
+    type: string
+    x-enum-varnames:
+    - ReconcileActionCreate
+    - ReconcileActionUpdate
+    - ReconcileActionLiquidate
+    - ReconcileActionNoop
   github_com_chienchuanw_asset-manager_internal_models.ReconcileBankAccountInput:
     properties:
       date:
@@ -1237,10 +1301,19 @@ definitions:
     type: object
   github_com_chienchuanw_asset-manager_internal_models.Transaction:
     properties:
+      adjustment_prev_avg_cost:
+        type: number
+      adjustment_prev_quantity:
+        description: Adjustment 稽核欄位（僅 transaction_type='adjustment' 時填值）
+        type: number
+      adjustment_reason:
+        type: string
       amount:
         type: number
       asset_type:
         $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType'
+      broker_account_id:
+        type: string
       created_at:
         type: string
       currency:
@@ -1276,12 +1349,14 @@ definitions:
     - sell
     - dividend
     - fee
+    - adjustment
     type: string
     x-enum-varnames:
     - TransactionTypeBuy
     - TransactionTypeSell
     - TransactionTypeDividend
     - TransactionTypeFee
+    - TransactionTypeAdjustment
   github_com_chienchuanw_asset-manager_internal_models.UnrealizedPerformance:
     properties:
       asset_type:
@@ -5511,6 +5586,117 @@ paths:
       summary: 批次校準
       tags:
       - reconciliation
+  /holdings/{symbol}/reconcile:
+    post:
+      consumes:
+      - application/json
+      description: path 上的 symbol 會覆寫 body 內的 symbol（若有不一致）
+      parameters:
+      - description: 標的代碼
+        in: path
+        name: symbol
+        required: true
+        type: string
+      - description: 對帳項目
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 執行單一 symbol 的持倉對帳
+      tags:
+      - holdings
+  /holdings/reconcile:
+    post:
+      consumes:
+      - application/json
+      description: 為每個非 noop 項目寫入一筆 adjustment 交易；不結算實現損益、不影響現金流
+      parameters:
+      - description: 對帳項目
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileBatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 執行持倉對帳
+      tags:
+      - holdings
+  /holdings/reconcile/preview:
+    post:
+      consumes:
+      - application/json
+      description: 對帳前 dry-run，回傳每項 (asset_type, symbol) 的 prev/target/delta/action
+        預覽
+      parameters:
+      - description: 對帳項目
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileBatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api.APIResponse'
+      summary: 預覽持倉對帳變動
+      tags:
+      - holdings
 securityDefinitions:
   BearerAuth:
     in: header

@@ -6511,6 +6511,187 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/holdings/reconcile": {
+            "post": {
+                "description": "為每個非 noop 項目寫入一筆 adjustment 交易；不結算實現損益、不影響現金流",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "holdings"
+                ],
+                "summary": "執行持倉對帳",
+                "parameters": [
+                    {
+                        "description": "對帳項目",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileBatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/holdings/reconcile/preview": {
+            "post": {
+                "description": "對帳前 dry-run，回傳每項 (asset_type, symbol) 的 prev/target/delta/action 預覽",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "holdings"
+                ],
+                "summary": "預覽持倉對帳變動",
+                "parameters": [
+                    {
+                        "description": "對帳項目",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileBatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/holdings/{symbol}/reconcile": {
+            "post": {
+                "description": "path 上的 symbol 會覆寫 body 內的 symbol（若有不一致）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "holdings"
+                ],
+                "summary": "執行單一 symbol 的持倉對帳",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "標的代碼",
+                        "name": "symbol",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "對帳項目",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -7568,6 +7749,85 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileBatchInput": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem"
+                    }
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem": {
+            "type": "object",
+            "required": [
+                "asset_type",
+                "currency",
+                "symbol"
+            ],
+            "properties": {
+                "asset_type": {
+                    "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType"
+                },
+                "currency": {
+                    "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.Currency"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "target_avg_cost": {
+                    "type": "number"
+                },
+                "target_quantity": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreview": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreviewItem"
+                    }
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.HoldingReconcilePreviewItem": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileAction"
+                },
+                "avg_cost_delta": {
+                    "type": "number"
+                },
+                "item": {
+                    "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.HoldingReconcileItem"
+                },
+                "prev_avg_cost": {
+                    "type": "number"
+                },
+                "prev_quantity": {
+                    "type": "number"
+                },
+                "quantity_delta": {
+                    "type": "number"
+                }
+            }
+        },
         "github_com_chienchuanw_asset-manager_internal_models.Installment": {
             "type": "object",
             "properties": {
@@ -7968,6 +8228,21 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_chienchuanw_asset-manager_internal_models.ReconcileAction": {
+            "type": "string",
+            "enum": [
+                "create",
+                "update",
+                "liquidate",
+                "noop"
+            ],
+            "x-enum-varnames": [
+                "ReconcileActionCreate",
+                "ReconcileActionUpdate",
+                "ReconcileActionLiquidate",
+                "ReconcileActionNoop"
+            ]
+        },
         "github_com_chienchuanw_asset-manager_internal_models.ReconcileBankAccountInput": {
             "type": "object",
             "required": [
@@ -8310,11 +8585,24 @@ const docTemplate = `{
         "github_com_chienchuanw_asset-manager_internal_models.Transaction": {
             "type": "object",
             "properties": {
+                "adjustment_prev_avg_cost": {
+                    "type": "number"
+                },
+                "adjustment_prev_quantity": {
+                    "description": "Adjustment 稽核欄位（僅 transaction_type='adjustment' 時填值）",
+                    "type": "number"
+                },
+                "adjustment_reason": {
+                    "type": "string"
+                },
                 "amount": {
                     "type": "number"
                 },
                 "asset_type": {
                     "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.AssetType"
+                },
+                "broker_account_id": {
+                    "type": "string"
                 },
                 "created_at": {
                     "type": "string"
@@ -8366,13 +8654,15 @@ const docTemplate = `{
                 "buy",
                 "sell",
                 "dividend",
-                "fee"
+                "fee",
+                "adjustment"
             ],
             "x-enum-varnames": [
                 "TransactionTypeBuy",
                 "TransactionTypeSell",
                 "TransactionTypeDividend",
-                "TransactionTypeFee"
+                "TransactionTypeFee",
+                "TransactionTypeAdjustment"
             ]
         },
         "github_com_chienchuanw_asset-manager_internal_models.UnrealizedPerformance": {
