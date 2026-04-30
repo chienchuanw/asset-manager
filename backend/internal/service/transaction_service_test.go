@@ -90,6 +90,14 @@ func (m *MockTransactionRepository) CreateWithExchangeRateTx(tx *sql.Tx, input *
 	return args.Get(0).(*models.Transaction), args.Error(1)
 }
 
+func (m *MockTransactionRepository) CreateAdjustmentTx(tx *sql.Tx, t *models.Transaction) (*models.Transaction, error) {
+	args := m.Called(tx, t)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Transaction), args.Error(1)
+}
+
 func (m *MockTransactionRepository) DB() *sql.DB {
 	args := m.Called()
 	if args.Get(0) == nil {
