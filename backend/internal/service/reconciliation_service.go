@@ -112,7 +112,8 @@ func (s *reconciliationService) reconcileCreditCardTx(
 	)
 	err := tx.QueryRow(
 		`SELECT used_credit, credit_limit, issuing_bank, card_name, card_number_last4
-		 FROM credit_cards WHERE id = $1`,
+		 FROM credit_cards WHERE id = $1
+		 FOR UPDATE`,
 		id,
 	).Scan(&currUsed, &currLimit, &issuingBank, &cardName, &last4)
 	if err == sql.ErrNoRows {
@@ -247,7 +248,8 @@ func (s *reconciliationService) reconcileBankAccountTx(
 		last4          string
 	)
 	err := tx.QueryRow(
-		`SELECT balance, bank_name, account_number_last4 FROM bank_accounts WHERE id = $1`,
+		`SELECT balance, bank_name, account_number_last4 FROM bank_accounts WHERE id = $1
+		 FOR UPDATE`,
 		id,
 	).Scan(&currentBalance, &bankName, &last4)
 	if err == sql.ErrNoRows {
