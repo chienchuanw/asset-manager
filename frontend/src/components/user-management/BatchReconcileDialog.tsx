@@ -137,12 +137,12 @@ export function BatchReconcileDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t("batchTitle")}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 overflow-y-auto -mx-6 px-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="batch-date">{t("date")}</Label>
