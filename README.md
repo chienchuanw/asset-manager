@@ -487,6 +487,18 @@ make test-unit
 # Integration tests (requires test database)
 export TEST_DB_HOST=localhost TEST_DB_PORT=5432 TEST_DB_USER=postgres TEST_DB_PASSWORD=your_password TEST_DB_NAME=asset_manager_test
 make test-integration
+
+# Backend BDD (godog scenarios)
+make test-bdd
+
+# Frontend unit tests
+cd frontend && pnpm test
+
+# Frontend E2E BDD (Playwright + playwright-bdd)
+# Requires backend running and a logged-in user (defaults: admin / admin123).
+# Override via E2E_USERNAME / E2E_PASSWORD; skip the embedded webServer with
+# E2E_SKIP_WEBSERVER=1 to reuse an externally started frontend.
+pnpm test:e2e
 ```
 
 ### Common Commands
