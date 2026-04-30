@@ -28,10 +28,11 @@ const (
 type TransactionType string
 
 const (
-	TransactionTypeBuy      TransactionType = "buy"
-	TransactionTypeSell     TransactionType = "sell"
-	TransactionTypeDividend TransactionType = "dividend"
-	TransactionTypeFee      TransactionType = "fee"
+	TransactionTypeBuy        TransactionType = "buy"
+	TransactionTypeSell       TransactionType = "sell"
+	TransactionTypeDividend   TransactionType = "dividend"
+	TransactionTypeFee        TransactionType = "fee"
+	TransactionTypeAdjustment TransactionType = "adjustment"
 )
 
 // Transaction 交易記錄模型
@@ -50,8 +51,15 @@ type Transaction struct {
 	Currency        Currency        `json:"currency" db:"currency"`
 	ExchangeRateID  *int            `json:"exchange_rate_id,omitempty" db:"exchange_rate_id"`
 	Note            *string         `json:"note,omitempty" db:"note"`
-	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
-	UpdatedAt       time.Time       `json:"updated_at" db:"updated_at"`
+
+	// Adjustment 稽核欄位（僅 transaction_type='adjustment' 時填值）
+	AdjustmentPrevQuantity *float64   `json:"adjustment_prev_quantity,omitempty" db:"adjustment_prev_quantity"`
+	AdjustmentPrevAvgCost  *float64   `json:"adjustment_prev_avg_cost,omitempty" db:"adjustment_prev_avg_cost"`
+	AdjustmentReason       *string    `json:"adjustment_reason,omitempty" db:"adjustment_reason"`
+	BrokerAccountID        *uuid.UUID `json:"broker_account_id,omitempty" db:"broker_account_id"`
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // CreateTransactionInput 建立交易的輸入資料
@@ -103,7 +111,7 @@ func (a AssetType) Validate() bool {
 // Validate 驗證 TransactionType 是否有效
 func (t TransactionType) Validate() bool {
 	switch t {
-	case TransactionTypeBuy, TransactionTypeSell, TransactionTypeDividend, TransactionTypeFee:
+	case TransactionTypeBuy, TransactionTypeSell, TransactionTypeDividend, TransactionTypeFee, TransactionTypeAdjustment:
 		return true
 	}
 	return false
