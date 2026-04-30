@@ -229,7 +229,49 @@
     "searchPlaceholder": "搜尋代碼或名稱...",
     "loadingHoldings": "載入持倉資料中...",
     "loadError": "無法載入持倉資料",
-    "fixSuccess": "成功修復資料不一致問題"
+    "fixSuccess": "成功修復資料不一致問題",
+    "reconcile": {
+      "button": "對帳",
+      "batchButton": "批次對帳",
+      "dialogTitle": "持倉對帳",
+      "batchDialogTitle": "批次持倉對帳",
+      "description": "此操作會把持倉直接設為目標狀態，不會結算實現損益、不會影響現金。若要記錄實際買賣請使用「新增交易」。",
+      "field": {
+        "symbol": "代碼",
+        "name": "名稱",
+        "quantity": "目標數量",
+        "avgCost": "目標平均成本",
+        "currency": "幣別",
+        "reason": "對帳原因（選填）"
+      },
+      "preview": {
+        "title": "預覽變動",
+        "noChanges": "沒有需要寫入的變動",
+        "action": {
+          "create": "建立",
+          "update": "更新",
+          "liquidate": "清倉",
+          "noop": "無變動"
+        },
+        "delta": {
+          "qty": "數量變動",
+          "avgCost": "均價變動"
+        }
+      },
+      "addRow": "新增標的",
+      "removeRow": "移除",
+      "confirm": "確認",
+      "cancel": "取消",
+      "toast": {
+        "success": "持倉對帳完成"
+      },
+      "error": {
+        "invalidQuantity": "數量必須 ≥ 0",
+        "invalidAvgCost": "平均成本必須 > 0（清倉時可為 0）",
+        "nameRequired": "新建倉時必須填寫名稱",
+        "currencyMismatch": "幣別與既有持倉不符"
+      }
+    }
   },
   "assetTypes": {
     "twStock": "台股",
