@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -336,6 +337,59 @@ func TestReconcileBatch_OneItemFails_RollsBackAll(t *testing.T) {
 	gotC, err := env.cardRepo.GetByID(c.ID)
 	require.NoError(t, err)
 	assert.Equal(t, 5000.0, gotC.UsedCredit)
+}
+
+func TestReconcileBankAccount_ConcurrentReconcile_CashFlowMatchesFinalDelta(t *testing.T) {
+	env := newReconciliationTestEnv(t)
+	defer env.db.Close()
+
+	startBalance := 1000.0
+	acc := seedBankAccount(t, env, startBalance)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	errs := make([]error, 2)
+	targets := []float64{1500, 1200}
+	for i, target := range targets {
+		i, target := i, target
+		go func() {
+			defer wg.Done()
+			_, errs[i] = env.svc.ReconcileBankAccount(acc.ID, &models.ReconcileBankAccountInput{
+				NewBalance: target,
+				Date:       time.Now(),
+			})
+		}()
+	}
+	wg.Wait()
+	for _, err := range errs {
+		require.NoError(t, err)
+	}
+
+	updated, err := env.bankRepo.GetByID(acc.ID)
+	require.NoError(t, err)
+
+	var totalDelta float64
+	rows, err := env.db.Query(
+		`SELECT type, amount FROM cash_flows
+		 WHERE source_type = $1 AND source_id = $2`,
+		models.SourceTypeBankAccount, acc.ID,
+	)
+	require.NoError(t, err)
+	defer rows.Close()
+	for rows.Next() {
+		var typ string
+		var amt float64
+		require.NoError(t, rows.Scan(&typ, &amt))
+		if typ == string(models.CashFlowTypeIncome) {
+			totalDelta += amt
+		} else {
+			totalDelta -= amt
+		}
+	}
+	require.NoError(t, rows.Err())
+
+	assert.InDelta(t, updated.Balance-startBalance, totalDelta, 0.001,
+		"sum of cash_flow deltas must equal final balance - starting balance")
 }
 
 func TestReconcileBankAccount_NegativeBalance(t *testing.T) {
