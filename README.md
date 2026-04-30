@@ -48,6 +48,8 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
 - **Bank and credit card accounts** -- Multi-account support with credit card grouping. Single-item and batch **balance reconciliation** lets users overwrite balances and credit-card usage when they have not bookkept for a while; the system automatically generates an "adjustment" cash flow for the delta so analytics stay consistent.
 
+- **Holdings reconciliation** -- Snap investment holdings to current real-world state without backfilling every missed buy/sell. A batch dialog lets users edit `(symbol, target quantity, target average cost)` per position (and add first-time positions), preview a diff with `create / update / liquidate / noop` actions, and commit. Each non-noop item writes a single `adjustment` transaction with audit fields; the FIFO calculator resets prior cost lots at that point so subsequent sells use the post-adjustment basis. Reconciliation does **not** realize P&L and does **not** affect cash flows -- it is a data-correction tool, not a substitute for recording real trades.
+
 - **Analytics and snapshots** -- Performance trends via daily snapshots, asset allocation by type and individual asset, top performing/underperforming assets, and time-range filtering.
 
   ![Analytics](assets/screenshots/analytics.png)
@@ -285,6 +287,9 @@ For detailed architecture documentation, see [`backend/doc/ARCHITECTURE.md`](bac
 |--------|------|-------------|
 | GET | `/api/holdings` | Get all holdings |
 | GET | `/api/holdings/:symbol` | Get holding by symbol |
+| POST | `/api/holdings/reconcile/preview` | Preview holding reconciliation diff (dry-run) |
+| POST | `/api/holdings/reconcile` | Execute holding reconciliation; writes one adjustment transaction per non-noop item |
+| POST | `/api/holdings/:symbol/reconcile` | Reconcile a single symbol (convenience) |
 
 ### Analytics
 
