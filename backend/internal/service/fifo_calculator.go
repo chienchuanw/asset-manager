@@ -88,6 +88,17 @@ func (c *fifoCalculator) CalculateHoldingForSymbol(symbol string, transactions [
 		case models.TransactionTypeFee:
 			// 單獨的手續費記錄：暫時跳過（手續費已在買賣時處理）
 			continue
+
+		case models.TransactionTypeAdjustment:
+			// 對帳：捨棄之前所有批次，以 (target_qty, target_avg_cost) 作為新起點
+			costBatches = costBatches[:0]
+			if tx.Quantity > 0 {
+				batch, err := c.processAdjustment(tx)
+				if err != nil {
+					return nil, err
+				}
+				costBatches = append(costBatches, batch)
+			}
 		}
 	}
 
@@ -100,6 +111,34 @@ func (c *fifoCalculator) CalculateHoldingForSymbol(symbol string, transactions [
 	holding := c.calculateHoldingFromBatches(symbol, name, assetType, costBatches)
 
 	return holding, nil
+}
+
+// processAdjustment 將對帳交易轉成單一合成成本批次（直接使用 tx.Price 作為單位成本）
+func (c *fifoCalculator) processAdjustment(tx *models.Transaction) (*models.CostBatch, error) {
+	unitCostOriginal := tx.Price
+
+	var unitCostTWD, exchangeRate float64
+	if tx.Currency == models.CurrencyUSD {
+		twdAmount, err := c.exchangeRateService.ConvertToTWD(unitCostOriginal, tx.Currency, tx.Date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert adjustment unit cost to TWD for %s on %s: %w", tx.Symbol, tx.Date.Format("2006-01-02"), err)
+		}
+		unitCostTWD = twdAmount
+		exchangeRate = unitCostTWD / unitCostOriginal
+	} else {
+		unitCostTWD = unitCostOriginal
+		exchangeRate = 1.0
+	}
+
+	return &models.CostBatch{
+		Date:             tx.Date,
+		Quantity:         tx.Quantity,
+		UnitCost:         unitCostTWD,
+		UnitCostOriginal: unitCostOriginal,
+		OriginalQty:      tx.Quantity,
+		Currency:         tx.Currency,
+		ExchangeRate:     exchangeRate,
+	}, nil
 }
 
 // CalculateAllHoldings 計算所有標的的持倉（返回結果包含警告）
@@ -278,6 +317,16 @@ func (c *fifoCalculator) CalculateCostBasis(symbol string, sellTransaction *mode
 			costBatches, err = c.processSell(tx, costBatches)
 			if err != nil {
 				return 0, err
+			}
+
+		case models.TransactionTypeAdjustment:
+			costBatches = costBatches[:0]
+			if tx.Quantity > 0 {
+				batch, err := c.processAdjustment(tx)
+				if err != nil {
+					return 0, err
+				}
+				costBatches = append(costBatches, batch)
 			}
 		}
 	}

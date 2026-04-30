@@ -1014,6 +1014,106 @@ func TestFIFO_AvgCostOriginal_MultipleBuys(t *testing.T) {
 	assert.InDelta(t, 153.87, holding.AvgCostOriginal, 0.01)
 }
 
+// ==================== Adjustment 對帳測試 ====================
+
+// TestFIFO_AdjustmentResetsLots 對帳後的賣出，成本基礎以對帳後均價計
+func TestFIFO_AdjustmentResetsLots(t *testing.T) {
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           150,
+			Amount:          15000,
+			Currency:        models.CurrencyTWD,
+		},
+		{
+			Date:            time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeAdjustment,
+			Quantity:        100,
+			Price:           200,
+			Amount:          0,
+			Currency:        models.CurrencyTWD,
+		},
+		{
+			Date:            time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeSell,
+			Quantity:        50,
+			Price:           220,
+			Amount:          11000,
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	calc := NewFIFOCalculator(newMockExchangeRateForTWD())
+
+	holding, err := calc.CalculateHoldingForSymbol("2330", transactions)
+	assert.NoError(t, err)
+	assert.NotNil(t, holding)
+	assert.InDelta(t, 50.0, holding.Quantity, 1e-9)
+	assert.InDelta(t, 200.0, holding.AvgCost, 1e-6, "avg cost should reset to adjustment value")
+
+	costBasis, err := calc.CalculateCostBasis("2330", transactions[2], transactions)
+	assert.NoError(t, err)
+	assert.InDelta(t, 200.0*50, costBasis, 1e-6, "sell cost basis = post-adjustment avg * sell qty")
+}
+
+// TestFIFO_AdjustmentToZeroLiquidates 對帳到 0 後重新建倉，FIFO 從新建倉起算
+func TestFIFO_AdjustmentToZeroLiquidates(t *testing.T) {
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "0050",
+			Name:            "元大台灣 50",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        50,
+			Price:           120,
+			Amount:          6000,
+			Currency:        models.CurrencyTWD,
+		},
+		{
+			Date:            time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "0050",
+			Name:            "元大台灣 50",
+			TransactionType: models.TransactionTypeAdjustment,
+			Quantity:        0,
+			Price:           0,
+			Amount:          0,
+			Currency:        models.CurrencyTWD,
+		},
+		{
+			Date:            time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "0050",
+			Name:            "元大台灣 50",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        30,
+			Price:           130,
+			Amount:          3900,
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	calc := NewFIFOCalculator(newMockExchangeRateForTWD())
+
+	holding, err := calc.CalculateHoldingForSymbol("0050", transactions)
+	assert.NoError(t, err)
+	assert.NotNil(t, holding)
+	assert.InDelta(t, 30.0, holding.Quantity, 1e-9)
+	assert.InDelta(t, 130.0, holding.AvgCost, 1e-6)
+}
+
 // ==================== 輔助函式 ====================
 
 // ptrFloat64 建立 float64 指標（方便測試）
