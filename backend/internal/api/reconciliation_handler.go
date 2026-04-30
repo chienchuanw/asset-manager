@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -8,6 +9,25 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+// mapReconcileError 將 service 層 sentinel errors 映射成 HTTP status / API code。
+func mapReconcileError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrBankAccountNotFound),
+		errors.Is(err, service.ErrCreditCardNotFound):
+		return http.StatusNotFound, "NOT_FOUND"
+	case errors.Is(err, service.ErrInvalidInput),
+		errors.Is(err, service.ErrUsedExceedsLimit):
+		return http.StatusBadRequest, "INVALID_INPUT"
+	default:
+		return http.StatusInternalServerError, "RECONCILE_FAILED"
+	}
+}
+
+func writeReconcileError(c *gin.Context, err error) {
+	status, code := mapReconcileError(err)
+	c.JSON(status, APIResponse{Error: &APIError{Code: code, Message: err.Error()}})
+}
 
 // ReconciliationHandler 校準 API
 type ReconciliationHandler struct {
@@ -29,6 +49,7 @@ func NewReconciliationHandler(svc service.ReconciliationService) *Reconciliation
 // @Param input body models.ReconcileBankAccountInput true "校準資料"
 // @Success 200 {object} APIResponse{data=models.ReconcileResult}
 // @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 404 {object} APIResponse{error=APIError}
 // @Failure 500 {object} APIResponse{error=APIError}
 // @Router /api/bank-accounts/{id}/reconcile [post]
 func (h *ReconciliationHandler) ReconcileBankAccount(c *gin.Context) {
@@ -48,9 +69,7 @@ func (h *ReconciliationHandler) ReconcileBankAccount(c *gin.Context) {
 	}
 	res, err := h.service.ReconcileBankAccount(id, &input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, APIResponse{Error: &APIError{
-			Code: "RECONCILE_FAILED", Message: err.Error(),
-		}})
+		writeReconcileError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, APIResponse{Data: res})
@@ -66,6 +85,7 @@ func (h *ReconciliationHandler) ReconcileBankAccount(c *gin.Context) {
 // @Param input body models.ReconcileCreditCardInput true "校準資料"
 // @Success 200 {object} APIResponse{data=models.ReconcileResult}
 // @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 404 {object} APIResponse{error=APIError}
 // @Failure 500 {object} APIResponse{error=APIError}
 // @Router /api/credit-cards/{id}/reconcile [post]
 func (h *ReconciliationHandler) ReconcileCreditCard(c *gin.Context) {
@@ -85,9 +105,7 @@ func (h *ReconciliationHandler) ReconcileCreditCard(c *gin.Context) {
 	}
 	res, err := h.service.ReconcileCreditCard(id, &input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, APIResponse{Error: &APIError{
-			Code: "RECONCILE_FAILED", Message: err.Error(),
-		}})
+		writeReconcileError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, APIResponse{Data: res})
@@ -102,6 +120,7 @@ func (h *ReconciliationHandler) ReconcileCreditCard(c *gin.Context) {
 // @Param input body models.ReconcileBatchInput true "批次校準資料"
 // @Success 200 {object} APIResponse{data=[]models.ReconcileResult}
 // @Failure 400 {object} APIResponse{error=APIError}
+// @Failure 404 {object} APIResponse{error=APIError}
 // @Failure 500 {object} APIResponse{error=APIError}
 // @Router /api/user-management/reconcile-batch [post]
 func (h *ReconciliationHandler) ReconcileBatch(c *gin.Context) {
@@ -114,9 +133,7 @@ func (h *ReconciliationHandler) ReconcileBatch(c *gin.Context) {
 	}
 	res, err := h.service.ReconcileBatch(&input)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, APIResponse{Error: &APIError{
-			Code: "RECONCILE_FAILED", Message: err.Error(),
-		}})
+		writeReconcileError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, APIResponse{Data: res})

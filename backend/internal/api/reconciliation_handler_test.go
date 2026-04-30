@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
+	"github.com/chienchuanw/asset-manager/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -92,6 +93,66 @@ func TestReconcileBankAccountHandler_ServiceError(t *testing.T) {
 	w := httptest.NewRecorder()
 	setupReconciliationRouter(svc).ServeHTTP(w, req)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestReconcileBankAccountHandler_NotFoundMapsTo404(t *testing.T) {
+	svc := &mockReconciliationService{}
+	id := uuid.New()
+	svc.On("ReconcileBankAccount", id, mock.Anything).Return(nil, service.ErrBankAccountNotFound)
+
+	body, _ := json.Marshal(models.ReconcileBankAccountInput{NewBalance: 1, Date: time.Now()})
+	req := httptest.NewRequest("POST", "/api/bank-accounts/"+id.String()+"/reconcile", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	setupReconciliationRouter(svc).ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestReconcileCreditCardHandler_NotFoundMapsTo404(t *testing.T) {
+	svc := &mockReconciliationService{}
+	id := uuid.New()
+	used := 1.0
+	svc.On("ReconcileCreditCard", id, mock.Anything).Return(nil, service.ErrCreditCardNotFound)
+
+	body, _ := json.Marshal(models.ReconcileCreditCardInput{NewUsedCredit: &used, Date: time.Now()})
+	req := httptest.NewRequest("POST", "/api/credit-cards/"+id.String()+"/reconcile", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	setupReconciliationRouter(svc).ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestReconcileCreditCardHandler_UsedExceedsLimitMapsTo400(t *testing.T) {
+	svc := &mockReconciliationService{}
+	id := uuid.New()
+	used := 99999.0
+	svc.On("ReconcileCreditCard", id, mock.Anything).Return(nil, service.ErrUsedExceedsLimit)
+
+	body, _ := json.Marshal(models.ReconcileCreditCardInput{NewUsedCredit: &used, Date: time.Now()})
+	req := httptest.NewRequest("POST", "/api/credit-cards/"+id.String()+"/reconcile", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	setupReconciliationRouter(svc).ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestReconcileBatchHandler_InvalidInputMapsTo400(t *testing.T) {
+	svc := &mockReconciliationService{}
+	bal := 1.0
+	id := uuid.New()
+	svc.On("ReconcileBatch", mock.Anything).Return(nil, service.ErrInvalidInput)
+
+	body, _ := json.Marshal(models.ReconcileBatchInput{
+		Date: time.Now(),
+		Items: []models.ReconcileBatchItem{
+			{TargetType: models.SourceTypeBankAccount, TargetID: id, NewBalance: &bal},
+		},
+	})
+	req := httptest.NewRequest("POST", "/api/user-management/reconcile-batch", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	setupReconciliationRouter(svc).ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestReconcileCreditCardHandler_Success(t *testing.T) {

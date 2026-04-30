@@ -2,11 +2,20 @@ package service
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
 	"github.com/chienchuanw/asset-manager/internal/repository"
 	"github.com/google/uuid"
+)
+
+// Sentinel errors so handlers can map to HTTP status codes via errors.Is.
+var (
+	ErrBankAccountNotFound = errors.New("bank account not found")
+	ErrCreditCardNotFound  = errors.New("credit card not found")
+	ErrUsedExceedsLimit    = errors.New("used_credit exceeds credit_limit")
+	ErrInvalidInput        = errors.New("invalid input")
 )
 
 // ReconciliationService 校準操作業務邏輯
@@ -47,7 +56,7 @@ func (s *reconciliationService) loadAdjustmentCategories() (*adjustmentCategoryI
 // ReconcileBankAccount 校準銀行帳戶餘額
 func (s *reconciliationService) ReconcileBankAccount(id uuid.UUID, input *models.ReconcileBankAccountInput) (*models.ReconcileResult, error) {
 	if err := input.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input: %w", err)
+		return nil, fmt.Errorf("%w: %s", ErrInvalidInput, err.Error())
 	}
 	cats, err := s.loadAdjustmentCategories()
 	if err != nil {
@@ -73,7 +82,7 @@ func (s *reconciliationService) ReconcileBankAccount(id uuid.UUID, input *models
 // ReconcileCreditCard 校準信用卡 used_credit / credit_limit
 func (s *reconciliationService) ReconcileCreditCard(id uuid.UUID, input *models.ReconcileCreditCardInput) (*models.ReconcileResult, error) {
 	if err := input.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input: %w", err)
+		return nil, fmt.Errorf("%w: %s", ErrInvalidInput, err.Error())
 	}
 	cats, err := s.loadAdjustmentCategories()
 	if err != nil {
@@ -117,7 +126,7 @@ func (s *reconciliationService) reconcileCreditCardTx(
 		id,
 	).Scan(&currUsed, &currLimit, &issuingBank, &cardName, &last4)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("credit card not found")
+		return nil, ErrCreditCardNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("fetch credit card: %w", err)
@@ -132,7 +141,7 @@ func (s *reconciliationService) reconcileCreditCardTx(
 		nextLimit = *input.NewCreditLimit
 	}
 	if nextUsed > nextLimit {
-		return nil, fmt.Errorf("used_credit (%v) cannot exceed credit_limit (%v)", nextUsed, nextLimit)
+		return nil, fmt.Errorf("%w: used_credit (%v) cannot exceed credit_limit (%v)", ErrUsedExceedsLimit, nextUsed, nextLimit)
 	}
 
 	if _, err := tx.Exec(
@@ -188,7 +197,7 @@ func (s *reconciliationService) reconcileCreditCardTx(
 // ReconcileBatch 批次校準（共用單一 transaction）
 func (s *reconciliationService) ReconcileBatch(input *models.ReconcileBatchInput) ([]*models.ReconcileResult, error) {
 	if err := input.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input: %w", err)
+		return nil, fmt.Errorf("%w: %s", ErrInvalidInput, err.Error())
 	}
 	cats, err := s.loadAdjustmentCategories()
 	if err != nil {
@@ -226,7 +235,7 @@ func (s *reconciliationService) ReconcileBatch(input *models.ReconcileBatchInput
 			}
 			results = append(results, r)
 		default:
-			return nil, fmt.Errorf("items[%d]: unsupported target_type %s", i, item.TargetType)
+			return nil, fmt.Errorf("items[%d]: %w: unsupported target_type %s", i, ErrInvalidInput, item.TargetType)
 		}
 	}
 
@@ -255,7 +264,7 @@ func (s *reconciliationService) reconcileBankAccountTx(
 		id,
 	).Scan(&currentBalance, &bankName, &last4, &currency)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("bank account not found")
+		return nil, ErrBankAccountNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("fetch bank account: %w", err)
