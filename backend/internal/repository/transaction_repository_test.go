@@ -292,6 +292,50 @@ func (suite *TransactionRepositoryTestSuite) TestDelete() {
 	assert.Nil(suite.T(), deleted)
 }
 
+// TestCreateAdjustmentTx_PersistsAuditFields 驗證 adjustment 交易的稽核欄位正確持久化
+func (suite *TransactionRepositoryTestSuite) TestCreateAdjustmentTx_PersistsAuditFields() {
+	tx, err := suite.db.Begin()
+	if err != nil {
+		suite.T().Fatalf("begin tx: %v", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	prevQty := 100.0
+	prevAvg := 150.0
+	reason := "broker statement sync"
+	input := &models.Transaction{
+		Date:                   time.Now(),
+		AssetType:              models.AssetTypeUSStock,
+		Symbol:                 "AAPL",
+		Name:                   "Apple Inc.",
+		TransactionType:        models.TransactionTypeAdjustment,
+		Quantity:               150,
+		Price:                  180.5,
+		Amount:                 0,
+		Currency:               models.CurrencyUSD,
+		AdjustmentPrevQuantity: &prevQty,
+		AdjustmentPrevAvgCost:  &prevAvg,
+		AdjustmentReason:       &reason,
+	}
+
+	created, err := suite.repo.CreateAdjustmentTx(tx, input)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), models.TransactionTypeAdjustment, created.TransactionType)
+
+	if err := tx.Commit(); err != nil {
+		suite.T().Fatalf("commit: %v", err)
+	}
+
+	got, err := suite.repo.GetByID(created.ID)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), got.AdjustmentPrevQuantity)
+	assert.InDelta(suite.T(), 100.0, *got.AdjustmentPrevQuantity, 1e-9)
+	assert.NotNil(suite.T(), got.AdjustmentPrevAvgCost)
+	assert.InDelta(suite.T(), 150.0, *got.AdjustmentPrevAvgCost, 1e-9)
+	assert.NotNil(suite.T(), got.AdjustmentReason)
+	assert.Equal(suite.T(), "broker statement sync", *got.AdjustmentReason)
+}
+
 // TestTransactionRepositorySuite 執行測試套件
 func TestTransactionRepositorySuite(t *testing.T) {
 	suite.Run(t, new(TransactionRepositoryTestSuite))

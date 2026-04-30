@@ -16,6 +16,7 @@ type TransactionRepository interface {
 	CreateTx(tx *sql.Tx, input *models.CreateTransactionInput) (*models.Transaction, error)
 	CreateWithExchangeRate(input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error)
 	CreateWithExchangeRateTx(tx *sql.Tx, input *models.CreateTransactionInput, exchangeRateID int) (*models.Transaction, error)
+	CreateAdjustmentTx(tx *sql.Tx, t *models.Transaction) (*models.Transaction, error)
 	GetByID(id uuid.UUID) (*models.Transaction, error)
 	GetAll(filters TransactionFilters) ([]*models.Transaction, error)
 	Update(id uuid.UUID, input *models.UpdateTransactionInput) (*models.Transaction, error)
@@ -54,7 +55,7 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 	query := `
 		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, note)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 	`
 
 	transaction := &models.Transaction{}
@@ -87,6 +88,10 @@ func (r *transactionRepository) Create(input *models.CreateTransactionInput) (*m
 		&transaction.Currency,
 		&transaction.ExchangeRateID,
 		&transaction.Note,
+		&transaction.AdjustmentPrevQuantity,
+		&transaction.AdjustmentPrevAvgCost,
+		&transaction.AdjustmentReason,
+		&transaction.BrokerAccountID,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
 	)
@@ -103,7 +108,7 @@ func (r *transactionRepository) CreateTx(tx *sql.Tx, input *models.CreateTransac
 	query := `
 		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, note)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 	`
 
 	transaction := &models.Transaction{}
@@ -136,6 +141,10 @@ func (r *transactionRepository) CreateTx(tx *sql.Tx, input *models.CreateTransac
 		&transaction.Currency,
 		&transaction.ExchangeRateID,
 		&transaction.Note,
+		&transaction.AdjustmentPrevQuantity,
+		&transaction.AdjustmentPrevAvgCost,
+		&transaction.AdjustmentReason,
+		&transaction.BrokerAccountID,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
 	)
@@ -152,7 +161,7 @@ func (r *transactionRepository) CreateWithExchangeRate(input *models.CreateTrans
 	query := `
 		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 	`
 
 	transaction := &models.Transaction{}
@@ -186,6 +195,10 @@ func (r *transactionRepository) CreateWithExchangeRate(input *models.CreateTrans
 		&transaction.Currency,
 		&transaction.ExchangeRateID,
 		&transaction.Note,
+		&transaction.AdjustmentPrevQuantity,
+		&transaction.AdjustmentPrevAvgCost,
+		&transaction.AdjustmentReason,
+		&transaction.BrokerAccountID,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
 	)
@@ -202,7 +215,7 @@ func (r *transactionRepository) CreateWithExchangeRateTx(tx *sql.Tx, input *mode
 	query := `
 		INSERT INTO transactions (date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 	`
 
 	transaction := &models.Transaction{}
@@ -236,6 +249,10 @@ func (r *transactionRepository) CreateWithExchangeRateTx(tx *sql.Tx, input *mode
 		&transaction.Currency,
 		&transaction.ExchangeRateID,
 		&transaction.Note,
+		&transaction.AdjustmentPrevQuantity,
+		&transaction.AdjustmentPrevAvgCost,
+		&transaction.AdjustmentReason,
+		&transaction.BrokerAccountID,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
 	)
@@ -247,10 +264,55 @@ func (r *transactionRepository) CreateWithExchangeRateTx(tx *sql.Tx, input *mode
 	return transaction, nil
 }
 
+// CreateAdjustmentTx 在指定的交易中寫入一筆 adjustment 交易（含稽核欄位）
+func (r *transactionRepository) CreateAdjustmentTx(tx *sql.Tx, t *models.Transaction) (*models.Transaction, error) {
+	query := `
+		INSERT INTO transactions (
+			date, asset_type, symbol, name, transaction_type,
+			quantity, price, amount, fee, tax, currency, note,
+			adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
+	`
+	out := &models.Transaction{}
+	err := tx.QueryRow(
+		query,
+		t.Date, t.AssetType, t.Symbol, t.Name, t.TransactionType,
+		t.Quantity, t.Price, t.Amount, t.Fee, t.Tax, t.Currency, t.Note,
+		t.AdjustmentPrevQuantity, t.AdjustmentPrevAvgCost, t.AdjustmentReason, t.BrokerAccountID,
+	).Scan(
+		&out.ID,
+		&out.Date,
+		&out.AssetType,
+		&out.Symbol,
+		&out.Name,
+		&out.TransactionType,
+		&out.Quantity,
+		&out.Price,
+		&out.Amount,
+		&out.Fee,
+		&out.Tax,
+		&out.Currency,
+		&out.ExchangeRateID,
+		&out.Note,
+		&out.AdjustmentPrevQuantity,
+		&out.AdjustmentPrevAvgCost,
+		&out.AdjustmentReason,
+		&out.BrokerAccountID,
+		&out.CreatedAt,
+		&out.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create adjustment transaction: %w", err)
+	}
+	return out, nil
+}
+
 // GetByID 根據 ID 取得交易記錄
 func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, error) {
 	query := `
-		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 		FROM transactions
 		WHERE id = $1
 	`
@@ -271,6 +333,10 @@ func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 		&transaction.Currency,
 		&transaction.ExchangeRateID,
 		&transaction.Note,
+		&transaction.AdjustmentPrevQuantity,
+		&transaction.AdjustmentPrevAvgCost,
+		&transaction.AdjustmentReason,
+		&transaction.BrokerAccountID,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
 	)
@@ -288,7 +354,7 @@ func (r *transactionRepository) GetByID(id uuid.UUID) (*models.Transaction, erro
 // GetAll 取得所有交易記錄（支援篩選）
 func (r *transactionRepository) GetAll(filters TransactionFilters) ([]*models.Transaction, error) {
 	query := `
-		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 		FROM transactions
 		WHERE 1=1
 	`
@@ -367,6 +433,10 @@ func (r *transactionRepository) GetAll(filters TransactionFilters) ([]*models.Tr
 			&transaction.Currency,
 			&transaction.ExchangeRateID,
 			&transaction.Note,
+			&transaction.AdjustmentPrevQuantity,
+			&transaction.AdjustmentPrevAvgCost,
+			&transaction.AdjustmentReason,
+			&transaction.BrokerAccountID,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
 		)
@@ -473,7 +543,7 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		UPDATE transactions
 		SET %s
 		WHERE id = $%d
-		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, created_at, updated_at
+		RETURNING id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note, adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id, created_at, updated_at
 	`, strings.Join(setClauses, ", "), argCount)
 
 	transaction := &models.Transaction{}
@@ -492,6 +562,10 @@ func (r *transactionRepository) Update(id uuid.UUID, input *models.UpdateTransac
 		&transaction.Currency,
 		&transaction.ExchangeRateID,
 		&transaction.Note,
+		&transaction.AdjustmentPrevQuantity,
+		&transaction.AdjustmentPrevAvgCost,
+		&transaction.AdjustmentReason,
+		&transaction.BrokerAccountID,
 		&transaction.CreatedAt,
 		&transaction.UpdatedAt,
 	)
