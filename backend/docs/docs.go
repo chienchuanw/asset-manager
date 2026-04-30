@@ -6821,11 +6821,6 @@ const docTemplate = `{
                 "BillingCycleQuarterly": "季繳",
                 "BillingCycleYearly": "年繳"
             },
-            "x-enum-descriptions": [
-                "月繳",
-                "季繳",
-                "年繳"
-            ],
             "x-enum-varnames": [
                 "BillingCycleMonthly",
                 "BillingCycleQuarterly",
@@ -6970,12 +6965,6 @@ const docTemplate = `{
                 "CashFlowTypeTransferIn": "存入帳戶",
                 "CashFlowTypeTransferOut": "從帳戶轉出"
             },
-            "x-enum-descriptions": [
-                "收入",
-                "支出",
-                "存入帳戶",
-                "從帳戶轉出"
-            ],
             "x-enum-varnames": [
                 "CashFlowTypeIncome",
                 "CashFlowTypeExpense",
@@ -7477,10 +7466,6 @@ const docTemplate = `{
                 "CurrencyTWD": "新台幣",
                 "CurrencyUSD": "美金"
             },
-            "x-enum-descriptions": [
-                "新台幣",
-                "美金"
-            ],
             "x-enum-varnames": [
                 "CurrencyTWD",
                 "CurrencyUSD"
@@ -7668,11 +7653,6 @@ const docTemplate = `{
                 "InstallmentStatusCancelled": "已取消",
                 "InstallmentStatusCompleted": "已完成"
             },
-            "x-enum-descriptions": [
-                "進行中",
-                "已完成",
-                "已取消"
-            ],
             "x-enum-varnames": [
                 "InstallmentStatusActive",
                 "InstallmentStatusCompleted",
@@ -7807,11 +7787,6 @@ const docTemplate = `{
                 "PaymentMethodCash": "現金",
                 "PaymentMethodCreditCard": "信用卡"
             },
-            "x-enum-descriptions": [
-                "現金",
-                "銀行帳戶",
-                "信用卡"
-            ],
             "x-enum-varnames": [
                 "PaymentMethodCash",
                 "PaymentMethodBankAccount",
@@ -8204,14 +8179,6 @@ const docTemplate = `{
                 "SourceTypeManual": "手動建立（現金交易）",
                 "SourceTypeSubscription": "訂閱自動產生"
             },
-            "x-enum-descriptions": [
-                "手動建立（現金交易）",
-                "訂閱自動產生",
-                "分期自動產生",
-                "銀行帳戶交易",
-                "信用卡交易",
-                "現金"
-            ],
             "x-enum-varnames": [
                 "SourceTypeManual",
                 "SourceTypeSubscription",
@@ -8298,10 +8265,6 @@ const docTemplate = `{
                 "SubscriptionStatusActive": "進行中",
                 "SubscriptionStatusCancelled": "已取消"
             },
-            "x-enum-descriptions": [
-                "進行中",
-                "已取消"
-            ],
             "x-enum-varnames": [
                 "SubscriptionStatusActive",
                 "SubscriptionStatusCancelled"
