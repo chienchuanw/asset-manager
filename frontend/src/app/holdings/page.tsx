@@ -44,6 +44,7 @@ import {
 } from "@/types/holding";
 import type { Holding } from "@/types/holding";
 import { InsufficientQuantityDialog } from "@/components/holdings/InsufficientQuantityDialog";
+import { BatchReconcileHoldingsDialog } from "@/components/holdings/BatchReconcileHoldingsDialog";
 import { holdingsAPI } from "@/lib/api/holdings";
 import { toast } from "sonner";
 import type { APIWarning } from "@/types/transaction";
@@ -228,6 +229,8 @@ export default function HoldingsPage() {
   // Dialog 狀態
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentWarning, setCurrentWarning] = useState<APIWarning | null>(null);
+  const [batchReconcileOpen, setBatchReconcileOpen] = useState(false);
+  const tReconcile = useTranslations("holdings.reconcile");
 
   // 每個資產類別獨立的排序狀態
   const [twStockSort, setTwStockSort] = useState<{
@@ -565,6 +568,16 @@ export default function HoldingsPage() {
                 {tCommon("refresh")}
               </Button>
 
+              {/* 批次對帳按鈕 */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBatchReconcileOpen(true)}
+                data-testid="reconcile-batch-open"
+              >
+                {tReconcile("batchButton")}
+              </Button>
+
               {/* 幣別切換開關 */}
               <div className="flex items-center gap-2">
                 <Switch
@@ -628,6 +641,13 @@ export default function HoldingsPage() {
         onOpenChange={setDialogOpen}
         warning={currentWarning}
         onFix={handleFixInsufficientQuantity}
+      />
+
+      {/* 批次持倉對帳對話框 */}
+      <BatchReconcileHoldingsDialog
+        open={batchReconcileOpen}
+        onOpenChange={setBatchReconcileOpen}
+        currentHoldings={holdings}
       />
     </AppLayout>
   );
