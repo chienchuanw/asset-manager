@@ -46,7 +46,7 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
   ![Recurring](assets/screenshots/recurring.png)
 
-- **Bank and credit card accounts** -- Multi-account support with credit card grouping.
+- **Bank and credit card accounts** -- Multi-account support with credit card grouping. Single-item and batch **balance reconciliation** lets users overwrite balances and credit-card usage when they have not bookkept for a while; the system automatically generates an "adjustment" cash flow for the delta so analytics stay consistent.
 
 - **Analytics and snapshots** -- Performance trends via daily snapshots, asset allocation by type and individual asset, top performing/underperforming assets, and time-range filtering.
 
@@ -313,6 +313,36 @@ For detailed architecture documentation, see [`backend/doc/ARCHITECTURE.md`](bac
 | PUT | `/api/cash-flows/:id` | Update cash flow |
 | DELETE | `/api/cash-flows/:id` | Delete cash flow |
 | GET | `/api/cash-flows/summary` | Cash flow summary |
+
+### Bank Accounts
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/bank-accounts` | Create bank account |
+| GET | `/api/bank-accounts` | List bank accounts |
+| GET | `/api/bank-accounts/:id` | Get bank account by ID |
+| PUT | `/api/bank-accounts/:id` | Update bank account |
+| DELETE | `/api/bank-accounts/:id` | Delete bank account |
+| POST | `/api/bank-accounts/:id/reconcile` | Reconcile balance (auto-creates adjustment cash flow for the delta) |
+
+### Credit Cards
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/credit-cards` | Create credit card |
+| GET | `/api/credit-cards` | List credit cards |
+| GET | `/api/credit-cards/:id` | Get credit card by ID |
+| PUT | `/api/credit-cards/:id` | Update credit card |
+| DELETE | `/api/credit-cards/:id` | Delete credit card |
+| POST | `/api/credit-cards/:id/reconcile` | Reconcile `used_credit` and/or `credit_limit` (only `used_credit` deltas produce cash flows) |
+| GET | `/api/credit-cards/upcoming-billing` | Upcoming billing dates |
+| GET | `/api/credit-cards/upcoming-payment` | Upcoming payment dates |
+
+### User Management
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/user-management/reconcile-batch` | Atomic batch reconciliation across bank accounts and credit cards |
 
 ### Categories
 
