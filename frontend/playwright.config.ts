@@ -1,3 +1,18 @@
+// Playwright config for E2E BDD tests.
+//
+// Env vars:
+//   E2E_BASE_URL       (default http://localhost:3001) — frontend URL.
+//   E2E_API_URL        (default http://localhost:8080) — backend URL for global-setup login.
+//   E2E_USERNAME       (default admin)                 — login username.
+//   E2E_PASSWORD       (default admin123)              — login password.
+//   E2E_SKIP_WEBSERVER (unset = start `pnpm dev`)      — set in CI when the
+//                                                         frontend is started
+//                                                         externally so the test
+//                                                         run reuses it.
+//
+// Mutating scenarios are intentionally avoided; tests stop at preview to keep
+// the dev DB clean. See e2e/features/holdings_reconcile.feature.
+
 import { defineConfig, devices } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
 
