@@ -916,6 +916,113 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bank-accounts/{id}/reconcile": {
+            "post": {
+                "description": "將銀行帳戶餘額校準為新值，並自動產生對帳 cash flow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reconciliation"
+                ],
+                "summary": "校準銀行帳戶餘額",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "銀行帳戶 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "校準資料",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileBankAccountInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/billing/process-daily": {
             "post": {
                 "description": "手動觸發每日扣款處理（訂閱 + 分期）",
@@ -3479,6 +3586,113 @@ const docTemplate = `{
                                             "additionalProperties": {
                                                 "type": "string"
                                             }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/credit-cards/{id}/reconcile": {
+            "post": {
+                "description": "將信用卡 used_credit 與/或 credit_limit 校準為新值",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reconciliation"
+                ],
+                "summary": "校準信用卡狀態",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "信用卡 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "校準資料",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileCreditCardInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileResult"
                                         }
                                     }
                                 }
@@ -6194,6 +6408,109 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/user-management/reconcile-batch": {
+            "post": {
+                "description": "一次校準多個銀行帳戶 / 信用卡，於單一 transaction 內執行",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reconciliation"
+                ],
+                "summary": "批次校準",
+                "parameters": [
+                    {
+                        "description": "批次校準資料",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileResult"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal_api.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/internal_api.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -7673,6 +7990,120 @@ const docTemplate = `{
                 "reason": {
                     "description": "原因說明",
                     "type": "string"
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.ReconcileBankAccountInput": {
+            "type": "object",
+            "required": [
+                "date"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "new_balance": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "note": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchInput": {
+            "type": "object",
+            "required": [
+                "date",
+                "items"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchItem"
+                    }
+                },
+                "note": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchItem": {
+            "type": "object",
+            "required": [
+                "target_id",
+                "target_type"
+            ],
+            "properties": {
+                "new_balance": {
+                    "type": "number"
+                },
+                "new_credit_limit": {
+                    "type": "number"
+                },
+                "new_used_credit": {
+                    "type": "number"
+                },
+                "target_id": {
+                    "type": "string"
+                },
+                "target_type": {
+                    "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType"
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.ReconcileCreditCardInput": {
+            "type": "object",
+            "required": [
+                "date"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "new_credit_limit": {
+                    "type": "number"
+                },
+                "new_used_credit": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "note": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.ReconcileResult": {
+            "type": "object",
+            "properties": {
+                "cash_flow_id": {
+                    "type": "string"
+                },
+                "delta": {
+                    "type": "number"
+                },
+                "new_balance": {
+                    "type": "number"
+                },
+                "new_credit_limit": {
+                    "type": "number"
+                },
+                "new_used_credit": {
+                    "type": "number"
+                },
+                "target_id": {
+                    "type": "string"
+                },
+                "target_type": {
+                    "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType"
                 }
             }
         },

@@ -1023,6 +1023,83 @@ definitions:
         description: 原因說明
         type: string
     type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReconcileBankAccountInput:
+    properties:
+      date:
+        type: string
+      new_balance:
+        minimum: 0
+        type: number
+      note:
+        maxLength: 500
+        type: string
+    required:
+    - date
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchInput:
+    properties:
+      date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchItem'
+        minItems: 1
+        type: array
+      note:
+        maxLength: 500
+        type: string
+    required:
+    - date
+    - items
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchItem:
+    properties:
+      new_balance:
+        type: number
+      new_credit_limit:
+        type: number
+      new_used_credit:
+        type: number
+      target_id:
+        type: string
+      target_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+    required:
+    - target_id
+    - target_type
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReconcileCreditCardInput:
+    properties:
+      date:
+        type: string
+      new_credit_limit:
+        type: number
+      new_used_credit:
+        minimum: 0
+        type: number
+      note:
+        maxLength: 500
+        type: string
+    required:
+    - date
+    type: object
+  github_com_chienchuanw_asset-manager_internal_models.ReconcileResult:
+    properties:
+      cash_flow_id:
+        type: string
+      delta:
+        type: number
+      new_balance:
+        type: number
+      new_credit_limit:
+        type: number
+      new_used_credit:
+        type: number
+      target_id:
+        type: string
+      target_type:
+        $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.SourceType'
+    type: object
   github_com_chienchuanw_asset-manager_internal_models.RemoveCardsFromGroupInput:
     properties:
       card_ids:
@@ -2278,6 +2355,65 @@ paths:
       summary: 更新銀行帳戶
       tags:
       - bank-accounts
+  /api/bank-accounts/{id}/reconcile:
+    post:
+      consumes:
+      - application/json
+      description: 將銀行帳戶餘額校準為新值，並自動產生對帳 cash flow
+      parameters:
+      - description: 銀行帳戶 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 校準資料
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileBankAccountInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 校準銀行帳戶餘額
+      tags:
+      - reconciliation
   /api/billing/process-daily:
     post:
       consumes:
@@ -3650,6 +3786,65 @@ paths:
       summary: 更新信用卡
       tags:
       - credit-cards
+  /api/credit-cards/{id}/reconcile:
+    post:
+      consumes:
+      - application/json
+      description: 將信用卡 used_credit 與/或 credit_limit 校準為新值
+      parameters:
+      - description: 信用卡 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 校準資料
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileCreditCardInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 校準信用卡狀態
+      tags:
+      - reconciliation
   /api/credit-cards/upcoming-billing:
     get:
       description: 取得未來 N 天內的帳單日信用卡
@@ -5290,6 +5485,62 @@ paths:
       summary: 下載 CSV 樣板
       tags:
       - transactions
+  /api/user-management/reconcile-batch:
+    post:
+      consumes:
+      - application/json
+      description: 一次校準多個銀行帳戶 / 信用卡，於單一 transaction 內執行
+      parameters:
+      - description: 批次校準資料
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileBatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_chienchuanw_asset-manager_internal_models.ReconcileResult'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal_api.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/internal_api.APIError'
+              type: object
+      summary: 批次校準
+      tags:
+      - reconciliation
 securityDefinitions:
   BearerAuth:
     in: header
