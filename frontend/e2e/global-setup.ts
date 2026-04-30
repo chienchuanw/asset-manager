@@ -24,6 +24,9 @@ export default async function globalSetup(_config: FullConfig) {
     );
   }
 
+  // Rewrite cookie domain to the frontend host so storageState applies in-browser.
+  // Assumes API and frontend share a hostname (e.g. localhost on different ports).
+  // For cross-host setups (staging), drive the real /login form instead.
   const cookies = (await ctx.storageState()).cookies.map((c) => ({
     ...c,
     domain: new URL(baseURL).hostname,
