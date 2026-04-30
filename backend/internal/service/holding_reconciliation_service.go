@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
+	"sort"
 	"time"
 
 	"github.com/chienchuanw/asset-manager/internal/models"
@@ -40,16 +42,35 @@ func (s *holdingReconciliationService) ReconcileHoldings(
 		return nil, err
 	}
 
+	// 規範化鎖定順序：依 (asset_type, symbol) 穩定排序，確保兩個批次
+	// 不論 caller 傳入順序如何，都依相同順序持有 row-level lock，避免 deadlock。
+	// 同時保留 caller 順序作為 preview output 的回傳順序。
+	type orderedItem struct {
+		item    models.HoldingReconcileItem
+		origIdx int
+	}
+	ordered := make([]orderedItem, len(items))
+	for i, it := range items {
+		ordered[i] = orderedItem{item: it, origIdx: i}
+	}
+	sort.SliceStable(ordered, func(i, j int) bool {
+		if ordered[i].item.AssetType != ordered[j].item.AssetType {
+			return ordered[i].item.AssetType < ordered[j].item.AssetType
+		}
+		return ordered[i].item.Symbol < ordered[j].item.Symbol
+	})
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	preview := &models.HoldingReconcilePreview{Items: make([]models.HoldingReconcilePreviewItem, 0, len(items))}
+	previewByOrig := make([]models.HoldingReconcilePreviewItem, len(items))
 	now := time.Now()
 
-	for _, item := range items {
+	for _, o := range ordered {
+		item := o.item
 		txs, existingCurrency, err := s.lockSymbolTxs(ctx, tx, item.AssetType, item.Symbol)
 		if err != nil {
 			return nil, err
@@ -81,14 +102,14 @@ func (s *holdingReconciliationService) ReconcileHoldings(
 			return nil, models.ErrReconcileNameRequired
 		}
 
-		preview.Items = append(preview.Items, models.HoldingReconcilePreviewItem{
+		previewByOrig[o.origIdx] = models.HoldingReconcilePreviewItem{
 			Item:          item,
 			PrevQuantity:  prevQty,
 			PrevAvgCost:   prevAvg,
 			QuantityDelta: item.TargetQuantity - prevQty,
 			AvgCostDelta:  item.TargetAvgCost - prevAvg,
 			Action:        action,
-		})
+		}
 
 		if dryRun || action == models.ReconcileActionNoop {
 			continue
@@ -131,7 +152,7 @@ func (s *holdingReconciliationService) ReconcileHoldings(
 			return nil, fmt.Errorf("commit: %w", err)
 		}
 	}
-	return preview, nil
+	return &models.HoldingReconcilePreview{Items: previewByOrig}, nil
 }
 
 // lockSymbolTxs 取得並鎖定指定 (asset_type, symbol) 的所有交易；同時回傳既有 currency。
@@ -143,7 +164,7 @@ func (s *holdingReconciliationService) lockSymbolTxs(
 ) ([]*models.Transaction, models.Currency, error) {
 	const q = `
 		SELECT id, date, asset_type, symbol, name, transaction_type, quantity, price, amount, fee, tax, currency, exchange_rate_id, note,
-		       adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason, broker_account_id,
+		       adjustment_prev_quantity, adjustment_prev_avg_cost, adjustment_reason,
 		       created_at, updated_at
 		FROM transactions
 		WHERE asset_type = $1 AND symbol = $2
@@ -162,7 +183,7 @@ func (s *holdingReconciliationService) lockSymbolTxs(
 		if err := rows.Scan(
 			&t.ID, &t.Date, &t.AssetType, &t.Symbol, &t.Name, &t.TransactionType,
 			&t.Quantity, &t.Price, &t.Amount, &t.Fee, &t.Tax, &t.Currency, &t.ExchangeRateID, &t.Note,
-			&t.AdjustmentPrevQuantity, &t.AdjustmentPrevAvgCost, &t.AdjustmentReason, &t.BrokerAccountID,
+			&t.AdjustmentPrevQuantity, &t.AdjustmentPrevAvgCost, &t.AdjustmentReason,
 			&t.CreatedAt, &t.UpdatedAt,
 		); err != nil {
 			return nil, "", err
@@ -175,14 +196,22 @@ func (s *holdingReconciliationService) lockSymbolTxs(
 	return out, currency, rows.Err()
 }
 
+// reconcileEpsilon 對應 schema DECIMAL(20,8) 的最小可表示差值；
+// FIFO 在多筆買賣後算出的均價會帶 IEEE 754 累積誤差，直接 == 比對不可靠。
+const reconcileEpsilon = 1e-8
+
+func nearlyEqual(a, b float64) bool {
+	return math.Abs(a-b) < reconcileEpsilon
+}
+
 func classifyReconcileAction(prevQty, targetQty, prevAvg, targetAvg float64) models.ReconcileAction {
-	if prevQty == 0 && targetQty > 0 {
+	if nearlyEqual(prevQty, 0) && targetQty > 0 {
 		return models.ReconcileActionCreate
 	}
-	if prevQty > 0 && targetQty == 0 {
+	if prevQty > 0 && nearlyEqual(targetQty, 0) {
 		return models.ReconcileActionLiquidate
 	}
-	if prevQty == targetQty && prevAvg == targetAvg {
+	if nearlyEqual(prevQty, targetQty) && nearlyEqual(prevAvg, targetAvg) {
 		return models.ReconcileActionNoop
 	}
 	return models.ReconcileActionUpdate
@@ -196,5 +225,6 @@ func IsReconcileValidationError(err error) bool {
 		errors.Is(err, models.ErrInvalidReconcileAssetType) ||
 		errors.Is(err, models.ErrReconcileNameRequired) ||
 		errors.Is(err, models.ErrReconcileCurrencyMismatch) ||
-		errors.Is(err, models.ErrReconcileEmptyBatch)
+		errors.Is(err, models.ErrReconcileEmptyBatch) ||
+		errors.Is(err, models.ErrReconcileReasonTooLong)
 }
