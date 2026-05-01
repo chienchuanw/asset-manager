@@ -391,6 +391,7 @@
     "monthlyStats": "Monthly Daily Income/Expense Statistics",
     "weeklyStats": "Weekly Daily Income/Expense Statistics",
     "weekly": "This Week",
+    "monthly": "This Month",
     "chartDescription": "Daily cash flow for {year}/{month}{period}",
     "totalIncome": "Total Income",
     "totalIncomeDesc": "All income for the period",
