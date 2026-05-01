@@ -390,6 +390,65 @@ func TestGetHoldingBySymbol_Success(t *testing.T) {
 	mockPriceService.AssertExpectations(t)
 }
 
+// TestGetAllHoldings_PriceUnavailable_StillSetsCurrency 迴歸測試 issue #77：
+// 當價格服務無法取得某標的價格時，回傳的 Holding 仍須有正確 Currency，
+// 否則前端批次對帳 dialog 會顯示空白幣別且無法修正。
+func TestGetAllHoldings_PriceUnavailable_StillSetsCurrency(t *testing.T) {
+	mockRepo := new(MockTransactionRepositoryForHolding)
+	mockPriceService := new(MockPriceService)
+	mockExchangeRateService := new(MockExchangeRateService)
+	fifoCalculator := NewFIFOCalculator(mockExchangeRateService)
+	service := NewHoldingService(mockRepo, fifoCalculator, mockPriceService, mockExchangeRateService)
+
+	transactions := []*models.Transaction{
+		{
+			Date:            time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeUSStock,
+			Symbol:          "AAPL",
+			Name:            "Apple Inc.",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        50,
+			Price:           150,
+			Amount:          7500,
+			Fee:             ptrFloat64(10),
+			Currency:        models.CurrencyUSD,
+		},
+		{
+			Date:            time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC),
+			AssetType:       models.AssetTypeTWStock,
+			Symbol:          "2330",
+			Name:            "台積電",
+			TransactionType: models.TransactionTypeBuy,
+			Quantity:        100,
+			Price:           500,
+			Amount:          50000,
+			Fee:             ptrFloat64(28),
+			Currency:        models.CurrencyTWD,
+		},
+	}
+
+	mockRepo.On("GetAll", mock.Anything).Return(transactions, nil)
+	mockExchangeRateService.On("ConvertToTWD", 7510.0, models.CurrencyUSD, mock.Anything).Return(225300.0, nil)
+	// 模擬價格服務完全無法取得任何標的的價格
+	mockPriceService.On("GetPrices", mock.Anything, mock.Anything).
+		Return(map[string]*models.Price{}, nil)
+
+	result, err := service.GetAllHoldings(models.HoldingFilters{})
+
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(result.Holdings))
+
+	for _, h := range result.Holdings {
+		assert.NotEmptyf(t, string(h.Currency), "%s holding must have currency even when price unavailable", h.Symbol)
+		switch h.AssetType {
+		case models.AssetTypeUSStock, models.AssetTypeCrypto:
+			assert.Equal(t, models.CurrencyUSD, h.Currency)
+		case models.AssetTypeTWStock:
+			assert.Equal(t, models.CurrencyTWD, h.Currency)
+		}
+	}
+}
+
 // TestGetHoldingBySymbol_NotFound 測試標的不存在
 func TestGetHoldingBySymbol_NotFound(t *testing.T) {
 	// Arrange
