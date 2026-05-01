@@ -275,6 +275,12 @@ func (c *fifoCalculator) calculateHoldingFromBatches(symbol, name string, assetT
 	avgCostTWD := totalCostTWD / totalQuantity
 	avgCostOriginal := totalCostOriginal / totalQuantity
 
+	// 幣別取自最後一個成本批次（同標的的所有批次幣別應一致）
+	var currency models.Currency
+	if len(batches) > 0 {
+		currency = batches[len(batches)-1].Currency
+	}
+
 	return &models.Holding{
 		Symbol:          symbol,
 		Name:            name,
@@ -283,6 +289,7 @@ func (c *fifoCalculator) calculateHoldingFromBatches(symbol, name string, assetT
 		AvgCost:         avgCostTWD,
 		AvgCostOriginal: avgCostOriginal,
 		TotalCost:       totalCostTWD,
+		Currency:        currency,
 		LastUpdated:     time.Now(),
 	}
 }

@@ -126,6 +126,11 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) (*Holding
 		log.Printf("[DEBUG] Processing holding: %s (AssetType: %s, Quantity: %.4f)",
 			symbol, holding.AssetType, holding.Quantity)
 
+		// 幣別由 asset_type 推導，與價格抓取結果無關，必須先設定
+		// 否則當價格服務失敗走入 else 分支時，currency 會是空字串
+		currency := s.getCurrencyForAssetType(holding.AssetType)
+		holding.Currency = currency
+
 		price, exists := prices[symbol]
 		if exists && price.Price > 0 {
 			log.Printf("[DEBUG] Price found for %s: %.4f (Source: %s, IsStale: %v)",
@@ -133,10 +138,6 @@ func (s *holdingService) GetAllHoldings(filters models.HoldingFilters) (*Holding
 
 			// 有價格資訊且價格有效
 			holding.CurrentPrice = price.Price
-
-			// 根據資產類型決定幣別
-			currency := s.getCurrencyForAssetType(holding.AssetType)
-			holding.Currency = currency
 			log.Printf("[DEBUG] Currency for %s: %s", symbol, currency)
 
 			// 將價格轉換為 TWD
