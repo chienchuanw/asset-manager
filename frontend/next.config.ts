@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true, // 在 Docker 環境中停用圖片優化
   },
+
+  // 安全性:明確停用 Next.js 16 實驗性 MCP server
+  // (16.0.0 預設啟用並公開暴露,曾被利用進行 RCE)
+  experimental: {
+    mcpServer: false,
+  },
 };
 
 // 設定 next-intl plugin，指定 i18n 請求配置檔案位置

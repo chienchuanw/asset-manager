@@ -15,7 +15,7 @@ services:
       # 初始化腳本 (可選)
       # - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test:
         [
@@ -39,7 +39,7 @@ services:
       # Redis 資料持久化
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -103,7 +103,7 @@ services:
       DISCORD_BOT_LANG: ${DISCORD_BOT_LANG:-zh-TW}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     networks:
       - asset-manager-network
     # 資源限制 (可選,防止單一容器佔用過多資源)
@@ -131,7 +131,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     networks:
       - asset-manager-network
     deploy:
