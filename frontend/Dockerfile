@@ -3,7 +3,7 @@
 FROM node:20-alpine AS deps
 
 # 安裝 pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile
 FROM node:20-alpine AS builder
 
 # 安裝 pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 WORKDIR /app
 
