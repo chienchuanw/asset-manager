@@ -20,6 +20,14 @@ if [[ -z "${DISCORD_WEBHOOK_URL:-}" ]]; then
   exit 1
 fi
 
+# 硬依賴：jq 用來組 JSON、curl 用來送 webhook。少任何一個就讓 cron 看到 stderr 而非靜默失敗。
+for dep in jq curl docker; do
+  if ! command -v "$dep" >/dev/null 2>&1; then
+    echo "ERROR: required command '$dep' not found in PATH" >&2
+    exit 1
+  fi
+done
+
 HOSTNAME_S=$(hostname)
 ALERTS=()
 
@@ -42,7 +50,10 @@ check_bad_processes() {
   if echo "$procs" | grep -iE "$BAD_PROCS_REGEX" >/dev/null; then
     local matches
     matches=$(echo "$procs" | grep -iE "$BAD_PROCS_REGEX" | head -3)
-    ALERTS+=("**[$c] 已知挖礦/惡意程式名命中**\n\`\`\`\n$matches\n\`\`\`")
+    # printf -v 把實體換行寫進變數；單純的 "...\n..." 在 bash 雙引號中是字面 backslash-n
+    local entry
+    printf -v entry '**[%s] 已知挖礦/惡意程式名命中**\n```\n%s\n```' "$c" "$matches"
+    ALERTS+=("$entry")
   fi
 }
 
@@ -52,7 +63,9 @@ check_tmp_executables() {
   local exe_files
   exe_files=$(docker exec "$c" sh -c 'find /tmp -type f -perm -u+x 2>/dev/null | head -5' 2>/dev/null || true)
   if [[ -n "$exe_files" ]]; then
-    ALERTS+=("**[$c] /tmp 出現可執行檔**\n\`\`\`\n$exe_files\n\`\`\`")
+    local entry
+    printf -v entry '**[%s] /tmp 出現可執行檔**\n```\n%s\n```' "$c" "$exe_files"
+    ALERTS+=("$entry")
   fi
 }
 
@@ -85,12 +98,29 @@ if [[ ${#ALERTS[@]} -eq 0 ]]; then
   exit 0
 fi
 
-# 拼 payload
+# 拼 payload；Discord content 欄位上限 2000 字元，多重告警同時觸發會超過。
+header="🚨 asset-manager 入侵偵測告警 (${HOSTNAME_S})"
 joined=$(printf '%s\n\n' "${ALERTS[@]}")
-content=$(jq -Rn --arg c "🚨 asset-manager 入侵偵測告警 (${HOSTNAME_S})" --arg b "$joined" '{content: ($c + "\n\n" + $b)}')
+# 預留 ~150 字給 header + 截斷提示
+max_body=$((2000 - ${#header} - 150))
+if [[ ${#joined} -gt $max_body ]]; then
+  joined="${joined:0:$max_body}
 
-curl -sS -X POST "$DISCORD_WEBHOOK_URL" \
+…（訊息過長已截斷，共 ${#ALERTS[@]} 項，請登入主機查看完整輸出）"
+fi
+content=$(jq -Rn --arg c "$header" --arg b "$joined" '{content: ($c + "\n\n" + $b)}')
+
+# 把 curl 的 HTTP code 抓出來，非 2xx 時讓 cron 看到 stderr
+http_code=$(curl -sS -o /tmp/discord-resp.$$ -w '%{http_code}' \
+  -X POST "$DISCORD_WEBHOOK_URL" \
   -H "Content-Type: application/json" \
-  -d "$content" >/dev/null
+  -d "$content")
+if [[ "$http_code" != 2* ]]; then
+  echo "ERROR: Discord webhook returned HTTP $http_code" >&2
+  cat /tmp/discord-resp.$$ >&2
+  rm -f /tmp/discord-resp.$$
+  exit 2
+fi
+rm -f /tmp/discord-resp.$$
 
 echo "$(date -u +%FT%TZ) alerted: ${#ALERTS[@]} item(s)"
