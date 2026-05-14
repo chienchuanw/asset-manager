@@ -106,12 +106,21 @@ services:
       - "127.0.0.1:8080:8080"
     networks:
       - asset-manager-network
+    # 安全強化：限制容器爆炸半徑
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     # 資源限制 (可選,防止單一容器佔用過多資源)
     deploy:
       resources:
         limits:
           cpus: "1.0"
           memory: 512M
+          pids: 200
         reservations:
           cpus: "0.5"
           memory: 256M
@@ -134,11 +143,21 @@ services:
       - "127.0.0.1:3000:3000"
     networks:
       - asset-manager-network
+    # 安全強化：阻斷在 /tmp 落地並執行挖礦程式的攻擊路徑
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /app/.next/cache:rw,nosuid,size=128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
           cpus: "0.5"
           memory: 256M
+          pids: 200
         reservations:
           cpus: "0.25"
           memory: 128M
