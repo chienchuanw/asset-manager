@@ -114,6 +114,9 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # pids_limit 重複在頂層 + deploy 區塊：前者是 Compose 在 standalone (非 Swarm) 模式
+    # 下保證會套用的欄位；後者覆蓋 Swarm 路徑。兩者值必須一致。
+    pids_limit: 200
     # 資源限制 (可選,防止單一容器佔用過多資源)
     deploy:
       resources:
@@ -147,11 +150,12 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
-      - /app/.next/cache:rw,nosuid,size=128m
+      - /app/.next/cache:rw,noexec,nosuid,size=128m
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
+    pids_limit: 200
     deploy:
       resources:
         limits:
