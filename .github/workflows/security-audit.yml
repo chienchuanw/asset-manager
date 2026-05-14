@@ -1,0 +1,62 @@
+name: Security Audit
+
+# 每週一掃描相依套件漏洞；PR 觸發時也跑一次以儘早發現。
+# 全部設為 non-blocking（continue-on-error），目的是「發現」而非「阻擋合併」，
+# Dependabot 負責後續升級 PR。
+on:
+  pull_request:
+    branches: [dev, main]
+  schedule:
+    - cron: "0 3 * * 1" # 每週一 03:00 UTC（≒ 11:00 Asia/Taipei）
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-audit:
+    name: pnpm audit (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm audit (high+ severity)
+        run: pnpm audit --audit-level=high --prod
+        continue-on-error: true
+
+  backend-audit:
+    name: govulncheck (backend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
+        continue-on-error: true

@@ -1,6 +1,8 @@
 # 多階段建置 Dockerfile for Go Backend
 # Stage 1: 建置階段
-FROM golang:1.25-alpine AS builder
+# Base images 以 digest 釘選，避免浮動 tag 在重新建置時拉到不同內容
+# Dependabot (.github/dependabot.yml) 會自動開 PR 升級這些 digest
+FROM golang:1.25-alpine@sha256:8d22e29d960bc50cd025d93d5b7c7d220b1ee9aa7a239b3c8f55a57e987e8d45 AS builder
 
 # 安裝必要工具
 RUN apk add --no-cache git make
@@ -23,7 +25,8 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/bin/api cmd/api/main.go
 
 # Stage 2: 執行階段
-FROM alpine:latest
+# alpine:3.20 + digest 釘選（之前用 alpine:latest，浮動 tag 是穩定性與安全風險）
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
 
 # 安裝必要工具
 # ca-certificates: HTTPS 連線需要
