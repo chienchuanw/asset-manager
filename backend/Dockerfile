@@ -2,7 +2,7 @@
 # Stage 1: 建置階段
 # Base images 以 digest 釘選，避免浮動 tag 在重新建置時拉到不同內容
 # Dependabot (.github/dependabot.yml) 會自動開 PR 升級這些 digest
-FROM golang:1.25-alpine@sha256:8d22e29d960bc50cd025d93d5b7c7d220b1ee9aa7a239b3c8f55a57e987e8d45 AS builder
+FROM golang:1.26-alpine@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d AS builder
 
 # 安裝必要工具
 RUN apk add --no-cache git make
