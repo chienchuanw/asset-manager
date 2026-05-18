@@ -19,7 +19,7 @@ NC     := \033[0m # No Color
 # Go 工具路徑
 GOTESTSUM := ./scripts/run-tests.sh
 
-.PHONY: help install test test-verbose test-unit test-integration test-bdd test-coverage test-watch migrate-up migrate-down migrate-create run build clean db-create db-drop seed seed-clean snapshot swagger swagger-check
+.PHONY: help install test test-verbose test-unit test-integration test-bdd test-coverage test-watch migrate-up migrate-down migrate-create run build mcp-build mcp-run clean db-create db-drop seed seed-clean snapshot swagger swagger-check
 
 # 顯示幫助訊息
 help:
@@ -159,6 +159,16 @@ build:
 	@echo "Building application..."
 	go build -o bin/api cmd/api/main.go
 	@echo "Build complete! Binary: bin/api"
+
+# 編譯 MCP server
+mcp-build:
+	@echo "Building MCP server..."
+	go build -o bin/mcp ./cmd/mcp
+	@echo "Build complete! Binary: bin/mcp"
+
+# 執行 MCP server（stdio，供 AI client 設定使用）
+mcp-run:
+	go run ./cmd/mcp
 
 # 清理編譯產物
 clean:
