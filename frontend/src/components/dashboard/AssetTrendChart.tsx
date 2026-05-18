@@ -14,8 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -26,11 +24,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useAssetTrend } from "@/hooks";
+import { chartTheme } from "@/lib/chartTheme";
+import { EmptyState } from "@/components/ui/states/EmptyState";
+import { LoadingState } from "@/components/ui/states/LoadingState";
+import { ErrorState } from "@/components/ui/states/ErrorState";
 
 export function AssetTrendChart() {
   const t = useTranslations("dashboard");
   const tAssets = useTranslations("assetTypes");
-  const tErrors = useTranslations("errors");
   // 使用 state 來延遲渲染圖表,避免 SSR 問題
   const [mounted, setMounted] = useState(false);
 
@@ -168,30 +169,13 @@ export function AssetTrendChart() {
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         {/* Loading 狀態 */}
-        {isLoading && (
-          <div className="h-[300px] w-full">
-            <Skeleton className="h-full w-full" />
-          </div>
-        )}
+        {isLoading && <LoadingState variant="chart" />}
 
         {/* Error 狀態 */}
-        {!isLoading && totalError && (
-          <div className="h-[300px] w-full flex items-center justify-center">
-            <div className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
-              <p className="text-sm">
-                {tErrors("loadFailed")}: {totalError.message}
-              </p>
-            </div>
-          </div>
-        )}
+        {!isLoading && totalError && <ErrorState />}
 
         {/* 空資料狀態 */}
-        {!isLoading && !totalError && chartData.length === 0 && (
-          <div className="h-[300px] w-full flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">{t("noData")}</p>
-          </div>
-        )}
+        {!isLoading && !totalError && chartData.length === 0 && <EmptyState />}
 
         {/* 圖表 */}
         {!isLoading && !totalError && chartData.length > 0 && mounted && (
@@ -209,7 +193,7 @@ export function AssetTrendChart() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  className="stroke-muted"
+                  stroke={chartTheme.grid.stroke}
                 />
                 <XAxis
                   dataKey="date"
@@ -230,7 +214,7 @@ export function AssetTrendChart() {
                   type="monotone"
                   dataKey="total"
                   name={tAssets("total")}
-                  stroke="#111827"
+                  stroke={chartTheme.neutral}
                   strokeWidth={2}
                   dot={false}
                 />
@@ -238,7 +222,7 @@ export function AssetTrendChart() {
                   type="monotone"
                   dataKey="twStock"
                   name={tAssets("twStock")}
-                  stroke="#3b82f6"
+                  stroke={chartTheme.series[0]}
                   strokeWidth={1.5}
                   dot={false}
                   strokeOpacity={0.7}
@@ -247,7 +231,7 @@ export function AssetTrendChart() {
                   type="monotone"
                   dataKey="usStock"
                   name={tAssets("usStock")}
-                  stroke="#10b981"
+                  stroke={chartTheme.series[1]}
                   strokeWidth={1.5}
                   dot={false}
                   strokeOpacity={0.7}
@@ -256,7 +240,7 @@ export function AssetTrendChart() {
                   type="monotone"
                   dataKey="crypto"
                   name={tAssets("crypto")}
-                  stroke="#f59e0b"
+                  stroke={chartTheme.series[2]}
                   strokeWidth={1.5}
                   dot={false}
                   strokeOpacity={0.7}
