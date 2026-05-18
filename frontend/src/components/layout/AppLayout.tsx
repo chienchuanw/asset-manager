@@ -40,6 +40,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/providers/AuthProvider";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
+import { ZenModeToggle } from "@/components/common/ZenModeToggle";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -255,7 +257,9 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
             </div>
           )}
 
-          {/* 語言切換 */}
+          {/* 主題、Zen 模式與語言切換 */}
+          <ThemeToggle />
+          <ZenModeToggle />
           <LanguageSwitcher />
         </header>
 
