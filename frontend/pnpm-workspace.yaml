@@ -1,0 +1,9 @@
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  esbuild: true
+  msw: true
+  # sharp is an optional Next.js image-optimization dep with no prebuilt binary
+  # for this toolchain; it fails to build from source and next build works
+  # without it, so its build script is intentionally skipped.
+  sharp: false
