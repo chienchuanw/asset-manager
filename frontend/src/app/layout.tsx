@@ -7,6 +7,7 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { LocaleProvider } from "@/providers/LocaleProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { ZenModeProvider } from "@/providers/ZenModeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { Locale } from "@/i18n/config";
 
@@ -41,14 +42,16 @@ export default async function RootLayout({
       >
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
-            <LocaleProvider initialLocale={locale as Locale}>
-              <QueryProvider>
-                <AuthProvider>
-                  {children}
-                  <Toaster />
-                </AuthProvider>
-              </QueryProvider>
-            </LocaleProvider>
+            <ZenModeProvider>
+              <LocaleProvider initialLocale={locale as Locale}>
+                <QueryProvider>
+                  <AuthProvider>
+                    {children}
+                    <Toaster />
+                  </AuthProvider>
+                </QueryProvider>
+              </LocaleProvider>
+            </ZenModeProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
