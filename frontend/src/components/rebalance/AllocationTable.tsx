@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import type { AssetTypeDeviation } from "@/types/rebalance";
 import { ASSET_TYPE_MAP } from "./constants";
+import { EmptyState } from "@/components/ui/states/EmptyState";
 
 interface AllocationTableProps {
   deviations: AssetTypeDeviation[];
@@ -35,7 +36,6 @@ export function AllocationTable({
 }: AllocationTableProps) {
   const t = useTranslations("rebalance");
   const tAssets = useTranslations("assetTypes");
-  const tCommon = useTranslations("common");
 
   /**
    * 取得資產類別的顯示名稱
@@ -73,9 +73,7 @@ export function AllocationTable({
       </CardHeader>
       <CardContent>
         {deviations.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {tCommon("noData")}
-          </div>
+          <EmptyState />
         ) : (
           <div className="rounded-md border">
             <Table>
