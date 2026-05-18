@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { type ReactElement, type ReactNode } from "react";
 import messages from "../../messages/en.json";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { ZenModeProvider } from "@/providers/ZenModeProvider";
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -24,7 +26,9 @@ function AllProviders({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <NextIntlClientProvider locale="en" messages={messages}>
-        {children}
+        <ThemeProvider>
+          <ZenModeProvider>{children}</ZenModeProvider>
+        </ThemeProvider>
       </NextIntlClientProvider>
     </QueryClientProvider>
   );
