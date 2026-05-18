@@ -46,6 +46,8 @@
   --color-neutral: var(--neutral);
   --color-surface: var(--surface);
   --color-surface-border: var(--surface-border);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
 }
 
 :root {
@@ -86,6 +88,8 @@
   --neutral: oklch(0.55 0 0);
   --surface: oklch(0.985 0 0);
   --surface-border: oklch(0.92 0 0);
+  --warning: oklch(0.62 0.15 65);
+  --warning-foreground: oklch(0.42 0.12 65);
 }
 
 .dark {
@@ -125,6 +129,8 @@
   --neutral: oklch(0.65 0 0);
   --surface: oklch(0.2 0.01 250);
   --surface-border: oklch(0.27 0.01 250);
+  --warning: oklch(0.8 0.15 75);
+  --warning-foreground: oklch(0.86 0.13 80);
 }
 
 @layer base {
