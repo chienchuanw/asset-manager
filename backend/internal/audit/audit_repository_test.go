@@ -77,3 +77,33 @@ func TestPostgresAuditRepository_RecordError(t *testing.T) {
 	assert.Equal(t, "error", status)
 	assert.Equal(t, "symbol not found", errText)
 }
+
+func TestPostgresAuditRepository_BeginFinishLifecycle(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+	_, err := db.Exec("DELETE FROM agent_audit_log")
+	require.NoError(t, err)
+
+	repo := NewPostgresAuditRepository(db)
+	id, err := repo.Begin("create_transaction", []byte(`{"symbol":"2330"}`))
+	require.NoError(t, err)
+	require.NotEmpty(t, id)
+
+	var status string
+	var executedAt sql.NullTime
+	require.NoError(t, db.QueryRow(
+		"SELECT status, executed_at FROM agent_audit_log WHERE id=$1", id,
+	).Scan(&status, &executedAt))
+	assert.Equal(t, "pending", status)
+	assert.False(t, executedAt.Valid, "executed_at should be null while pending")
+
+	require.NoError(t, repo.Finish(id, "success", "", []byte(`{"id":"x"}`), 17))
+
+	var dur int
+	require.NoError(t, db.QueryRow(
+		"SELECT status, duration_ms, executed_at FROM agent_audit_log WHERE id=$1", id,
+	).Scan(&status, &dur, &executedAt))
+	assert.Equal(t, "success", status)
+	assert.Equal(t, 17, dur)
+	assert.True(t, executedAt.Valid, "executed_at set after Finish")
+}
