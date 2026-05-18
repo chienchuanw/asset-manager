@@ -6,8 +6,12 @@ import { join } from "node:path";
 // utilities (bg-white, bg-gray-N, text-gray-N, border-gray-N, text-black,
 // arbitrary hex utilities) do not adapt to the dark theme. This guard fails
 // if any reappear so the regression cannot creep back in.
+// Trailing boundary is a negative lookahead, not \b: the arbitrary-hex
+// branch ends in "]", a non-word char, so \b after it could never match
+// (it would require a following word char, but real code has whitespace or
+// a quote there). (?![\w-]) lets every branch terminate correctly.
 const BANNED =
-  /\b(?:bg-white|text-black|(?:bg|text|border)-gray-\d{2,3}|(?:bg|text|border)-\[#[0-9a-fA-F]{3,8}\])\b/;
+  /\b(?:bg-white|text-black|(?:bg|text|border)-gray-\d{2,3}|(?:bg|text|border)-\[#[0-9a-fA-F]{3,8}\])(?![\w-])/;
 
 // Documented, deliberate exceptions (see issue #25 / PR #119).
 const EXCEPT = new Set<string>([
@@ -44,5 +48,33 @@ describe("no hardcoded light colors (dark-mode guard)", () => {
         });
     }
     expect(violations, `Hardcoded light classes found:\n${violations.join("\n")}`).toEqual([]);
+  });
+
+  it("BANNED regex actually catches every hardcoded form", () => {
+    for (const bad of [
+      'className="bg-white"',
+      "text-black ",
+      "bg-gray-50",
+      "bg-gray-100",
+      "text-gray-700",
+      "border-gray-300",
+      "bg-[#fff]",
+      'text-[#abcdef]',
+      "border-[#ccc]/50",
+    ]) {
+      expect(BANNED.test(bad), `should flag: ${bad}`).toBe(true);
+    }
+    for (const ok of [
+      "bg-card",
+      "bg-muted",
+      "text-foreground",
+      "text-muted-foreground",
+      "border-border",
+      "bg-gain/10",
+      "text-warning",
+      "bg-grayish-thing", // not a gray-NN utility
+    ]) {
+      expect(BANNED.test(ok), `should not flag: ${ok}`).toBe(false);
+    }
   });
 });
