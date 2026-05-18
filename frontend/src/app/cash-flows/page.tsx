@@ -164,7 +164,7 @@ export default function CashFlowsPage() {
   return (
     <AppLayout title={t("title")} description={t("pageDescription")}>
       {/* Main Content */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
+      <div className="flex-1 p-4 md:p-6 bg-muted space-y-6">
         {/* 當月/當週每日收入/支出圖表 - 置於頁面最上方 */}
         <Card>
           <CardHeader>

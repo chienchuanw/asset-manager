@@ -31,7 +31,7 @@ export function Header({ userName = "使用者", onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header className="bg-card border-b border-border sticky top-0 z-10">
       <div className="flex items-center justify-between px-6 py-4">
         {/* 左側：歡迎訊息 + 手機版選單按鈕 */}
         <div className="flex items-center gap-4">
@@ -47,10 +47,10 @@ export function Header({ userName = "使用者", onMenuClick }: HeaderProps) {
 
           {/* 歡迎訊息 */}
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-foreground">
               歡迎回來, {userName}!
             </h1>
-            <p className="text-sm text-gray-600 hidden sm:block">
+            <p className="text-sm text-muted-foreground hidden sm:block">
               這是你今天的資產概況
             </p>
           </div>
@@ -60,12 +60,12 @@ export function Header({ userName = "使用者", onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-3">
           {/* 搜尋按鈕 */}
           <Button variant="ghost" size="icon" className="hidden sm:flex">
-            <SearchIcon className="h-5 w-5 text-gray-600" />
+            <SearchIcon className="h-5 w-5 text-muted-foreground" />
           </Button>
 
           {/* 通知按鈕 */}
           <Button variant="ghost" size="icon" className="relative">
-            <BellIcon className="h-5 w-5 text-gray-600" />
+            <BellIcon className="h-5 w-5 text-muted-foreground" />
             {/* 通知小紅點 */}
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
           </Button>
@@ -80,10 +80,10 @@ export function Header({ userName = "使用者", onMenuClick }: HeaderProps) {
                     {userName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline text-sm font-medium text-gray-700">
+                <span className="hidden sm:inline text-sm font-medium text-muted-foreground">
                   {userName}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-600" />
+                <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

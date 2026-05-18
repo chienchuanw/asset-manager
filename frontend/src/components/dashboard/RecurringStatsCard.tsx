@@ -205,7 +205,7 @@ export function RecurringStatsCard({
         {/* 提醒 */}
         {(expiringSubscriptions.length > 0 ||
           completingInstallments.length > 0) && (
-          <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-900">
+          <div className="flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-warning-foreground">
             <AlertCircleIcon className="h-4 w-4 mt-0.5 shrink-0" />
             <div className="text-xs space-y-1">
               {expiringSubscriptions.length > 0 && (

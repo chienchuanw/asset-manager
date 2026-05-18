@@ -40,9 +40,9 @@ const getTransactionTypeColor = (type: TransactionType) => {
     case TransactionType.DIVIDEND:
       return "bg-blue-100 text-blue-800";
     case TransactionType.FEE:
-      return "bg-gray-100 text-gray-800";
+      return "bg-muted text-foreground";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-muted text-foreground";
   }
 };
 
@@ -60,7 +60,7 @@ const getAssetTypeColor = (assetType: AssetType) => {
     case AssetType.CASH:
       return "bg-emerald-100 text-emerald-800";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-muted text-foreground";
   }
 };
 
@@ -150,7 +150,7 @@ export function TransactionCard({
         </div>
 
         {/* 總金額 */}
-        <div className="bg-gray-50 rounded-lg p-3 mb-3">
+        <div className="bg-muted rounded-lg p-3 mb-3">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">總金額</div>
             <div className="flex items-center gap-2">

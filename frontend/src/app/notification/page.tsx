@@ -170,7 +170,7 @@ export default function NotificationPage() {
   if (isLoading) {
     return (
       <AppLayout title={t("title")} description={t("description")}>
-        <main className="flex-1 p-4 md:p-6 bg-gray-50">
+        <main className="flex-1 p-4 md:p-6 bg-muted">
           <Loading variant="page" size="lg" text={tCommon("loading")} />
         </main>
       </AppLayout>
@@ -179,7 +179,7 @@ export default function NotificationPage() {
 
   return (
     <AppLayout title={t("title")} description={t("description")}>
-      <div className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-muted">
         <div className="flex flex-col gap-6">
           {/* Discord 設定和訂閱分期通知設定 - 並排顯示 */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

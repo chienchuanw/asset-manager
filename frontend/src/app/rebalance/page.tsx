@@ -33,7 +33,7 @@ export default function RebalancePage() {
   if (isLoading) {
     return (
       <AppLayout title={t("title")} description={t("description")}>
-        <div className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-muted">
           <div className="flex items-center justify-center h-96">
             <Loading variant="page" size="lg" text={tCommon("loading")} />
           </div>
@@ -46,7 +46,7 @@ export default function RebalancePage() {
   if (error) {
     return (
       <AppLayout title={t("title")} description={t("description")}>
-        <div className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-muted">
           <div className="flex items-center justify-center h-96">
             <Card className="w-full max-w-md">
               <CardHeader>
@@ -74,7 +74,7 @@ export default function RebalancePage() {
 
   return (
     <AppLayout title={t("title")} description={t("description")}>
-      <div className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-muted">
         <div className="flex flex-col gap-6">
           {/* 摘要資訊 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

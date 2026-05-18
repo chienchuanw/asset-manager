@@ -125,7 +125,7 @@ export default function DashboardPage() {
   if (holdingsLoading || transactionsLoading) {
     return (
       <AppLayout title={t("title")} description={t("description")}>
-        <div className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-muted">
           <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
             {/* 統計卡片 Loading */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -175,7 +175,7 @@ export default function DashboardPage() {
   if (holdingsError || transactionsError) {
     return (
       <AppLayout title={t("title")} description={t("description")}>
-        <div className="flex-1 p-4 md:p-6 bg-gray-50">
+        <div className="flex-1 p-4 md:p-6 bg-muted">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-red-600">
@@ -195,16 +195,16 @@ export default function DashboardPage() {
   return (
     <AppLayout title={t("title")} description={t("description")}>
       {/* 內容區域 */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-muted">
         <div className="@container/main flex flex-1 flex-col gap-4 md:gap-6">
           {/* 過期價格警告 */}
           {stalePriceInfo && (
-            <Alert variant="default" className="border-amber-200 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-amber-900">
+            <Alert variant="default" className="border-warning/30 bg-warning/10">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <AlertTitle className="text-warning-foreground">
                 {t("stalePriceWarning")}
               </AlertTitle>
-              <AlertDescription className="text-amber-800">
+              <AlertDescription className="text-warning-foreground">
                 {t("stalePriceDescription")}
                 <br />
                 <span className="text-sm">

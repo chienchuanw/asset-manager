@@ -32,8 +32,8 @@ export function StatCard({ title, value, change, description }: StatCardProps) {
             variant="outline"
             className={`gap-1 ${
               isPositive
-                ? "bg-green-50 text-green-700 border-green-200"
-                : "bg-red-50 text-red-700 border-red-200"
+                ? "bg-gain/10 text-gain border-gain/30"
+                : "bg-loss/10 text-loss border-loss/30"
             }`}
           >
             {isPositive ? (

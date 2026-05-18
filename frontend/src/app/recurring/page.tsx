@@ -276,7 +276,7 @@ export default function RecurringPage() {
   return (
     <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-50">
+      <div className="flex-1 p-4 md:p-6 bg-muted">
         <div className="flex flex-col gap-6">
           {/* 統計卡片 */}
           <RecurringStatsCard

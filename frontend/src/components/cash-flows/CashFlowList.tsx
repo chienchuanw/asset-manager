@@ -136,15 +136,15 @@ export function CashFlowList({ filters }: CashFlowListProps) {
                   TypeIcon = TrendingDown;
                   break;
                 case "transfer_in":
-                  typeColor = "text-gray-600";
+                  typeColor = "text-muted-foreground";
                   TypeIcon = ArrowDownToLine;
                   break;
                 case "transfer_out":
-                  typeColor = "text-gray-600";
+                  typeColor = "text-muted-foreground";
                   TypeIcon = ArrowUpFromLine;
                   break;
                 default:
-                  typeColor = "text-gray-600";
+                  typeColor = "text-muted-foreground";
                   TypeIcon = TrendingUp;
               }
 
