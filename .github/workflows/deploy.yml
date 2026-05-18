@@ -203,14 +203,14 @@ jobs:
           docker save asset-manager-frontend:latest | gzip > frontend-image.tar.gz
 
       - name: 📤 Upload Backend image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-image
           path: backend-image.tar.gz
           retention-days: 1
 
       - name: 📤 Upload Frontend image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-image
           path: frontend-image.tar.gz
