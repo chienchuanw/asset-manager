@@ -46,6 +46,11 @@ func NewDispatcher(tools []Tool, a auditSink) *Dispatcher {
 	return &Dispatcher{tools: m, audit: a}
 }
 
+// SelfAudited marks tools that own their audit lifecycle (the fail-closed
+// write tools). The Dispatcher must NOT also best-effort log them, or every
+// mutation would produce two audit rows.
+type SelfAudited interface{ selfAudited() }
+
 func (d *Dispatcher) Dispatch(name string, args json.RawMessage) (json.RawMessage, error) {
 	start := time.Now()
 	tool, ok := d.tools[name]
@@ -53,12 +58,17 @@ func (d *Dispatcher) Dispatch(name string, args json.RawMessage) (json.RawMessag
 		d.audit.Record(name, "error", args, nil, ms(start), "unknown tool")
 		return nil, fmt.Errorf("unknown tool: %s", name)
 	}
+	_, selfAudits := tool.(SelfAudited)
 	payload, summary, err := tool.Run(args)
 	if err != nil {
-		d.audit.Record(name, "error", args, nil, ms(start), err.Error())
+		if !selfAudits {
+			d.audit.Record(name, "error", args, nil, ms(start), err.Error())
+		}
 		return nil, err
 	}
-	d.audit.Record(name, "success", args, summary, ms(start), "")
+	if !selfAudits {
+		d.audit.Record(name, "success", args, summary, ms(start), "")
+	}
 	return payload, nil
 }
 
