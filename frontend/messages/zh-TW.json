@@ -754,5 +754,12 @@
     "networkError": "網路連線錯誤",
     "unauthorized": "未授權，請重新登入",
     "serverError": "伺服器錯誤"
+  },
+  "states": {
+    "emptyTitle": "尚無資料",
+    "emptyDescription": "目前沒有可顯示的內容。",
+    "loading": "載入中…",
+    "errorTitle": "資料載入失敗",
+    "retry": "重試"
   }
 }
