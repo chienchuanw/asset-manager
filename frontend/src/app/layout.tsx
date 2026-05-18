@@ -6,6 +6,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { LocaleProvider } from "@/providers/LocaleProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { Locale } from "@/i18n/config";
 
@@ -34,19 +35,21 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
-          <LocaleProvider initialLocale={locale as Locale}>
-            <QueryProvider>
-              <AuthProvider>
-                {children}
-                <Toaster />
-              </AuthProvider>
-            </QueryProvider>
-          </LocaleProvider>
+          <ThemeProvider>
+            <LocaleProvider initialLocale={locale as Locale}>
+              <QueryProvider>
+                <AuthProvider>
+                  {children}
+                  <Toaster />
+                </AuthProvider>
+              </QueryProvider>
+            </LocaleProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>
