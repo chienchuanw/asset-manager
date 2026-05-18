@@ -79,6 +79,6 @@ describe("AllocationTable", () => {
       <AllocationTable deviations={[]} threshold={5} />
     );
 
-    expect(screen.getByText("No data")).toBeInTheDocument();
+    expect(screen.getByText("No data yet")).toBeInTheDocument();
   });
 });

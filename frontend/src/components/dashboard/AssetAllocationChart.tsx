@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AssetType } from "@/types/transaction";
+import { chartTheme } from "@/lib/chartTheme";
+import { EmptyState } from "@/components/ui/states/EmptyState";
 
 interface AssetAllocationData {
   name: string;
@@ -26,11 +28,11 @@ interface AssetAllocationChartProps {
   data: AssetAllocationData[];
 }
 
-// 資產類型顏色對應
+// 資產類型顏色對應(由設計 token 衍生,與 AssetTrendChart 一致)
 const ASSET_COLORS: Record<string, string> = {
-  "tw-stock": "#3b82f6", // 藍色
-  "us-stock": "#10b981", // 綠色
-  crypto: "#f59e0b", // 橘色
+  "tw-stock": chartTheme.series[0],
+  "us-stock": chartTheme.series[1],
+  crypto: chartTheme.series[2],
 };
 
 export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
@@ -57,7 +59,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
       assetType: item.name,
       value: item.value,
       percentage: total > 0 ? (item.value / total) * 100 : 0,
-      color: ASSET_COLORS[item.name] || "#6b7280",
+      color: ASSET_COLORS[item.name] || chartTheme.neutral,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, tAssets]);
@@ -98,9 +100,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            {t("noData")}
-          </div>
+          <EmptyState />
         ) : (
           <>
             <div className="h-[200px] min-h-[200px]">
@@ -112,7 +112,7 @@ export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
                     cy="50%"
                     labelLine={false}
                     outerRadius={90}
-                    fill="#8884d8"
+                    fill={chartTheme.neutral}
                     dataKey="value"
                   >
                     {chartData.map((entry, index) => (

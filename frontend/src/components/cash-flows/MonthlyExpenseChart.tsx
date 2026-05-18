@@ -13,6 +13,7 @@ import { useCashFlows } from "@/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CashFlowType, formatAmount } from "@/types/cash-flow";
 import { Skeleton } from "@/components/ui/skeleton";
+import { chartTheme } from "@/lib/chartTheme";
 
 interface MonthlyExpenseChartProps {
   selectedDate: string; // ISO 8601 格式 (YYYY-MM-DD)
@@ -162,11 +163,11 @@ export function MonthlyExpenseChart({
   const chartConfig = {
     income: {
       label: t("income"),
-      color: "#22c55e", // 綠色
+      color: chartTheme.gain,
     },
     expense: {
       label: t("expense"),
-      color: "#ef4444", // 紅色
+      color: chartTheme.loss,
     },
   } satisfies ChartConfig;
 

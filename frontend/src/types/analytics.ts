@@ -86,19 +86,6 @@ export function getTimeRangeOptions() {
 }
 
 /**
- * 格式化金額（加上千分位）
- */
-export function formatCurrency(
-  amount: number,
-  currency: string = "TWD"
-): string {
-  return `${currency} ${amount.toLocaleString("zh-TW", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
-}
-
-/**
  * 格式化百分比
  */
 export function formatPercentage(value: number): string {

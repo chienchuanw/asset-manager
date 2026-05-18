@@ -37,12 +37,12 @@ import {
   calculateTotalCost,
   calculateTotalProfitLoss,
   calculateTotalProfitLossPct,
-  formatCurrency,
   formatPercentage,
   getProfitLossColor,
   getConvertedStyle,
 } from "@/types/holding";
 import type { Holding } from "@/types/holding";
+import { Money } from "@/components/common/Money";
 import { InsufficientQuantityDialog } from "@/components/holdings/InsufficientQuantityDialog";
 import { BatchReconcileHoldingsDialog } from "@/components/holdings/BatchReconcileHoldingsDialog";
 import { holdingsAPI } from "@/lib/api/holdings";
@@ -183,12 +183,14 @@ function HoldingCard({
                                 : getProfitLossColor(holding.unrealized_pl)
                             }`}
                           >
-                            {showInTWD
-                              ? formatCurrency(holding.unrealized_pl, "TWD")
-                              : formatCurrency(
-                                  originalValues.unrealizedPL,
-                                  holding.currency
-                                )}
+                            {showInTWD ? (
+                              <Money value={holding.unrealized_pl} currency="TWD" />
+                            ) : (
+                              <Money
+                                value={originalValues.unrealizedPL}
+                                currency={holding.currency}
+                              />
+                            )}
                           </span>
                           <span
                             className={`text-xs tabular-nums ${
@@ -481,7 +483,7 @@ export default function HoldingsPage() {
                     stats.totalProfitLoss
                   )}`}
                 >
-                  {formatCurrency(stats.totalProfitLoss, "TWD")}
+                  <Money value={stats.totalProfitLoss} currency="TWD" />
                 </CardTitle>
               </CardHeader>
             </Card>
@@ -533,7 +535,7 @@ export default function HoldingsPage() {
                     stats.availableCash
                   )}`}
                 >
-                  {formatCurrency(stats.availableCash, "TWD")}
+                  <Money value={stats.availableCash} currency="TWD" />
                 </CardTitle>
               </CardHeader>
             </Card>

@@ -40,11 +40,8 @@ import { Loading } from "@/components/ui/loading";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useUnrealizedAnalytics } from "@/hooks/useUnrealizedAnalytics";
 import { TimeRange } from "@/types/analytics";
-import {
-  formatCurrency,
-  formatPercentage,
-  isPositive,
-} from "@/types/analytics";
+import { formatPercentage, isPositive } from "@/types/analytics";
+import { formatCurrency } from "@/lib/format";
 import { getAssetTypeLabel } from "@/types/transaction";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 

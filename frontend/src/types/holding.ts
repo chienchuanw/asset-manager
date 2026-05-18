@@ -69,20 +69,6 @@ export const holdingFiltersSchema = z.object({
 // ==================== 輔助函式 ====================
 
 /**
- * 格式化貨幣顯示
- * @param value 金額
- * @param currency 貨幣代碼
- * @returns 格式化後的字串
- */
-export function formatCurrency(value: number, currency: string): string {
-  const prefix = currency === "TWD" ? "NT$" : currency === "USD" ? "$" : "";
-  return `${prefix} ${value.toLocaleString("zh-TW", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-/**
  * 格式化百分比顯示
  * @param value 百分比數值
  * @returns 格式化後的字串
