@@ -41,7 +41,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { useUnrealizedAnalytics } from "@/hooks/useUnrealizedAnalytics";
 import { TimeRange } from "@/types/analytics";
 import { formatPercentage, isPositive } from "@/types/analytics";
-import { formatCurrency } from "@/lib/format";
+import { Money } from "@/components/common/Money";
 import { getAssetTypeLabel } from "@/types/transaction";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -126,10 +126,10 @@ export default function AnalyticsPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(
-                              realizedData.summary.data.total_cost_basis,
-                              realizedData.summary.data.currency
-                            )}
+                            <Money
+                              value={realizedData.summary.data.total_cost_basis}
+                              currency={realizedData.summary.data.currency}
+                            />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("sellTransactionCost")}
@@ -145,10 +145,10 @@ export default function AnalyticsPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(
-                              realizedData.summary.data.total_sell_amount,
-                              realizedData.summary.data.currency
-                            )}
+                            <Money
+                              value={realizedData.summary.data.total_sell_amount}
+                              currency={realizedData.summary.data.currency}
+                            />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("actualSellIncome")}
@@ -170,10 +170,10 @@ export default function AnalyticsPage() {
                                 : "text-red-600"
                             }`}
                           >
-                            {formatCurrency(
-                              realizedData.summary.data.total_realized_pl,
-                              realizedData.summary.data.currency
-                            )}
+                            <Money
+                              value={realizedData.summary.data.total_realized_pl}
+                              currency={realizedData.summary.data.currency}
+                            />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("actualProfitLoss")}
@@ -347,7 +347,7 @@ export default function AnalyticsPage() {
                                           : "text-red-600"
                                       }`}
                                     >
-                                      {formatCurrency(item.realized_pl, "TWD")}
+                                      <Money value={item.realized_pl} currency="TWD" />
                                     </span>
                                   </div>
                                 </div>
@@ -414,10 +414,10 @@ export default function AnalyticsPage() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right tabular-nums">
-                                    {formatCurrency(asset.cost_basis, "TWD")}
+                                    <Money value={asset.cost_basis} currency="TWD" />
                                   </TableCell>
                                   <TableCell className="text-right tabular-nums">
-                                    {formatCurrency(asset.sell_amount, "TWD")}
+                                    <Money value={asset.sell_amount} currency="TWD" />
                                   </TableCell>
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
@@ -426,7 +426,7 @@ export default function AnalyticsPage() {
                                         : "text-red-600"
                                     }`}
                                   >
-                                    {formatCurrency(asset.realized_pl, "TWD")}
+                                    <Money value={asset.realized_pl} currency="TWD" />
                                   </TableCell>
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
@@ -483,10 +483,10 @@ export default function AnalyticsPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(
-                              unrealizedData.summary.data.total_cost,
-                              unrealizedData.summary.data.currency
-                            )}
+                            <Money
+                              value={unrealizedData.summary.data.total_cost}
+                              currency={unrealizedData.summary.data.currency}
+                            />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("holdingCostBasis")}
@@ -502,10 +502,10 @@ export default function AnalyticsPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(
-                              unrealizedData.summary.data.total_market_value,
-                              unrealizedData.summary.data.currency
-                            )}
+                            <Money
+                              value={unrealizedData.summary.data.total_market_value}
+                              currency={unrealizedData.summary.data.currency}
+                            />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("currentMarketValue")}
@@ -527,10 +527,10 @@ export default function AnalyticsPage() {
                                 : "text-red-600"
                             }`}
                           >
-                            {formatCurrency(
-                              unrealizedData.summary.data.total_unrealized_pl,
-                              unrealizedData.summary.data.currency
-                            )}
+                            <Money
+                              value={unrealizedData.summary.data.total_unrealized_pl}
+                              currency={unrealizedData.summary.data.currency}
+                            />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("floatingPL")}
@@ -687,10 +687,7 @@ export default function AnalyticsPage() {
                                           : "text-red-600"
                                       }`}
                                     >
-                                      {formatCurrency(
-                                        item.unrealized_pl,
-                                        "TWD"
-                                      )}
+                                      <Money value={item.unrealized_pl} currency="TWD" />
                                     </span>
                                   </div>
                                 </div>
@@ -763,10 +760,10 @@ export default function AnalyticsPage() {
                                     {asset.quantity.toLocaleString("zh-TW")}
                                   </TableCell>
                                   <TableCell className="text-right tabular-nums">
-                                    {formatCurrency(asset.avg_cost, "TWD")}
+                                    <Money value={asset.avg_cost} currency="TWD" />
                                   </TableCell>
                                   <TableCell className="text-right tabular-nums">
-                                    {formatCurrency(asset.current_price, "TWD")}
+                                    <Money value={asset.current_price} currency="TWD" />
                                   </TableCell>
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
@@ -775,7 +772,7 @@ export default function AnalyticsPage() {
                                         : "text-red-600"
                                     }`}
                                   >
-                                    {formatCurrency(asset.unrealized_pl, "TWD")}
+                                    <Money value={asset.unrealized_pl} currency="TWD" />
                                   </TableCell>
                                   <TableCell
                                     className={`text-right font-medium tabular-nums ${
