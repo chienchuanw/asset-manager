@@ -718,5 +718,12 @@
     "networkError": "Network connection error",
     "unauthorized": "Unauthorized, please login again",
     "serverError": "Server error"
+  },
+  "states": {
+    "emptyTitle": "No data yet",
+    "emptyDescription": "There's nothing to show here right now.",
+    "loading": "Loading…",
+    "errorTitle": "Couldn't load data",
+    "retry": "Retry"
   }
 }
