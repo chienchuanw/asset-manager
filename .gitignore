@@ -65,3 +65,6 @@ openspec/
 # Planning docs
 docs/
 note/
+
+# Brainstorming visual companion
+.superpowers/
