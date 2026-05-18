@@ -128,7 +128,7 @@ export function CashFlowSummaryCard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-gray-600">
+          <div className="text-2xl font-bold text-muted-foreground">
             {incomeRecords}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -145,7 +145,7 @@ export function CashFlowSummaryCard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-gray-600">
+          <div className="text-2xl font-bold text-muted-foreground">
             {expenseRecords}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -162,7 +162,7 @@ export function CashFlowSummaryCard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-gray-600">{totalRecords}</div>
+          <div className="text-2xl font-bold text-muted-foreground">{totalRecords}</div>
           <p className="text-xs text-muted-foreground mt-1">
             {t("totalRecordsDesc")}
           </p>

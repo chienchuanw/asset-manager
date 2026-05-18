@@ -67,7 +67,7 @@ export function TransactionExample() {
         <button
           onClick={handleCreateTestTransaction}
           disabled={createMutation.isPending}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-muted"
         >
           {createMutation.isPending ? "建立中..." : "建立測試交易"}
         </button>
@@ -81,15 +81,15 @@ export function TransactionExample() {
           {data?.map((transaction) => (
             <div
               key={transaction.id}
-              className="p-3 border rounded bg-gray-50"
+              className="p-3 border rounded bg-muted"
             >
               <div className="flex justify-between">
                 <span className="font-medium">{transaction.name}</span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   {transaction.symbol}
                 </span>
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 {transaction.type} | 數量: {transaction.quantity} | 價格:{" "}
                 {transaction.price}
               </div>

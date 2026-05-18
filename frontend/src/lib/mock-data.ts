@@ -451,7 +451,7 @@ export const transactionTypeColors: Record<Transaction['type'], string> = {
   buy: 'bg-blue-100 text-blue-800',
   sell: 'bg-red-100 text-red-800',
   dividend: 'bg-green-100 text-green-800',
-  fee: 'bg-gray-100 text-gray-800',
+  fee: 'bg-muted text-foreground',
 };
 
 // 績效分析資料

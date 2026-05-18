@@ -229,7 +229,7 @@ export default function TransactionsPage() {
   return (
     <AppLayout title={t("title")} description={t("description")}>
       {/* Main Content */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-50 space-y-6">
+      <div className="flex-1 p-4 md:p-6 bg-muted space-y-6">
         {/* 上半部：Tab + 統計卡片 */}
         <div className="flex flex-col gap-6">
           {/* Tab 切換 */}
@@ -434,7 +434,7 @@ export default function TransactionsPage() {
                             ? "text-green-600"
                             : transaction.type === "dividend"
                             ? "text-blue-600"
-                            : "text-gray-600";
+                            : "text-muted-foreground";
 
                         return (
                           <TableRow key={transaction.id}>

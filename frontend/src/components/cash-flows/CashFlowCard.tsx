@@ -36,7 +36,7 @@ const getCashFlowTypeColor = (type: CashFlowType) => {
     case CashFlowType.EXPENSE:
       return "bg-red-100 text-red-800";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-muted text-foreground";
   }
 };
 
@@ -121,7 +121,7 @@ export function CashFlowCard({
         </div>
 
         {/* 金額 */}
-        <div className="bg-gray-50 rounded-lg p-3 mb-3">
+        <div className="bg-muted rounded-lg p-3 mb-3">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">金額</div>
             <div className="flex items-center gap-2">

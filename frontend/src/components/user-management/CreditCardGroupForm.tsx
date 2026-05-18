@@ -182,7 +182,7 @@ export function CreditCardGroupForm({
                       checked={isSelected}
                       disabled={isDisabled}
                       onChange={() => handleCardToggle(card.id)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-border"
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">

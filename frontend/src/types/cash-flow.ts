@@ -391,8 +391,8 @@ export function getCashFlowTypeColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
     [CashFlowType.INCOME]: "text-green-600",
     [CashFlowType.EXPENSE]: "text-red-600",
-    [CashFlowType.TRANSFER_IN]: "text-gray-600",
-    [CashFlowType.TRANSFER_OUT]: "text-gray-600",
+    [CashFlowType.TRANSFER_IN]: "text-muted-foreground",
+    [CashFlowType.TRANSFER_OUT]: "text-muted-foreground",
   };
   return colors[cashFlowType];
 }
@@ -405,8 +405,8 @@ export function getCashFlowTypeBgColor(cashFlowType: CashFlowType): string {
   const colors: Record<CashFlowType, string> = {
     [CashFlowType.INCOME]: "bg-red-100",
     [CashFlowType.EXPENSE]: "bg-green-100",
-    [CashFlowType.TRANSFER_IN]: "bg-gray-100",
-    [CashFlowType.TRANSFER_OUT]: "bg-gray-100",
+    [CashFlowType.TRANSFER_IN]: "bg-muted",
+    [CashFlowType.TRANSFER_OUT]: "bg-muted",
   };
   return colors[cashFlowType];
 }
