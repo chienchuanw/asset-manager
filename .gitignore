@@ -63,6 +63,7 @@ yarn-error.log*
 openspec/
 
 # Planning docs
+doc/
 docs/
 note/
 
