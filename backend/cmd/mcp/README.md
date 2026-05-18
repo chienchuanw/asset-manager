@@ -1,10 +1,26 @@
-# MCP Server (Phase 1 — read-only)
+# MCP Server
 
-An in-process Model Context Protocol server that lets AI agents read portfolio
-data. It speaks MCP over **stdio** and reuses the same database and service
-layer as the API (no HTTP, no API keys). **Phase 1 is read-only** — there are
-no write tools (creating/updating/deleting transactions or reconciliation is
-Phase 2 and intentionally unavailable).
+An in-process Model Context Protocol server that lets AI agents read and modify
+portfolio data. It speaks MCP over **stdio** and reuses the same database and
+service layer as the API (no HTTP, no API keys). Phase 1 added read tools;
+Phase 2 adds write tools behind a dry-run/confirm guardrail with fail-closed
+auditing.
+
+## Write tools (Phase 2)
+
+`create_transaction`, `update_transaction`, `delete_transaction`,
+`reconcile_holding`. Every write tool is **two-step**:
+
+- Without `confirm:true` (default) the tool returns a **dry-run preview** of
+  the effect and persists nothing.
+- With `confirm:true` it executes through the existing service layer (FIFO,
+  realized-profit and reconciliation row-locks preserved).
+
+Writes are **fail-closed audited**: a `pending` row is written to
+`agent_audit_log` *before* the mutation; if that insert fails the write is
+aborted and nothing is persisted. After execution the row is finalized to
+`success`/`error` with `executed_at` set. (Read tools remain best-effort
+audited, per Phase 1.)
 
 ## Tools
 

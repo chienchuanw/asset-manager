@@ -59,11 +59,18 @@ func main() {
 	allocationService := service.NewAllocationService(holdingService)
 	performanceTrendService := service.NewPerformanceTrendService(performanceSnapshotRepo, unrealizedAnalyticsService, analyticsService)
 
-	logger := audit.NewLogger(audit.NewPostgresAuditRepository(database))
+	reconcileService := service.NewHoldingReconciliationService(database, transactionRepo, fifoCalculator)
+
+	auditRepo := audit.NewPostgresAuditRepository(database)
+	logger := audit.NewLogger(auditRepo)
+	failClosed := audit.NewFailClosed(auditRepo)
 
 	holdingsAdapter := mcpserver.NewHoldingsAdapter(holdingService)
 	txAdapter := mcpserver.NewTransactionsAdapter(transactionService)
+	txWriteAdapter := mcpserver.NewTxWriteAdapter(transactionService)
+	reconcileAdapter := mcpserver.NewReconcileAdapter(reconcileService)
 	tools := []mcpserver.Tool{
+		// read (Phase 1)
 		mcpserver.NewGetHoldingsTool(holdingsAdapter),
 		mcpserver.NewGetHoldingTool(holdingsAdapter),
 		mcpserver.NewListTransactionsTool(txAdapter),
@@ -71,6 +78,11 @@ func main() {
 		mcpserver.NewGetAnalyticsTool(mcpserver.NewAnalyticsAdapter(analyticsService)),
 		mcpserver.NewGetAllocationTool(mcpserver.NewAllocationAdapter(allocationService)),
 		mcpserver.NewGetPerformanceTrendTool(mcpserver.NewTrendAdapter(performanceTrendService)),
+		// write (Phase 2, dry-run/confirm + fail-closed audit)
+		mcpserver.NewCreateTransactionTool(txWriteAdapter, failClosed),
+		mcpserver.NewUpdateTransactionTool(txWriteAdapter, failClosed),
+		mcpserver.NewDeleteTransactionTool(txWriteAdapter, failClosed),
+		mcpserver.NewReconcileHoldingTool(reconcileAdapter, failClosed),
 	}
 
 	dispatcher := mcpserver.NewDispatcher(tools, mcpserver.NewLoggerSink(logger))
