@@ -22,6 +22,7 @@ import {
   RepeatIcon,
   ScaleIcon,
   BellIcon,
+  FlameIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -108,6 +109,12 @@ export function AppLayout({ children, title, description }: AppLayoutProps) {
       label: t("rebalance"),
       icon: ScaleIcon,
       href: "/rebalance",
+    },
+    {
+      id: "fire",
+      label: t("fire"),
+      icon: FlameIcon,
+      href: "/fire",
     },
   ];
 

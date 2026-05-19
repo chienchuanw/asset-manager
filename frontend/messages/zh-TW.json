@@ -81,7 +81,8 @@
     "notification": "通知管理",
     "mainFeatures": "主要功能",
     "appName": "Asset Manager",
-    "appDescription": "資產管理系統"
+    "appDescription": "資產管理系統",
+    "fire": "FIRE"
   },
   "dashboard": {
     "title": "首頁",
@@ -761,5 +762,30 @@
     "loading": "載入中…",
     "errorTitle": "資料載入失敗",
     "retry": "重試"
+  },
+  "fire": {
+    "title": "FIRE 計算",
+    "description": "估算你的財務獨立目標金額與達標進度",
+    "assumptions": "假設參數",
+    "assumptionsHint": "留空的欄位會自動從你的資料推導，提示文字顯示目前推導值。",
+    "fields": {
+      "netWorth": "目前淨值（TWD）",
+      "annualExpenses": "年支出（TWD）",
+      "annualSavings": "年儲蓄（TWD）",
+      "expectedReturn": "預期年化報酬率",
+      "withdrawalRate": "安全提領率"
+    },
+    "apply": "套用",
+    "resetToAuto": "重設為自動",
+    "fireNumber": "FIRE 數字",
+    "progress": "達標進度",
+    "yearsToFI": "預估達標年數",
+    "yearsValue": "{years} 年",
+    "notOnTrack": "尚未在軌道上",
+    "projectionTitle": "淨值投影",
+    "projectionHint": "預估淨值與 FIRE 目標對照",
+    "yearAxis": "第 {year} 年",
+    "noSnapshotTitle": "尚無淨值資料",
+    "noSnapshotHint": "新增資產快照即可看到個人化投影，或於上方手動輸入淨值。"
   }
 }
