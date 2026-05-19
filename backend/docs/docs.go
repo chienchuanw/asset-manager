@@ -3872,6 +3872,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/fire/projection": {
+            "get": {
+                "description": "依據自動推導的淨值與現金流（可由查詢參數覆寫）計算 FIRE 數字、進度與達標年數",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "fire"
+                ],
+                "summary": "取得 FIRE 投影",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "目前淨值（TWD），覆寫最新資產快照",
+                        "name": "netWorth",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "年支出（TWD），覆寫近 12 個月推導值",
+                        "name": "annualExpenses",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "年儲蓄（TWD），覆寫近 12 個月推導值",
+                        "name": "annualSavings",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "預期年化報酬率（小數），預設 0.05",
+                        "name": "expectedReturn",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "安全提領率（小數），預設 0.04",
+                        "name": "withdrawalRate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.FireProjectionResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/holdings": {
             "get": {
                 "description": "取得所有持倉列表，支援按資產類型和標的代碼篩選",
@@ -7724,6 +7791,58 @@ const docTemplate = `{
                 },
                 "yearly_report_month": {
                     "description": "每年幾月發送 (1-12)",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.FireProjectionPoint": {
+            "type": "object",
+            "properties": {
+                "fire_target": {
+                    "type": "number"
+                },
+                "projected_net_worth": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_chienchuanw_asset-manager_internal_models.FireProjectionResult": {
+            "type": "object",
+            "properties": {
+                "annual_expenses": {
+                    "type": "number"
+                },
+                "annual_savings": {
+                    "type": "number"
+                },
+                "current_net_worth": {
+                    "type": "number"
+                },
+                "expected_return": {
+                    "type": "number"
+                },
+                "fire_number": {
+                    "type": "number"
+                },
+                "on_track": {
+                    "type": "boolean"
+                },
+                "progress_pct": {
+                    "type": "number"
+                },
+                "projection": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_chienchuanw_asset-manager_internal_models.FireProjectionPoint"
+                    }
+                },
+                "withdrawal_rate": {
+                    "type": "number"
+                },
+                "years_to_fi": {
                     "type": "integer"
                 }
             }
