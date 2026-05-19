@@ -51,6 +51,8 @@ The system provides analytics dashboards with realized/unrealized P&L, asset all
 
 - **Holdings reconciliation** -- Snap investment holdings to current real-world state without backfilling every missed buy/sell. A batch dialog lets users edit `(symbol, target quantity, target average cost)` per position (and add first-time positions), preview a diff with `create / update / liquidate / noop` actions, and commit. Each non-noop item writes a single `adjustment` transaction with audit fields; the FIFO calculator resets prior cost lots at that point so subsequent sells use the post-adjustment basis. Reconciliation does **not** realize P&L and does **not** affect cash flows -- it is a data-correction tool, not a substitute for recording real trades.
 
+- **FIRE calculator** -- Estimates the Financial Independence / Retire Early target (`annual expenses / withdrawal rate`), progress percentage, and projected years to FI. Inputs auto-prefill from existing data (latest asset snapshot net worth, trailing-12-month expenses and savings from the cash flow summary) and every assumption is overridable on the page.
+
 - **Analytics and snapshots** -- Performance trends via daily snapshots, asset allocation by type and individual asset, top performing/underperforming assets, and time-range filtering.
 
   ![Analytics](assets/screenshots/analytics.png)
@@ -300,6 +302,7 @@ For detailed architecture documentation, see [`backend/doc/ARCHITECTURE.md`](bac
 | GET | `/api/analytics/performance` | Performance data |
 | GET | `/api/analytics/top-assets` | Top performing assets |
 | GET | `/api/analytics/unrealized` | Unrealized P&L |
+| GET | `/api/fire/projection` | FIRE projection (auto-derived, query-param overridable) |
 
 ### Asset Allocation
 
