@@ -12,7 +12,7 @@ on:
 env:
   GO_VERSION: "1.25"
   NODE_VERSION: "20"
-  PNPM_VERSION: "9"
+  PNPM_VERSION: "10"
 
 jobs:
   # Job 1: 通知 - 部署開始
@@ -125,7 +125,10 @@ jobs:
           TEST_DB_PASSWORD: postgres
           TEST_DB_NAME: asset_manager_test
         run: |
-          gotestsum --format testname -- -cover ./...
+          # -p 1 serializes package test binaries: repository/BDD suites share
+          # one Postgres test DB and TRUNCATE ... CASCADE concurrently, which
+          # deadlocks (pq 40P01) when packages run in parallel.
+          gotestsum --format testname -- -p 1 -cover ./...
 
       - name: 📝 Install swag CLI
         run: go install github.com/swaggo/swag/cmd/swag@v1.16.4
