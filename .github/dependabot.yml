@@ -42,6 +42,12 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    # Stay on a Node.js LTS line. Allow 22.x updates (incl. digest/patch);
+    # block jumps to 23+ (non-LTS Current) so moving LTS lines stays a
+    # manual, deliberate decision.
+    ignore:
+      - dependency-name: "node"
+        versions: [">22"]
 
   - package-ecosystem: "docker"
     directory: "/backend"
