@@ -15,6 +15,7 @@ A full-stack personal finance management system for tracking investment portfoli
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
 - [API Endpoints](#api-endpoints)
+- [MCP Server (AI Agent Access)](#mcp-server-ai-agent-access)
 - [Development](#development)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -472,6 +473,65 @@ Bot: ❓ 目前不支援這項操作 (lists available features)
 | `DISCORD_CHANNEL_IDS` | Comma-separated channel IDs to listen in |
 | `DISCORD_BOT_LANG` | `zh-TW` (default) or `en` |
 | `GEMINI_API_KEY` | Google Gemini API key |
+
+## MCP Server (AI Agent Access)
+
+An in-process Model Context Protocol server (`backend/cmd/mcp`) lets AI agents
+read and modify portfolio data. It speaks MCP over **stdio** and reuses the same
+database and service layer as the API — no HTTP and no API keys; access is
+process-level (whoever the MCP client is configured to launch). FIFO,
+realized-profit and reconciliation row-locks are preserved because every call
+goes through the existing service layer.
+
+### Tools
+
+Read: `get_holdings`, `get_holding`, `list_transactions`, `get_transaction`,
+`get_analytics`, `get_allocation`, `get_performance_trend`.
+
+Write: `create_transaction`, `update_transaction`, `delete_transaction`,
+`reconcile_holding`.
+
+### Write safety
+
+Every write tool is two-step:
+
+- Without `confirm:true` (the default) the tool returns a **dry-run preview**
+  of the effect and persists nothing.
+- With `confirm:true` it executes through the service layer.
+
+Writes are **fail-closed audited**: a `pending` row is written to
+`agent_audit_log` before the mutation; if that insert fails the write is
+aborted and nothing is persisted, then the row is finalized to `success`/
+`error` with `executed_at`. Read-tool calls are best-effort audited.
+
+### Build and run
+
+```bash
+cd backend
+make mcp-build   # -> backend/bin/mcp
+# or, run directly over stdio
+make mcp-run
+```
+
+Requires `backend/.env.local` (same DB config as the API).
+
+### Configuring an MCP client
+
+Register the built binary as a stdio MCP server:
+
+```json
+{
+  "mcpServers": {
+    "asset-manager": {
+      "command": "/absolute/path/to/asset-manager/backend/bin/mcp"
+    }
+  }
+}
+```
+
+The working directory must contain `.env.local` (or run the binary from
+`backend/`) so the database connection resolves. Full tool arguments and
+behavior are documented in `backend/cmd/mcp/README.md`.
 
 ## Development
 
