@@ -81,7 +81,8 @@
     "notification": "Notifications",
     "mainFeatures": "Main Features",
     "appName": "Asset Manager",
-    "appDescription": "Asset Management System"
+    "appDescription": "Asset Management System",
+    "fire": "FIRE"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -725,5 +726,30 @@
     "loading": "Loading…",
     "errorTitle": "Couldn't load data",
     "retry": "Retry"
+  },
+  "fire": {
+    "title": "FIRE Calculator",
+    "description": "Estimate your financial independence number and progress",
+    "assumptions": "Assumptions",
+    "assumptionsHint": "Leave a field blank to auto-derive it from your data. Placeholders show the current derived value.",
+    "fields": {
+      "netWorth": "Current Net Worth (TWD)",
+      "annualExpenses": "Annual Expenses (TWD)",
+      "annualSavings": "Annual Savings (TWD)",
+      "expectedReturn": "Expected Annual Return",
+      "withdrawalRate": "Withdrawal Rate"
+    },
+    "apply": "Apply",
+    "resetToAuto": "Reset to Auto",
+    "fireNumber": "FIRE Number",
+    "progress": "Progress",
+    "yearsToFI": "Years to FI",
+    "yearsValue": "{years} years",
+    "notOnTrack": "Not on track",
+    "projectionTitle": "Net Worth Projection",
+    "projectionHint": "Projected net worth vs. your FIRE target",
+    "yearAxis": "Y{year}",
+    "noSnapshotTitle": "No net worth data",
+    "noSnapshotHint": "Add an asset snapshot to see a personalized projection, or enter a net worth value above."
   }
 }
