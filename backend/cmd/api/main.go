@@ -163,6 +163,8 @@ func main() {
 		rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 		cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
 		cashFlowHandler.SetDiscordService(discordService) // 設定 Discord service 用於發送報告
+		fireService := service.NewFireService(assetSnapshotService, cashFlowService)
+		fireHandler := api.NewFireHandler(fireService)
 		categoryHandler := api.NewCategoryHandler(categoryService)
 		subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 		installmentHandler := api.NewInstallmentHandler(installmentService)
@@ -197,7 +199,7 @@ func main() {
 		// 建立 router 並啟動（簡化版，不啟動排程器）
 		log.Println("Warning: Scheduler is disabled (Redis not available)")
 		bot := startDiscordBot(botCtx, cashFlowService, categoryRepo, bankAccountRepo, creditCardRepo)
-		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, reconciliationHandler, holdingReconcileHandler, exchangeRateHandler, nil, bot)
+		startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, reconciliationHandler, holdingReconcileHandler, exchangeRateHandler, fireHandler, nil, bot)
 		return
 	}
 	defer redisCache.Close()
@@ -285,6 +287,8 @@ func main() {
 	rebalanceHandler := api.NewRebalanceHandler(rebalanceService)
 	cashFlowHandler := api.NewCashFlowHandler(cashFlowService)
 	cashFlowHandler.SetDiscordService(discordService) // 設定 Discord service 用於發送報告
+	fireService := service.NewFireService(assetSnapshotService, cashFlowService)
+	fireHandler := api.NewFireHandler(fireService)
 	categoryHandler := api.NewCategoryHandler(categoryService)
 	subscriptionHandler := api.NewSubscriptionHandler(subscriptionService)
 	installmentHandler := api.NewInstallmentHandler(installmentService)
@@ -323,7 +327,7 @@ func main() {
 
 	// 啟動伺服器（會在內部處理 graceful shutdown）
 	bot := startDiscordBot(botCtx, cashFlowService, categoryRepo, bankAccountRepo, creditCardRepo)
-	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, reconciliationHandler, holdingReconcileHandler, exchangeRateHandler, schedulerManager, bot)
+	startServer(authHandler, transactionHandler, holdingHandler, analyticsHandler, unrealizedAnalyticsHandler, allocationHandler, performanceTrendHandler, settingsHandler, assetSnapshotHandler, discordHandler, schedulerHandler, rebalanceHandler, cashFlowHandler, categoryHandler, subscriptionHandler, installmentHandler, billingHandler, bankAccountHandler, creditCardHandler, creditCardGroupHandler, reconciliationHandler, holdingReconcileHandler, exchangeRateHandler, fireHandler, schedulerManager, bot)
 }
 
 // getEnvOrDefault 取得環境變數，如果不存在則使用預設值
@@ -370,7 +374,7 @@ func startDiscordBot(ctx context.Context, cashFlowSvc service.CashFlowService, c
 	return bot
 }
 
-func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, creditCardGroupHandler *api.CreditCardGroupHandler, reconciliationHandler *api.ReconciliationHandler, holdingReconcileHandler *api.HoldingReconciliationHandler, exchangeRateHandler *api.ExchangeRateHandler, schedulerManager *scheduler.SchedulerManager, discordBot *discordbot.Bot) {
+func startServer(authHandler *api.AuthHandler, transactionHandler *api.TransactionHandler, holdingHandler *api.HoldingHandler, analyticsHandler *api.AnalyticsHandler, unrealizedAnalyticsHandler *api.UnrealizedAnalyticsHandler, allocationHandler *api.AllocationHandler, performanceTrendHandler *api.PerformanceTrendHandler, settingsHandler *api.SettingsHandler, assetSnapshotHandler *api.AssetSnapshotHandler, discordHandler *api.DiscordHandler, schedulerHandler *api.SchedulerHandler, rebalanceHandler *api.RebalanceHandler, cashFlowHandler *api.CashFlowHandler, categoryHandler *api.CategoryHandler, subscriptionHandler *api.SubscriptionHandler, installmentHandler *api.InstallmentHandler, billingHandler *api.BillingHandler, bankAccountHandler *api.BankAccountHandler, creditCardHandler *api.CreditCardHandler, creditCardGroupHandler *api.CreditCardGroupHandler, reconciliationHandler *api.ReconciliationHandler, holdingReconcileHandler *api.HoldingReconciliationHandler, exchangeRateHandler *api.ExchangeRateHandler, fireHandler *api.FireHandler, schedulerManager *scheduler.SchedulerManager, discordBot *discordbot.Bot) {
 	// 建立 Gin router
 	router := gin.Default()
 
@@ -441,6 +445,12 @@ func startServer(authHandler *api.AuthHandler, transactionHandler *api.Transacti
 		}
 
 		// Analytics 路由
+		// FIRE 路由
+		fire := apiGroup.Group("/fire")
+		{
+			fire.GET("/projection", fireHandler.GetProjection)
+		}
+
 		analytics := apiGroup.Group("/analytics")
 		{
 			analytics.GET("/summary", analyticsHandler.GetSummary)
