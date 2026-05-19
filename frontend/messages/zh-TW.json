@@ -82,7 +82,7 @@
     "mainFeatures": "主要功能",
     "appName": "Asset Manager",
     "appDescription": "資產管理系統",
-    "fire": "FIRE"
+    "fire": "財務自由"
   },
   "dashboard": {
     "title": "首頁",
@@ -764,7 +764,7 @@
     "retry": "重試"
   },
   "fire": {
-    "title": "FIRE 計算",
+    "title": "財務自由試算",
     "description": "估算你的財務獨立目標金額與達標進度",
     "assumptions": "假設參數",
     "assumptionsHint": "留空的欄位會自動從你的資料推導，提示文字顯示目前推導值。",
