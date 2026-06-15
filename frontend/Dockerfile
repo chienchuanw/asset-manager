@@ -1,6 +1,6 @@
 # 多階段建置 Dockerfile for Next.js Frontend
 # Stage 1: 依賴安裝階段
-FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS deps
+FROM node:22-alpine@sha256:9385cd9f3001dfc3431e8ead12c43e9e1f87cc1b9b5c6cfd0f73865d405b27c4 AS deps
 
 # 安裝 pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: 建置階段
-FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS builder
+FROM node:22-alpine@sha256:9385cd9f3001dfc3431e8ead12c43e9e1f87cc1b9b5c6cfd0f73865d405b27c4 AS builder
 
 # 安裝 pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
@@ -39,7 +39,7 @@ ENV NODE_OPTIONS="--max-old-space-size=1024"
 RUN pnpm build
 
 # Stage 3: 執行階段
-FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS runner
+FROM node:22-alpine@sha256:9385cd9f3001dfc3431e8ead12c43e9e1f87cc1b9b5c6cfd0f73865d405b27c4 AS runner
 
 WORKDIR /app
 
