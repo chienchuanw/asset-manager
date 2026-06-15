@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/bin/api cmd/api/m
 
 # Stage 2: 執行階段
 # alpine:3.20 + digest 釘選（之前用 alpine:latest，浮動 tag 是穩定性與安全風險）
-FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
+FROM alpine:3.24@sha256:a2d49ea686c2adfe3c992e47dc3b5e7fa6e6b5055609400dc2acaeb241c829f4
 
 # 安裝必要工具
 # ca-certificates: HTTPS 連線需要
